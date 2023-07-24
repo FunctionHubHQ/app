@@ -1,0 +1,288 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "GPT Lambda API",
+    "description": "GPT Lambda AI API Service",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.gptlambda.com",
+      "description": "Prod"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Dev"
+    }
+  ],
+  "paths": {
+    "/user/": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get user profile",
+        "description": "Get user profile or create one if it doesn't exist",
+        "operationId": "getUserprofile",
+        "responses": {
+          "200": {
+            "description": "Get user profile response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extension": {
+      "post": {
+        "tags": [
+          "extension"
+        ],
+        "summary": "Handle messages from the Chrome extension",
+        "description": "Handle messages from the Chrome extension",
+        "operationId": "handleMessage",
+        "requestBody": {
+          "required": true,
+          "description": "New message request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtensionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generic Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "UserProfileResponse":  {
+        "type": "object",
+        "required": [
+          "error",
+          "profile"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/UserProfile"
+          }
+        }
+      },
+      "ExtensionRequest":  {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          },
+          "product_url": {
+            "type": "string"
+          },
+          "product_sku": {
+            "type": "string"
+          }
+        }
+      },
+      "GenericResponse":  {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductRequest":  {
+        "type": "object",
+        "properties": {
+          "product_url": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductFromDataRequest":  {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "seller": {
+            "type": "string"
+          },
+          "product_url": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "num_reviews": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "num_questions_answered": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "star_rating": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ProductCreateResponse":  {
+        "type": "object",
+        "properties": {
+          "is_ready": {
+            "type": "boolean"
+          },
+          "in_progress": {
+            "type": "boolean"
+          },
+          "product_sku": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Payload":  {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ProductCreateResponse"
+          }
+        ]
+      },
+      "WebsocketResponse":  {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/WebsocketResponseType"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/Payload"
+          }
+        }
+      },
+      "WebsocketResponseType":  {
+        "type": "string",
+        "enum": [
+          "Create Product"
+        ],
+        "x-enum-varnames": [
+          "CREATE_PRODUCT"
+        ]
+      },
+      "ChatDto":  {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string"
+          },
+          "from_user": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FeedbackDto":  {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          }
+        }
+      },
+      "UserProfile":  {
+        "type": "object",
+        "required": [
+          "uid",
+          "name",
+          "email",
+          "picture",
+          "roles",
+          "is_authorized"
+        ],
+        "properties": {
+          "uid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "picture": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "is_authorized": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

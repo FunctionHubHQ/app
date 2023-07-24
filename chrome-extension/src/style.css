@@ -1,0 +1,186 @@
+.rs-drawer-wrapper {
+  z-index: 99999999;
+}
+.rs-drawer-content {
+  border-top-left-radius: 18px;
+}
+.rs-drawer-header {
+  padding: 12px 20px 5px 20px;
+}
+.product-card-header {
+  height: 132px;
+}
+.rs-drawer-header-close {
+  display: none
+}
+.floating-button {
+  max-width: 64px;
+  z-index: 9999999;
+}
+#floating-btn, .floating-btn-badge, .rs-badge-content {
+  z-index: 9999999 !important;
+}
+
+.floating-button svg {
+  background: #3498ff;
+  padding: 8px;
+  border-right: 16px;
+  height: 48px;
+}
+.shoppiem-full-logo svg {
+  height: 40px;
+  width: 128px;
+}
+.rs-drawer-body {
+  padding: 30px 20px;
+  /*height: calc(100vh - 376px) !important;*/
+}
+.rs-form-control {
+  width: 100%;
+}
+.product-info-form .rs-input, .chat-form .rs-input {
+  width: 100%;
+}
+.product-info-form {
+  display: block;
+}
+
+.rs-drawer-header + .rs-drawer-body {
+ height: calc(100vh - 376px) !important;
+}
+
+.chat-form-container {
+  display: flex;
+  position: relative;
+  margin-top: 10px;
+}
+.chat-form {
+  width: 100%;
+}
+
+form {
+  margin-bottom: 0px !important;;
+}
+
+.chat-form-container .rs-btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.chat-form textarea {
+  resize: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  outline: none;
+  padding: 15px;
+  overflow: auto;
+  height: 60px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border: none;
+  background: #f7f7fa;
+}
+.chat-form textarea:focus {
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  outline: none;
+}
+.section-header {
+  background: #3498ff;
+  border-radius: 8px;
+  margin-bottom: 0;
+  padding: 6px 6px 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 24px;
+  display: block;
+  text-align: center;
+  color: white;
+}
+
+.landing-section-header {
+  /*margin: 16px;*/
+  line-height: 24px;
+  padding: 6px;
+  padding-left: 14px;
+  /*background: #f2f4f7;*/
+  border-radius: 8px;
+  color: #101828;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 0;
+  display: block;
+  text-align: center;
+}
+.landing-section-header span {
+  padding-left: 10px;
+}
+.landing-section {
+  background: #f5faff;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: inline-block;
+  font-size: 14px;
+  line-height: 24px;
+  color: #1570ef;
+  text-align: center;
+}
+
+.break-4 {
+  margin-top: 4rem;
+}
+.break-2 {
+  margin-top: 2rem;
+}
+.break-1 {
+  margin-top: 1rem;
+}
+.close-btn:hover {
+  cursor: pointer;
+}
+
+.message-container {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  position: relative;
+  padding-bottom: 1rem;
+  bottom: 0;
+}
+
+.chat-msg {
+  display: block;
+  width: 65%;
+  padding: 10px 14px;
+  gap: 8px;
+  margin-top: 16px;
+  position: relative;
+  box-sizing: border-box;
+  overflow: visible;
+  min-height: 40px;
+}
+
+.chat-msg.left {
+  float: left;
+  color: #101828;
+  background: #f2f4f7;
+  border-radius: 0px 8px 8px 8px;
+}
+
+.chat-msg.right.empty {
+  background: #fff;
+}
+
+.chat-msg.right {
+  float: right;
+  background: #007aff;
+  color: #fff;
+  border-radius: 8px 8px 0px;
+}
+.disclaimer {
+  font-size: 10px;
+  text-align: center;
+  color: grey;
+  margin-top: -20px;
+  margin-bottom: 20px;
+}

@@ -1,0 +1,38 @@
+{
+  "short_name": "shoppiem",
+  "name": "Shoppiem ChatGPT for Amazon",
+  "description": "Shoppiem is ChatGPT for Amazon. Get instant answers to all your product questions when shopping on Amazon.",
+  "version": "0.0.4",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "run_at": "document_end",
+      "matches": [ "https://www.amazon.com/*", "https://www.amazon.de/*", "https://www.amazon.co.jp/*", "https://www.amazon.co.uk/*", "https://www.amazon.fr/*", "https://www.amazon.it/*", "https://www.amazon.es/*", "https://www.amazon.sg/*", "https://www.amazon.com.mx/*", "https://www.amazon.com.au/*", "https://www.amazon.in/*", "https://www.amazon.com.tr/*", "https://www.amazon.com.br/*", "https://www.amazon.ca/*", "https://www.amazon.nl/*", "https://www.amazon.se/*", "https://www.amazon.pl/*", "https://www.amazon.ae/*", "https://www.amazon.sa/*", "https://www.amazon.eg/*", "https://www.amazon.com.be/*" ],
+      "css": [
+        "dist/index.735b2751.css",
+        "dist/index.b284f5af.css",
+        "dist/index.fd2011b2.css"
+      ],
+      "js": ["dist/index.b48ba010.js"]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "gcm",
+    "tabs"
+  ],
+  "action": {},
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  }
+}

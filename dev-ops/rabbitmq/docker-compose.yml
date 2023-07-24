@@ -1,0 +1,24 @@
+version: '3.7'
+
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_PASS=pV5S7ulu26J
+      - RABBITMQ_DEFAULT_USER=shoppiem
+    volumes:
+      - './data:/mnesia'
+    networks:
+      - messaging
+      - traefik_network
+
+networks:
+  messaging:
+    driver: bridge
+  traefik_network:
+    external: true

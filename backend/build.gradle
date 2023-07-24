@@ -1,0 +1,230 @@
+plugins {
+  id "io.swagger.core.v3.swagger-gradle-plugin" version "2.1.10"
+  id 'org.openapi.generator' version '5.1.1'
+  id 'org.springframework.boot' version '3.1.0'
+  id "io.spring.dependency-management" version '1.0.11.RELEASE'
+  id "org.flywaydb.flyway" version "7.15.0"
+  id 'groovy'
+}
+
+allprojects {
+  apply plugin: "idea"
+  apply plugin: 'java'
+  repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url "https://plugins.gradle.org/m2/" }
+
+  }
+}
+
+bootJar {
+  enabled = false
+}
+
+ext {
+  set('springCloudVersion', "2022.0.3")
+  set('awsSDKVersion', '1.12.65')
+  set("apiPackageName", "com.gptlambda.api")
+  set("modelPackageName", "com.gptlambda.api")
+  set("openApiSpecPath", "src/main/resources/openapi/openapi.json")
+  set("generatedDirSpring", "generated/openapi/spring")
+  set("generatedDirTypeScript", "generated/openapi/typescript")
+  set("apiVersion", "1.0.0")
+}
+
+/**
+ * Configure Java/Spring Boot projects
+ */
+configure(subprojects.findAll(it ->
+  it.file('src/main/java').exists()
+)) {
+  group = 'com.gptlambda'
+  version = '1.0.0'
+  sourceCompatibility = JavaVersion.VERSION_20
+  targetCompatibility = JavaVersion.VERSION_20
+
+  apply plugin: 'io.spring.dependency-management'
+  apply plugin: 'org.springframework.boot'
+  apply plugin: 'java-library'
+  apply plugin: 'application'
+  apply plugin: 'org.openapi.generator'
+  apply plugin: 'io.swagger.core.v3.swagger-gradle-plugin'
+
+  dependencies {
+    implementation 'io.github.resilience4j:resilience4j-spring-boot2:2.0.2'
+    implementation 'org.hibernate:hibernate-core:6.2.4.Final'
+    implementation 'com.vladmihalcea:hibernate-types-60:2.21.1'
+    implementation "org.springframework.security:spring-security-web"
+    implementation "org.springframework.security:spring-security-config"
+    implementation 'org.apache.httpcomponents:fluent-hc:4.5.14'
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'org.springframework:spring-websocket:6.0.9'
+    implementation 'org.springframework:spring-messaging:6.0.9'
+    api 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-jackson:2.9.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5-fluent:5.1.1'
+    implementation 'com.alibaba:fastjson:2.0.19'
+    implementation 'org.jsoup:jsoup:1.15.1'
+    implementation 'net.sourceforge.htmlunit:htmlunit:2.62.0'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.2.2'
+    implementation 'io.springfox:springfox-boot-starter:3.0.0'
+    implementation 'javax.validation:validation-api:2.0.1.Final'
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.1'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
+    implementation 'io.springfox:springfox-swagger2:3.0.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.0'
+    implementation 'org.postgresql:postgresql:42.2.23'
+    implementation 'com.google.firebase:firebase-admin:8.0.1'
+    implementation platform("com.amazonaws:aws-java-sdk-bom:${awsSDKVersion}")
+    compileOnly 'org.projectlombok:lombok:1.18.28'
+    implementation 'javax.servlet:javax.servlet-api:4.0.1'
+    implementation 'org.mapstruct:mapstruct:1.4.2.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.2.Final'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    annotationProcessor 'org.projectlombok:lombok'
+
+
+    // Test dependencies
+    testImplementation(platform('org.junit:junit-bom:5.8.2'))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testCompileOnly 'org.projectlombok:lombok:1.18.28'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.28'
+    testImplementation 'org.testng:testng:7.4.0'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+      exclude module: "org.junit.vintage:junit-vintage-engine"
+    }
+
+  }
+
+  dependencyManagement {
+    imports {
+      mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+      mavenBom 'org.springframework.security:spring-security-bom:6.1.0'
+      mavenBom 'org.springframework:spring-framework-bom:6.0.9'
+    }
+  }
+
+  tasks.withType(JavaCompile) {
+    options.compilerArgs = [
+            "--enable-preview"
+    ]
+  }
+
+  test {
+    useTestNG {
+      preserveOrder true
+    }
+    systemProperties = [
+      'spring.profiles.active'       : System.getProperty('SPRING_PROFILES_ACTIVE'),
+      'spring.application.name'      : System.getProperty('SPRING_APPLICATION_NAME'),
+      'MR_GH_TOKEN'                  : System.getProperty('MR_GH_TOKEN'),
+      'MR_GH_USERNAME'               : System.getProperty('MR_GH_USERNAME')
+    ]
+    reports.html.required = true
+    reports.junitXml.required = false
+    jvmArgs(['--enable-preview'])
+  }
+
+  run {
+    systemProperties = [
+      'spring.profiles.active'       : System.getProperty('SPRING_PROFILES_ACTIVE'),
+      'spring.application.name'      : System.getProperty('SPRING_APPLICATION_NAME'),
+      'MR_GH_TOKEN'                  : System.getProperty('MR_GH_TOKEN'),
+      'MR_GH_USERNAME'               : System.getProperty('MR_GH_USERNAME')
+    ]
+  }
+
+  jar {
+    enabled = false
+  }
+  bootJar {
+    enabled = true
+    archiveFileName = "app.${archiveExtension.get()}"
+    launchScript()
+  }
+
+  compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+  }
+
+  compileTestJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+  }
+}
+
+/**
+ * Generate OpenApi stubs for Spring and TypeScript
+ */
+task openApiBuilder() {
+  def childProjects = getChildProjects()
+  def services = [
+    "api"         : [
+      clientApi: true,
+      serverApi: true
+    ]
+  ]
+  for (Map.Entry<String, Project> entry : childProjects.entrySet()) {
+    def serviceName = entry.getKey()
+    def openApiSpecPath = "$rootDir/$serviceName/$project.openApiSpecPath" as String
+    def generatedSourcesDirSpring = "$rootDir/$serviceName/build/$project.generatedDirSpring" as String
+    def generatedSourcesDirTypeScript = "$rootDir/$serviceName/build/$project.generatedDirTypeScript" as String
+    def generatedTargetsDirTypesScript ="$rootDir/build/openapi-ts" as String
+
+    def projectTasks = entry.getValue().tasks
+    if (services.containsKey(serviceName)) {
+      projectTasks.register('openApiGenerateSpringServer',
+        org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+        generatorName = "spring"
+        inputSpec = openApiSpecPath
+        outputDir = generatedSourcesDirSpring
+        apiPackage = project.apiPackageName
+        modelPackage = project.modelPackageName
+        configOptions = [
+                dateLibrary            : "java8",
+                interfaceOnly          : "true",
+                invoker                : "false",
+                generateSupportingFiles: "false",
+                serializableModel      : "true",
+                swaggerAnnotations     : "false",
+                java8                  : "false",
+                gradleBuildFile        : "false",
+                useTags                : "true",
+                oas3                   : "true",
+                useSpringfox           : "false",
+        ]
+      }
+      projectTasks.getByName('compileJava')
+        .dependsOn('openApiGenerateSpringServer')
+
+      boolean generateClientApi = services.get(serviceName).get("clientApi")
+      if (generateClientApi) {
+        projectTasks.register('openApiGenerateTypeScriptClient',
+          org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+          generatorName = "typescript-axios"
+          inputSpec = openApiSpecPath
+          outputDir = generatedSourcesDirTypeScript
+        }
+
+//        projectTasks.register('openApiTypeScriptClientZip', Zip) {
+//          dependsOn('openApiGenerateTypeScriptClient')
+//          from generatedSourcesDirTypeScript
+//          include '**/*.ts'
+//          getArchiveBaseName('openapi_ts.zip')
+//          destinationDir(file(generatedTargetsDirTypesScript))
+//        }
+
+        projectTasks.getByName('compileJava')
+//          .dependsOn('openApiTypeScriptClientZip')
+          .dependsOn('openApiGenerateTypeScriptClient')
+      }
+    }
+  }
+}
+tasks.getByName('compileJava').dependsOn('openApiBuilder')

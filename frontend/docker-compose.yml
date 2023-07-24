@@ -1,0 +1,18 @@
+version: "3.3"
+services:
+  shoppiem_frontend:
+    image: 537408061242.dkr.ecr.us-east-2.amazonaws.com/shoppiem:frontend
+    container_name: shoppiem_frontend
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shoppiem_frontend.rule=Host(`shoppiem.com`, `www.shoppiem.com`)"
+      - "traefik.http.routers.shoppiem_frontend.service=shoppiem_frontend"
+      - "traefik.http.services.shoppiem_frontend.loadbalancer.server.port=3000"
+    networks:
+      - traefik_network
+
+networks:
+    traefik_network:
+      external: true
+

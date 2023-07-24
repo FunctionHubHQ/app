@@ -1,0 +1,59 @@
+.chrome-button {
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #fff;
+  padding: 0 24px;
+  height: 40px;
+  color: #0052ff;
+  border-radius: 20px;
+  transition-duration: .2s;
+  white-space: nowrap;
+}
+.chrome-button svg {
+  width: 16px;
+  height: 16px;
+  max-width: 16px;
+  max-height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin-right: 8px;
+}
+.footer-description {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 17px;
+  letter-spacing: .5px;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+.body-container {
+  width: 100%;
+  max-width: 772px;
+}
+.body-container p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+.body-container h1 {
+  font-size: 1.5rem;
+  margin-top: 1.5rem;
+}
+.body-container h2 {
+  font-size: 1.25rem;
+  margin-top: 1.2rem;
+}
+.body-container ul {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  display: block;
+  list-style-type: disc;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  padding-inline-start: 40px;
+}

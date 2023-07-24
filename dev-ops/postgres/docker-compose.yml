@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  shoppiem_db:
+    image: ankane/pgvector
+    command: postgres -c 'max_connections=2000'
+    container_name: shoppiem_db
+    restart: always
+    environment:
+      - DATABASE_HOST=127.0.0.1
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=shoppiem
+    ports:
+      - "8432:5432"
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+
+networks:
+  traefik_network:
+    external: true

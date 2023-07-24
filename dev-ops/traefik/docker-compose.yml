@@ -1,0 +1,63 @@
+version: "3.7"
+
+services:
+  traefik:
+    image: traefik:chevrotin
+    container_name: "traefik_wild"
+    restart: always
+    command:
+      --api.insecure=true
+      --api.dashboard=true
+      --providers.docker=true
+      --providers.docker.exposedbydefault=false
+
+      --entrypoints.web.address=:80
+      --entrypoints.web.http.redirections.entrypoint.to=websecure
+      --entrypoints.web.http.redirections.entrypoint.scheme=https
+
+      --entrypoints.websecure.address=:443
+      --entrypoints.websecure.http.tls=true
+      --entrypoints.websecure.http.tls.certResolver=letsencrypt
+      --entrypoints.websecure.http.tls.domains[0].main=shoppiem.com
+      --entrypoints.websecure.http.tls.domains[0].sans=*.shoppiem.com
+
+      --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+      --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=lightsail
+      --certificatesresolvers.letsencrypt.acme.dnschallenge.delayBeforeCheck=60
+      --certificatesresolvers.letsencrypt.acme.email=bizmelesse@gmail.com
+      --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      --certificatesresolvers.tlsresolver.acme.tlschallenge=true
+      --certificatesresolvers.tlsresolver.acme.email=bizmelesse@gmail.com
+      --certificatesresolvers.tlsresolver.acme.storage=/tlsresolver/acme.json
+      --certificatesresolvers.tlsresolver.acme.httpchallenge.entrypoint=web
+
+    environment:
+      - "AWS_ACCESS_KEY_ID="
+      - "AWS_SECRET_ACCESS_KEY="
+      - "DNS_ZONE=shoppiem.com"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "./tlsresolver:/tlsresolver"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+    networks:
+      - traefik_network
+
+    labels:
+      - traefik.enable=true
+      # Redirect all HTTP traffic to HTTPS
+      - traefik.http.routers.api.entryPoints=traefik
+      - traefik.http.routers.traefik.rule=Host(`dashboard.shoppiem.com`)
+      - traefik.http.routers.traefik.middlewares=auth
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.tls.certresolver=letsencrypt
+      - traefik.http.middlewares.auth.basicauth.users=mrecipes:$$2y$$05$$P286XrGurDASrb6LF3A0vOPQndH2ikvpLKjU/20PQHPrk3y7Wt0n6
+networks:
+  traefik_network:
+    external: true
+

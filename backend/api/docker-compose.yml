@@ -1,0 +1,21 @@
+version: "3.3"
+services:
+  shoppiem_backend:
+    image: 537408061242.dkr.ecr.us-east-2.amazonaws.com/shoppiem:backend
+    container_name: shoppiem_backend
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shoppiem_backend.rule=Host(`api.shoppiem.com`)"
+      - "traefik.http.routers.shoppiem_backend.service=shoppiem_backend"
+      - "traefik.http.services.shoppiem_backend.loadbalancer.server.port=8080"
+    networks:
+      - traefik_network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - /tmp:/tmp
+networks:
+  traefik_network:
+    external: true
+
