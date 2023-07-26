@@ -1,7 +1,7 @@
 import { Application, isHttpError } from "https://deno.land/x/oak/mod.ts";
 
 const devHost = 'http://host.docker.internal:8080';
-const prodHost = 'http://gpt-deno:8080/';
+const prodHost = 'http://api:8080/';
 async function sendResult(ctx, result, error) {
   const body = JSON.parse(await ctx.request.body().value);
   const environment = body.env

@@ -1,10 +1,9 @@
 version: '3.8'
 services:
-  deno_runtime:
+  runtime:
     build: .
-    container_name: deno_runtime
+    container_name: runtime
     restart: always
-#    user: "${UID}:${GID}"
     volumes:
       - ./deno-dir:/deno-dir
     ports:
@@ -13,6 +12,5 @@ services:
       - DENO_NO_PROMPT=1
     extra_hosts:
     - "host.docker.internal:host-gateway"
-
-
-# UID=${UID} GID=${GID} docker-compose up
+    networks:
+      - messaging

@@ -36,7 +36,7 @@ import org.springframework.util.ObjectUtils;
 public class RuntimeServiceImpl implements RuntimeService {
   private final SourceProps sourceProps;
   private final ObjectMapper objectMapper;
-  private final String runtimeUrl = "http://localhost:8000/execute";
+  private final String runtimeUrl = "http://localhost:8000/execute"; // in docker: http://runtime:8000/execute";
 
   @Override
   public GenericResponse exec(ExecRequest execRequest) {
@@ -62,7 +62,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         + "}\n"
         + "\n"
         + "export default async function(payload: RequestPayload) {\n"
-        + "  console.log(\"Default function reached in user code\", xyz)\n"
+        + "  console.log(\"Default function reached in user code\")\n"
         + "  return `${payload.day}: ${payload.greeting}, time: ${moment().format('MMMM Do YYYY, h:mm:ss a')}`\n"
         + "}";
   }
