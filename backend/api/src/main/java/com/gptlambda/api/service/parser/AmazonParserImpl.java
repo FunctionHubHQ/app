@@ -18,7 +18,7 @@ import com.gptlambda.api.service.chromeExtension.ExtensionServiceImpl.MessageTyp
 import com.gptlambda.api.service.embedding.EmbeddingService;
 import com.gptlambda.api.service.scraper.Merchant;
 import com.gptlambda.api.service.utils.JobUtils;
-import com.gptlambda.api.service.utils.ShoppiemUtils;
+import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -123,7 +123,7 @@ public class AmazonParserImpl implements AmazonParser {
     entity.setPrice(price);
     entity.setProductUrl(canonicalUrl);
     entity.setSeller(seller);
-    entity.setTitle(ShoppiemUtils.truncate(title));
+    entity.setTitle(GPTLambdaUtils.truncate(title));
     entity.setDescription(combineDescriptionData(List.of(
         features,
         overviewTableData,
@@ -173,7 +173,7 @@ public class AmazonParserImpl implements AmazonParser {
     for (String url : questionUrls) {
       ScrapingJob job = new ScrapingJob();
       job.setProductSku(entity.getProductSku());
-      job.setId(ShoppiemUtils.generateUid(ShoppiemUtils.DEFAULT_UID_LENGTH));
+      job.setId(GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH));
       job.setUrl(url);
       job.setType(JobType.QUESTION_PAGE);
       job.setProductId(entity.getId());
@@ -190,7 +190,7 @@ public class AmazonParserImpl implements AmazonParser {
       String url = generateInitialReviewLink(productSku, productUrl, starRating);
       ScrapingJob job = new ScrapingJob();
       job.setProductSku(productSku);
-      job.setId(ShoppiemUtils.generateUid(ShoppiemUtils.DEFAULT_UID_LENGTH));
+      job.setId(GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH));
       job.setUrl(url);
       job.setRetries(retries);
       job.setInitialReviewsByStarRating(true);
@@ -267,7 +267,7 @@ public class AmazonParserImpl implements AmazonParser {
         for (String url : reviewUrls) {
           ScrapingJob job = new ScrapingJob();
           job.setProductSku(entity.getProductSku());
-          job.setId(ShoppiemUtils.generateUid(ShoppiemUtils.DEFAULT_UID_LENGTH));
+          job.setId(GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH));
           job.setUrl(url);
           job.setInitialReviewsByStarRating(false);
           job.setType(JobType.REVIEW_PAGE);

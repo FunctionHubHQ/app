@@ -1,15 +1,15 @@
 version: '3.8'
 services:
-  shoppiem_db:
-    image: ankane/pgvector
+  gpt_lambda_db:
+    image: postgres
     command: postgres -c 'max_connections=2000'
-    container_name: shoppiem_db
+    container_name: gpt_lambda_db
     restart: always
     environment:
       - DATABASE_HOST=127.0.0.1
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=root
-      - POSTGRES_DB=shoppiem
+      - POSTGRES_DB=gpt_lambda
     ports:
       - "8432:5432"
     volumes:
@@ -18,3 +18,5 @@ services:
 networks:
   traefik_network:
     external: true
+
+    docker run -v $(pwd)/data/:/data denoland/deno:alpine run /data/main.ts

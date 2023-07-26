@@ -11,10 +11,10 @@ public class UnsecurePaths {
   private static final List<String> paths = List.of(
       "/actuator/health",
       "/actuator/health/**",
-      "/product/**",
-      "/product",
-      "/extension",
-      "/extension/**"
+      "/npm",
+      "/npm/**",
+      "/run",
+      "/run/**"
   );
 
   public static Stream<String> paths() {

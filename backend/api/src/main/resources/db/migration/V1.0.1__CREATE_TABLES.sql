@@ -1,6 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS public;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "vector";
 
 CREATE TABLE IF NOT EXISTS public.user (
     id BIGSERIAL NOT NULL primary key,
@@ -97,7 +96,6 @@ CREATE TABLE IF NOT EXISTS public.embedding (
     answer_id bigint NOT NULL default -1,
     product_sku varchar(255) NOT NULL,
     product_id bigint NOT NULL,
-    embedding vector(1536) NOT NULL,
     text varchar NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP

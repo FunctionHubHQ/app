@@ -14,7 +14,7 @@ import com.gptlambda.api.dto.ScrapingJob;
 import com.gptlambda.api.props.RabbitMQProps;
 import com.gptlambda.api.service.chromeExtension.ExtensionServiceImpl.MessageType;
 import com.gptlambda.api.service.parser.AmazonParser;
-import com.gptlambda.api.service.utils.ShoppiemUtils;
+import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import java.net.MalformedURLException;
 import java.net.URL;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +53,7 @@ public class ProductServiceImpl implements ProductService {
       entity.setProductUrl(url);
       entity.setBaseUrl(getBaseUrl(url));
       entity.setSeller(productFromDataRequest.getSeller());
-      entity.setTitle(ShoppiemUtils.truncate(productFromDataRequest.getTitle()));
+      entity.setTitle(GPTLambdaUtils.truncate(productFromDataRequest.getTitle()));
       entity.setDescription(productFromDataRequest.getDescription());
       entity.setIsReady(false);
       productRepo.save(entity);
@@ -86,7 +86,7 @@ public class ProductServiceImpl implements ProductService {
       } else {
         ScrapingJob job = new ScrapingJob();
         job.setProductSku(productSku);
-        job.setId(ShoppiemUtils.generateUid(ShoppiemUtils.DEFAULT_UID_LENGTH));
+        job.setId(GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH));
         job.setUrl(url);
         job.setType(JobType.PRODUCT_PAGE);
         try {

@@ -21,7 +21,7 @@ import com.gptlambda.api.service.openai.completion.CompletionRequest;
 import com.gptlambda.api.service.openai.completion.CompletionResult;
 import com.gptlambda.api.service.openai.completion.CompletionMessage;
 import com.gptlambda.api.service.utils.JobSemaphore;
-import com.gptlambda.api.service.utils.ShoppiemUtils;
+import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,7 +104,7 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   public void callGpt(String query, String fcmToken, String productSku) {
-    String queryId = ShoppiemUtils.generateUid(ShoppiemUtils.DEFAULT_CHAT_UID_LENGTH);
+    String queryId = GPTLambdaUtils.generateUid(GPTLambdaUtils.LONG_UID_LENGTH);
     log.info("Query - SKU={} queryId={}: {}", productSku, queryId, query);
     if (query.toLowerCase().contains("feedback")) {
       handleFeedback(query, fcmToken, productSku);
@@ -170,7 +170,7 @@ public class ChatServiceImpl implements ChatService {
   public void addQueryToQueue(String query, String fcmToken, String productSku) {
     Thread.startVirtualThread(() -> {
       ChatJob job = new ChatJob();
-      job.setId(ShoppiemUtils.generateUid(ShoppiemUtils.DEFAULT_UID_LENGTH));
+      job.setId(GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH));
       job.setQuery(query);
       job.setFcmToken(fcmToken);
       job.setProductSku(productSku);
@@ -227,7 +227,7 @@ public class ChatServiceImpl implements ChatService {
     entity.setMessage(query);
     entity.setIsGpt(isGpt);
     entity.setProductSku(productSku);
-    entity.setChatId(ShoppiemUtils.generateUid(ShoppiemUtils.DEFAULT_CHAT_UID_LENGTH));
+    entity.setChatId(GPTLambdaUtils.generateUid(GPTLambdaUtils.LONG_UID_LENGTH));
 
     FcmTokenEntity fcmTokenEntity = fcmTokenRepo.findByFcmToken(fcmToken);
     if (fcmTokenEntity == null) {

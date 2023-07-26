@@ -16,6 +16,69 @@
     }
   ],
   "paths": {
+    "/npm/{hash}": {
+      "get": {
+        "tags": [
+          "runtime"
+        ],
+        "operationId": "getUserCode",
+        "parameters": [
+          {
+            "name": "hash",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User code",
+            "content": {
+              "application/typescript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run": {
+      "post": {
+        "tags": [
+          "runtime"
+        ],
+        "summary": "Execute user code",
+        "description": "Execute user code in a secure sandbox",
+        "operationId": "exec",
+        "requestBody": {
+          "required": true,
+          "description": "Execution request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Runtime Info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user/": {
       "get": {
         "tags": [
@@ -81,6 +144,76 @@
       }
     },
     "schemas": {
+      "ExecutionRequest":  {
+        "type": "object",
+        "required": [
+          "code",
+          "runtime_id"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "runtime_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateRuntimeRequest":  {
+        "type": "object",
+        "required": [
+          "runtime"
+        ],
+        "properties": {
+          "runtime": {
+            "$ref": "#/components/schemas/RuntimeType"
+          }
+        }
+      },
+      "ExecutionResult":  {
+        "type": "object",
+        "properties": {
+          "std_out": {
+            "type": "string"
+          },
+          "std_error": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          }
+        }
+      },
+      "ExecRequest":  {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Id of the code block to execute"
+          },
+          "fcm_token": {
+            "type": "string"
+          }
+        }
+      },
+      "RuntimeInfo":  {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      
+      "RuntimeType": {
+        "type": "string",
+        "enum": [
+          "NODE_18"
+        ]
+      },
       "UserProfileResponse":  {
         "type": "object",
         "required": [

@@ -1,15 +1,13 @@
 package com.gptlambda.api.service.utils;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Random;
 
 /**
  * @author Biz Melesse created on 1/2/23
  */
-public class ShoppiemUtils {
-  public static final int DEFAULT_UID_LENGTH = 8;
-  public static final int DEFAULT_CHAT_UID_LENGTH = 16;
+public class GPTLambdaUtils {
+  public static final int SHORT_UID_LENGTH = 8;
+  public static final int LONG_UID_LENGTH = 16;
 
   public static String generateUid(int length) {
     StringBuilder builder = new StringBuilder();
