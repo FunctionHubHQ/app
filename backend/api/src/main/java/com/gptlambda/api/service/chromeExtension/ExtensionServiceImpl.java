@@ -24,6 +24,7 @@ public class ExtensionServiceImpl implements ExtensionService {
   private final ChatService chatService;
 
   public static final class MessageType {
+    public static final String EXEC_RESULT = "EXEC_RESULT";
     public static final String CHAT = "CHAT";
     public static final String HEART_BEAT = "HEART_BEAT";
     public static final String PRODUCT_INIT = "PRODUCT_INIT";

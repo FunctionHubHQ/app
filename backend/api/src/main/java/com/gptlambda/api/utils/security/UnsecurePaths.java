@@ -14,7 +14,9 @@ public class UnsecurePaths {
       "/npm",
       "/npm/**",
       "/run",
-      "/run/**"
+      "/run/**",
+      "/result",
+      "/result/**"
   );
 
   public static Stream<String> paths() {

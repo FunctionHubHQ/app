@@ -1,6 +1,7 @@
 package com.gptlambda.api.service.runtime;
 
 import com.gptlambda.api.ExecRequest;
+import com.gptlambda.api.ExecResult;
 import com.gptlambda.api.GenericResponse;
 
 /**
@@ -9,4 +10,5 @@ import com.gptlambda.api.GenericResponse;
 public interface RuntimeService {
   GenericResponse exec(ExecRequest execRequest);
   String getUserCode(String hash);
+  GenericResponse handleExecResult(ExecResult execResult);
 }

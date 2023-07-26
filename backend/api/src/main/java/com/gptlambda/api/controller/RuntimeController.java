@@ -1,6 +1,7 @@
 package com.gptlambda.api.controller;
 
 import com.gptlambda.api.ExecRequest;
+import com.gptlambda.api.ExecResult;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.RuntimeApi;
 import com.gptlambda.api.service.runtime.RuntimeService;
@@ -27,16 +28,10 @@ public class RuntimeController implements RuntimeApi {
   @Override
   public ResponseEntity<String> getUserCode(String hash) {
     return ResponseEntity.ok(runtimeService.getUserCode(hash));
-//    return ResponseEntity.ok("import moment from \"npm:moment\";\n"
-//        + "\n"
-//        + "interface RequestPayload {\n"
-//        + "  greeting?: String,\n"
-//        + "  day?: String\n"
-//        + "}\n"
-//        + "\n"
-//        + "export default async function(payload: RequestPayload) {\n"
-//        + "  console.log(\"Default function reached in user code\", xyz)\n"
-//        + "  return `${payload.day}: ${payload.greeting}, time: ${moment().format('MMMM Do YYYY, h:mm:ss a')}`\n"
-//        + "}");
+  }
+
+  @Override
+  public ResponseEntity<GenericResponse> handleExecResult(ExecResult execResult) {
+    return ResponseEntity.ok(runtimeService.handleExecResult(execResult));
   }
 }

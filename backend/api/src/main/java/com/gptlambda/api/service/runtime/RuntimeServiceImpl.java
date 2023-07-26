@@ -2,10 +2,15 @@ package com.gptlambda.api.service.runtime;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingException;
+import com.google.firebase.messaging.Message;
 import com.gptlambda.api.ExecRequest;
+import com.gptlambda.api.ExecResult;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.dto.SmartProxyTaskDto;
 import com.gptlambda.api.props.SourceProps;
+import com.gptlambda.api.service.chromeExtension.ExtensionServiceImpl.MessageType;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -20,6 +25,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @author Biz Melesse created on 7/26/23
@@ -59,6 +65,40 @@ public class RuntimeServiceImpl implements RuntimeService {
         + "  console.log(\"Default function reached in user code\", xyz)\n"
         + "  return `${payload.day}: ${payload.greeting}, time: ${moment().format('MMMM Do YYYY, h:mm:ss a')}`\n"
         + "}";
+  }
+
+  @Override
+  public GenericResponse handleExecResult(ExecResult execResult) {
+    if (!ObjectUtils.isEmpty(execResult.getFcmToken())) {
+      try {
+        Message.Builder builder = Message.builder();
+        builder.putData("type", MessageType.EXEC_RESULT);
+        if (!ObjectUtils.isEmpty(execResult.getResult())) {
+          builder.putData("result", objectMapper.writeValueAsString(execResult.getResult()));
+        }
+        if (!ObjectUtils.isEmpty(execResult.getError())) {
+          builder.putData("error", execResult.getError());
+        }
+        if (!ObjectUtils.isEmpty(execResult.getHash())) {
+          builder.putData("hash", execResult.getHash());
+        }
+        Message message = builder.setToken(execResult.getFcmToken()).build();
+        sendFcmMessage(message);
+      } catch (JsonProcessingException e) {
+        log.error("{}.submitExecutionTask: {}",
+            getClass().getSimpleName(),
+            e.getMessage());
+      }
+    }
+    return new GenericResponse().status("ok");
+  }
+
+  private void sendFcmMessage(Message message) {
+    try {
+      FirebaseMessaging.getInstance().send(message);
+    } catch (FirebaseMessagingException e) {
+      log.error(e.getLocalizedMessage());
+    }
   }
 
   private void submitExecutionTask(Map<String, Object> body, String url) {

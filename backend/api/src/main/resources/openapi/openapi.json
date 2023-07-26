@@ -79,6 +79,39 @@
         }
       }
     },
+    "/result": {
+      "post": {
+        "tags": [
+          "runtime"
+        ],
+        "summary": "Execution result handler",
+        "description": "Handles user code execution result",
+        "operationId": "handleExecResult",
+        "requestBody": {
+          "required": true,
+          "description": "Execution result",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecResult"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Runtime Info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user/": {
       "get": {
         "tags": [
@@ -144,42 +177,19 @@
       }
     },
     "schemas": {
-      "ExecutionRequest":  {
+      "ExecResult":  {
         "type": "object",
-        "required": [
-          "code",
-          "runtime_id"
-        ],
         "properties": {
-          "code": {
+          "hash": {
             "type": "string"
           },
-          "runtime_id": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateRuntimeRequest":  {
-        "type": "object",
-        "required": [
-          "runtime"
-        ],
-        "properties": {
-          "runtime": {
-            "$ref": "#/components/schemas/RuntimeType"
-          }
-        }
-      },
-      "ExecutionResult":  {
-        "type": "object",
-        "properties": {
-          "std_out": {
-            "type": "string"
-          },
-          "std_error": {
+          "fcm_token": {
             "type": "string"
           },
           "result": {
+            "type": "object"
+          },
+          "error": {
             "type": "string"
           }
         }
@@ -187,9 +197,8 @@
       "ExecRequest":  {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "description": "Id of the code block to execute"
+          "hash": {
+            "type": "string"
           },
           "fcm_token": {
             "type": "string"
@@ -213,6 +222,20 @@
         "enum": [
           "NODE_18"
         ]
+      },
+      "GPTLambdaExceptionResponse":  {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
       },
       "UserProfileResponse":  {
         "type": "object",

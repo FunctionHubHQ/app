@@ -2,6 +2,7 @@ package com.gptlambda.api;
 
 import com.gptlambda.api.controller.ControllerConfiguration;
 import com.gptlambda.api.data.DataConfiguration;
+import com.gptlambda.api.exception.CustomRestExceptionHandler;
 import com.gptlambda.api.props.PropConfiguration;
 import com.gptlambda.api.service.ServiceConfiguration;
 import com.gptlambda.api.utils.migration.FlywayMigration;
@@ -18,10 +19,11 @@ import org.springframework.context.annotation.Import;
 @Slf4j
 @Configuration
 @Import({
-        ControllerConfiguration.class,
-        DataConfiguration.class,
-        PropConfiguration.class,
-        ServiceConfiguration.class
+    ControllerConfiguration.class,
+    DataConfiguration.class,
+    PropConfiguration.class,
+    ServiceConfiguration.class,
+    CustomRestExceptionHandler.class,
 })
 @RequiredArgsConstructor
 public class RootConfiguration {

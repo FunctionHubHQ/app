@@ -69,7 +69,7 @@ public class SecurityFilter extends OncePerRequestFilter {
     }
     try {
       filterChain.doFilter(httpServletRequest, httpServletResponse);
-    } catch (IOException | ServletException e) {
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
