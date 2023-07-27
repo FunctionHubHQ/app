@@ -16,7 +16,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.C;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
@@ -115,6 +114,11 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
         Code savedCode = runtimeService.getCodeDetail(code.getUid());
         assertNotNull(savedCode);
+
+        // Ensure the decoded code matches the raw code
+        String decodedRawCode = runtimeService.getUserCode(code.getUid());
+        assertNotNull(decodedRawCode);
+        assertEquals(decodedRawCode, rawCode);
     }
 
     @Test
@@ -133,6 +137,4 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         String code = runtimeService.getUserCode(codeCell.getUid().toString());
         assertNotNull(code);
     }
-
-
 }

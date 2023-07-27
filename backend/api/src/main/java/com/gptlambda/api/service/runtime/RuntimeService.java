@@ -16,4 +16,5 @@ public interface RuntimeService {
   String generateCodeVersion();
   CodeUpdateResponse updateCode(Code code);
   Code getCodeDetail(String uid);
+  String generatePayloadDto(String payload);
 }

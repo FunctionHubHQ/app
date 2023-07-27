@@ -16,11 +16,14 @@ import com.gptlambda.api.props.SourceProps;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.net.util.Base64;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -68,8 +71,8 @@ public class RuntimeServiceImpl implements RuntimeService {
   @Override
   public String getUserCode(String uid) {
     CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
-    if (entity != null) {
-      return entity.getCode();
+    if (entity != null && !ObjectUtils.isEmpty(entity.getCode())) {
+      return new String(new Base64().decode(entity.getCode().getBytes()));
     }
     return null;
   }
@@ -150,6 +153,7 @@ public class RuntimeServiceImpl implements RuntimeService {
             codeCell.setResponseDto(code.getRequestDto());
           }
         }
+        codeCell.setUpdatedAt(LocalDateTime.now());
         codeCellRepo.save(codeCell);
         codeId = codeCell.getUid().toString();
       }
@@ -168,12 +172,19 @@ public class RuntimeServiceImpl implements RuntimeService {
             .userId(codeCell.getUserId())
             .isActive(codeCell.getIsActive())
             .isPublic(codeCell.getIsPublic())
-            .functionName(codeCell.getFunctionName())
             .requestDto(codeCell.getRequestDto())
             .responseDto(codeCell.getResponseDto())
-            .description(codeCell.getDescription());
+            .description(codeCell.getDescription())
+            .functionName(codeCell.getFunctionName())
+            .updatedAt(codeCell.getUpdatedAt().toEpochSecond(ZoneOffset.UTC))
+            .createdAt(codeCell.getCreatedAt().toEpochSecond(ZoneOffset.UTC));
       }
     }
+    return null;
+  }
+
+  @Override
+  public String generatePayloadDto(String payload) {
     return null;
   }
 

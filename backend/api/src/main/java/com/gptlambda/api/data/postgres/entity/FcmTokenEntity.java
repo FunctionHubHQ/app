@@ -38,7 +38,6 @@ public class FcmTokenEntity {
     @Column(name = "fcm_token")
     private String fcmToken;
 
-
     @Basic
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();

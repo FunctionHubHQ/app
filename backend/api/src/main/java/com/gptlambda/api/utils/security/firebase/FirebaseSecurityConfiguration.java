@@ -1,7 +1,6 @@
 package com.gptlambda.api.utils.security.firebase;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gptlambda.api.props.CorsProps;
 import com.gptlambda.api.utils.security.firewall.FirewallConfiguration;
 import com.gptlambda.api.utils.security.UnsecurePaths;
 import lombok.RequiredArgsConstructor;
