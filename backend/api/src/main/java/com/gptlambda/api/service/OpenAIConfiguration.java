@@ -1,6 +1,5 @@
 package com.gptlambda.api.service;
 
-import com.gptlambda.api.props.OpenAiProps;
 import com.gptlambda.api.service.openai.OpenAiService;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -13,11 +12,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @RequiredArgsConstructor
 public class OpenAIConfiguration {
-  private final OpenAiProps openAiProps;
 
   @Bean
   public OpenAiService openAiService() {
-    return new OpenAiService(openAiProps.getApiKey(),
-        Duration.ofSeconds(openAiProps.getRequestTimeoutSeconds()));
+//    return new OpenAiService(openAiProps.getApiKey(),
+//        Duration.ofSeconds(openAiProps.getRequestTimeoutSeconds()));
+    return null;
   }
 }

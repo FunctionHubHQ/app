@@ -26,10 +26,14 @@ public class UserEntity {
     @Column(name = "uid")
     private String uid;
 
+    @JsonProperty("handle")
+    @Column(name = "handle")
+    private String handle;
+
     @Basic
-    @JsonProperty("name")
-    @Column(name = "name")
-    private String name;
+    @JsonProperty("full_name")
+    @Column(name = "full_name")
+    private String fullName;
 
     @Basic
     @JsonProperty("is_premium_user")

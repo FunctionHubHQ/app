@@ -13,7 +13,7 @@ async function sendResult(ctx, result, error) {
   }
   const data = {
     fcm_token: body.fcmToken,
-    hash: body.hash,
+    uid: body.uid,
     error: error,
     result: result
   }
@@ -32,9 +32,9 @@ async function executeUserCode(ctx) {
   const environment = body.env
   let module
   if (environment === "prod") {
-    module = await import(`${prodHost}/npm/${body.hash}.ts`);
+    module = await import(`${prodHost}/npm/${body.uid}.ts`);
   } else {
-    module = await import(`${devHost}/npm/${body.hash}.ts`);
+    module = await import(`${devHost}/npm/${body.uid}.ts`);
   }
   const result = await module.default(body.payload);
   await sendResult(ctx, result, null);

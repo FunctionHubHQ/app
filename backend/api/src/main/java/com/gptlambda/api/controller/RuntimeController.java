@@ -1,5 +1,7 @@
 package com.gptlambda.api.controller;
 
+import com.gptlambda.api.Code;
+import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
 import com.gptlambda.api.ExecResult;
 import com.gptlambda.api.GenericResponse;
@@ -26,6 +28,11 @@ public class RuntimeController implements RuntimeApi {
   }
 
   @Override
+  public ResponseEntity<Code> getCodeDetail(String uid) {
+    return ResponseEntity.ok(runtimeService.getCodeDetail(uid));
+  }
+
+  @Override
   public ResponseEntity<String> getUserCode(String hash) {
     return ResponseEntity.ok(runtimeService.getUserCode(hash));
   }
@@ -33,5 +40,10 @@ public class RuntimeController implements RuntimeApi {
   @Override
   public ResponseEntity<GenericResponse> handleExecResult(ExecResult execResult) {
     return ResponseEntity.ok(runtimeService.handleExecResult(execResult));
+  }
+
+  @Override
+  public ResponseEntity<CodeUpdateResponse> updateCode(Code code) {
+    return ResponseEntity.ok(runtimeService.updateCode(code));
   }
 }

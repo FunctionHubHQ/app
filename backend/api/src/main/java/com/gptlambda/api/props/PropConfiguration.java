@@ -18,14 +18,9 @@ import org.springframework.context.annotation.Configuration;
     PostgresDataSourceProps.class,
     SourceProps.class,
     DefaultUserProps.class,
-    OpenAiProps.class,
     UserProps.class,
-    IpAddressProps.class,
-    ScraperProps.class,
     RabbitMQProps.class,
-    InfaticaProps.class,
     CorsProps.class,
-    SmartProxyProps.class
 })
 public class PropConfiguration {
 }

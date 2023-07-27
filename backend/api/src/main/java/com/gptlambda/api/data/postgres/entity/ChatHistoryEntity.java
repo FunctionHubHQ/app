@@ -39,9 +39,9 @@ public class ChatHistoryEntity {
     private String chatId;
 
     @Basic
-    @JsonProperty("product_sku")
-    @Column(name = "product_sku")
-    private String productSku;
+    @JsonProperty("code_cell_uid")
+    @Column(name = "code_cell_uid")
+    private String codeCellUid;
 
     @Basic
     @JsonProperty("message")

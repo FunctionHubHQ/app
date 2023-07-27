@@ -28,7 +28,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 @Import({
     RabbitMQConfiguration.class,
-    WebSocketConfiguration.class,
     DataConfiguration.class,
     MapperConfiguration.class,
     OpenAIConfiguration.class,

@@ -48,7 +48,7 @@ public class PostgresDBDataConfiguration {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
         em.setPackagesToScan(new String[]{"com.gptlambda.api.data.postgres.entity"});
-        em.setPersistenceUnitName("shoppiemDb");
+        em.setPersistenceUnitName("gptlambdaDb");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         em.setJpaVendorAdapter(vendorAdapter);
