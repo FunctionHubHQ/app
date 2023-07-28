@@ -1,6 +1,7 @@
 package com.gptlambda.api.service.runtime;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
@@ -11,7 +12,9 @@ import com.gptlambda.api.ExecRequest;
 import com.gptlambda.api.ExecResult;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
+import com.gptlambda.api.data.postgres.entity.CommitHistoryEntity;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
+import com.gptlambda.api.data.postgres.repo.CommitHistoryRepo;
 import com.gptlambda.api.props.SourceProps;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import java.io.IOException;
@@ -42,6 +45,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final SourceProps sourceProps;
   private final ObjectMapper objectMapper;
   private final CodeCellRepo codeCellRepo;
+  private final CommitHistoryRepo commitHistoryRepo;
   private final Slugify slugify;
   private final String runtimeUrl = "http://localhost:8000/execute"; // in docker: http://runtime:8000/execute";
 
@@ -112,6 +116,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   public CodeUpdateResponse updateCode(Code code) {
     String userId = code.getUserId();
     String codeId = null;
+    CodeCellEntity updatedCell = null;
     if (!ObjectUtils.isEmpty(userId)) {
       if (ObjectUtils.isEmpty(code.getUid())) {
         CodeCellEntity codeCell = new CodeCellEntity();
@@ -126,8 +131,11 @@ public class RuntimeServiceImpl implements RuntimeService {
         codeCell.setVersion(generateCodeVersion());
         codeCell.setRequestDto(code.getRequestDto());
         codeCell.setResponseDto(code.getResponseDto());
+        if (!ObjectUtils.isEmpty(code.getParentId())) {
+          codeCell.setParentId(UUID.fromString(code.getParentId()));
+        }
         codeCellRepo.save(codeCell);
-        codeId = codeCell.getUid().toString();
+        updatedCell = codeCell;
       }
     } else {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(code.getUid()));
@@ -155,10 +163,19 @@ public class RuntimeServiceImpl implements RuntimeService {
         }
         codeCell.setUpdatedAt(LocalDateTime.now());
         codeCellRepo.save(codeCell);
-        codeId = codeCell.getUid().toString();
+        updatedCell = codeCell;
       }
     }
-    return new CodeUpdateResponse().uid(codeId);
+    if (updatedCell != null) {
+      CommitHistoryEntity commitHistory = new CommitHistoryEntity();
+      commitHistory.setUid(UUID.randomUUID());
+      commitHistory.setCodeCellId(updatedCell.getUid());
+      commitHistory.setVersion(updatedCell.getVersion());
+      commitHistory.setMessage(null);
+      commitHistoryRepo.save(commitHistory);
+      return new CodeUpdateResponse().uid(updatedCell.getUid().toString());
+    }
+    return new CodeUpdateResponse();
   }
 
   @Override
@@ -185,7 +202,21 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public String generatePayloadDto(String payload) {
+    Map<String, Object> dto = new HashMap<>();
+    try {
+      JsonNode node = objectMapper.readValue(payload, JsonNode.class);
+      walk(node, dto);
+      return objectMapper.writeValueAsString(dto);
+    } catch (JsonProcessingException e) {
+      log.error("{}.generatePayloadDto: {}",
+          getClass().getSimpleName(),
+          e.getMessage());
+    }
     return null;
+  }
+
+  private void walk(JsonNode node, Map<String, Object> dto) {
+    int x = 1;
   }
 
   private String oToString(Object o) {

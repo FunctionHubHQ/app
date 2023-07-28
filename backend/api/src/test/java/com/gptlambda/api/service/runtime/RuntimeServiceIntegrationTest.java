@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
+import com.gptlambda.api.data.postgres.entity.CommitHistoryEntity;
 import com.gptlambda.api.data.postgres.entity.UserEntity;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
+import com.gptlambda.api.data.postgres.repo.CommitHistoryRepo;
 import com.gptlambda.api.data.postgres.repo.UserRepo;
 import com.gptlambda.api.service.ServiceTestConfiguration;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
@@ -46,7 +48,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
     private RuntimeService runtimeService;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private CommitHistoryRepo commitHistoryRepo;
 
     @Autowired
     private FlywayMigration flywayMigration;
@@ -112,6 +114,11 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(response);
         assertNotNull(response.getUid());
 
+        List<CommitHistoryEntity> commitHistory = commitHistoryRepo
+            .findByCodeCellId(UUID.fromString(response.getUid()));
+        assertNotNull(commitHistory);
+        assertEquals(2, commitHistory.size());
+
         Code savedCode = runtimeService.getCodeDetail(code.getUid());
         assertNotNull(savedCode);
 
@@ -136,5 +143,77 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
         String code = runtimeService.getUserCode(codeCell.getUid().toString());
         assertNotNull(code);
+    }
+
+    @Test
+    public void generateDtoTest() {
+        String payload = "{\n"
+            + "  \"companyName\": \"QAAutomation\",\n"
+            + "  \"companyEmailId\": \"qaautomation@org.com\",\n"
+            + "  \"companyNumber\": \"+353891234121\",\n"
+            + "  \"companyAddress\": \"12, HeneryStreet, Dublin, D12PW20\",\n"
+            + "  \"supportedSalaryBanks\": [\n"
+            + "    \"AIB\",\n"
+            + "    \"BOI\",\n"
+            + "    \"PSB\"\n"
+            + "  ],\n"
+            + "  \"booleanValueFalse\": false,\n"
+            + "  \"booleanValueTrue\": true,\n"
+            + "  \"nullValue\": null,\n"
+            + "  \"doubleValue\": 1.22222,\n"
+            + "  \"floatValue\": 1.34,\n"
+            + "  \"employee\": [\n"
+            + "    {\n"
+            + "      \"firstName\": \"Vibha\",\n"
+            + "      \"lastName\": \"Singh\",\n"
+            + "      \"age\": 30,\n"
+            + "      \"salary\": 75000,\n"
+            + "      \"designation\": \"Manager\",\n"
+            + "      \"contactNumber\": \"+919999988822\",\n"
+            + "      \"emailId\": \"abc@test.com\"\n"
+            + "    },\n"
+            + "    {\n"
+            + "      \"firstName\": \"Neha\",\n"
+            + "      \"lastName\": \"Verma\",\n"
+            + "      \"age\": 25,\n"
+            + "      \"salary\": 60000,\n"
+            + "      \"designation\": \"Lead\",\n"
+            + "      \"contactNumber\": \"+914442266221\",\n"
+            + "      \"emailId\": \"xyz@test.com\"\n"
+            + "    },\n"
+            + "    {\n"
+            + "      \"firstName\": \"Rajesh\",\n"
+            + "      \"lastName\": \"Gupta\",\n"
+            + "      \"age\": 20,\n"
+            + "      \"salary\": 40000,\n"
+            + "      \"designation\": \"Intern\",\n"
+            + "      \"contactNumber\": \"+919933384422\",\n"
+            + "      \"emailId\": \"pqr@test.com\"\n"
+            + "    }\n"
+            + "  ],\n"
+            + "  \"contractors\": [\n"
+            + "    {\n"
+            + "      \"firstName\": \"John\",\n"
+            + "      \"lastName\": \"Mathew\",\n"
+            + "      \"contractFrom\": \"Jan-2018\",\n"
+            + "      \"contractTo\": \"Aug-2022\",\n"
+            + "      \"contactNumber\": \"+919631384422\"\n"
+            + "    },\n"
+            + "    {\n"
+            + "      \"firstName\": \"Seema\",\n"
+            + "      \"lastName\": \"Prasad\",\n"
+            + "      \"contractFrom\": \"Jun-2019\",\n"
+            + "      \"contractTo\": \"Jun-2023\",\n"
+            + "      \"contactNumber\": \"+919688881422\"\n"
+            + "    }\n"
+            + "  ],\n"
+            + "  \"companyPFDeails\": {\n"
+            + "    \"pfName\": \"XYZ\",\n"
+            + "    \"pfYear\": 2020,\n"
+            + "    \"noOfEmployees\": 100\n"
+            + "  }\n"
+            + "}";
+        String dto = runtimeService.generatePayloadDto(payload);
+        assertNotNull(dto);
     }
 }

@@ -18,6 +18,7 @@ comment on table public.user is 'Basic user information';
 
 CREATE TABLE IF NOT EXISTS public.code_cell (
     uid uuid NOT NULL primary key,
+    parent_id uuid,
     user_id varchar(255) NOT NULL,
     function_name varchar(64),
     description varchar(255),
@@ -33,6 +34,15 @@ CREATE TABLE IF NOT EXISTS public.code_cell (
     UNIQUE(slug)
 );
 ALTER TABLE public.code_cell OWNER TO root;
+
+CREATE TABLE IF NOT EXISTS public.commit_history (
+    uid uuid NOT NULL primary key,
+    code_cell_id uuid NOT NULL,
+    version varchar(32),
+    message varchar(255),
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.commit_history OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.fcm_token (
     id BIGSERIAL PRIMARY KEY NOT NULL,

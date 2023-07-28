@@ -248,6 +248,9 @@
             "type": "integer",
             "format": "int64"
           },
+          "parent_id": {
+            "type": "string"
+          },
           "fields_to_update": {
             "type": "array",
             "items": {

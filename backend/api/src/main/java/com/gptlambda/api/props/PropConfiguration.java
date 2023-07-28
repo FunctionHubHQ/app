@@ -19,7 +19,8 @@ import org.springframework.context.annotation.Configuration;
     SourceProps.class,
     DefaultUserProps.class,
     UserProps.class,
-    RabbitMQProps.class
+    RabbitMQProps.class,
+    CorsProps.class,
 })
 public class PropConfiguration {
 }

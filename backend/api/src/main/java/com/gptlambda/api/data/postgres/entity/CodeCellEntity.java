@@ -28,6 +28,10 @@ public class CodeCellEntity {
     @Column(name = "uid")
     private UUID uid;
 
+    @JsonProperty("parent_id")
+    @Column(name = "parent_id")
+    private UUID parentId;
+
     @JsonProperty("user_id")
     @Column(name = "user_id")
     private String userId;
