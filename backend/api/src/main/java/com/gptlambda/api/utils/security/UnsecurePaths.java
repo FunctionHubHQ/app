@@ -15,8 +15,12 @@ public class UnsecurePaths {
       "/npm/**",
       "/run",
       "/run/**",
-      "/result",
-      "/result/**"
+      "/e-result",
+      "/e-result/**",
+      "/s-result",
+      "/s-result/**",
+      "/spec",
+      "/spec/**"
   );
 
   public static Stream<String> paths() {

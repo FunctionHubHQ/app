@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS public.commit_history (
     uid uuid NOT NULL primary key,
     code_cell_id uuid NOT NULL,
     version varchar(32),
+    code varchar,
     message varchar(255),
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

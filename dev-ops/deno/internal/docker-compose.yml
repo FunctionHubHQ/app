@@ -1,16 +1,14 @@
 version: '3.8'
 services:
-  runtime:
+  deno_internal:
     build: .
-    container_name: runtime
+    container_name: deno_internal
     restart: always
     volumes:
       - ./deno-dir:/deno-dir
     ports:
-      - "8000:8000"
+      - "9000:9000"
     environment:
       - DENO_NO_PROMPT=1
     extra_hosts:
     - "host.docker.internal:host-gateway"
-    networks:
-      - messaging

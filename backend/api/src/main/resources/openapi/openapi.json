@@ -46,6 +46,36 @@
         }
       }
     },
+    "/spec/{uid}": {
+      "get": {
+        "tags": [
+          "runtime"
+        ],
+        "operationId": "deleteMe",
+        "parameters": [
+          {
+            "name": "uid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User code",
+            "content": {
+              "application/typescript": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/run": {
       "post": {
         "tags": [
@@ -79,7 +109,7 @@
         }
       }
     },
-    "/result": {
+    "/e-result": {
       "post": {
         "tags": [
           "runtime"
@@ -94,6 +124,39 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExecResult"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Runtime Info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/s-result": {
+      "post": {
+        "tags": [
+          "runtime"
+        ],
+        "summary": "Spec result handler",
+        "description": "Handles spec generation result",
+        "operationId": "handleSpecResult",
+        "requestBody": {
+          "required": true,
+          "description": "Spec result",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpecResult"
               }
             }
           }
@@ -278,6 +341,34 @@
           },
           "result": {
             "type": "object"
+          },
+          "std_out": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Spec":  {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          }
+        }
+      },
+      "SpecResult":  {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/Spec"
           },
           "error": {
             "type": "string"

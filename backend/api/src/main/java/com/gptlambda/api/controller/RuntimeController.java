@@ -6,6 +6,7 @@ import com.gptlambda.api.ExecRequest;
 import com.gptlambda.api.ExecResult;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.RuntimeApi;
+import com.gptlambda.api.SpecResult;
 import com.gptlambda.api.service.runtime.RuntimeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,11 @@ public class RuntimeController implements RuntimeApi {
   }
 
   @Override
+  public ResponseEntity<String> deleteMe(String uid) {
+    return ResponseEntity.ok(runtimeService.deleteMe(uid));
+  }
+
+  @Override
   public ResponseEntity<String> getUserCode(String hash) {
     return ResponseEntity.ok(runtimeService.getUserCode(hash));
   }
@@ -40,6 +46,11 @@ public class RuntimeController implements RuntimeApi {
   @Override
   public ResponseEntity<GenericResponse> handleExecResult(ExecResult execResult) {
     return ResponseEntity.ok(runtimeService.handleExecResult(execResult));
+  }
+
+  @Override
+  public ResponseEntity<GenericResponse> handleSpecResult(SpecResult specResult) {
+    return ResponseEntity.ok(runtimeService.handleSpecResult(specResult));
   }
 
   @Override

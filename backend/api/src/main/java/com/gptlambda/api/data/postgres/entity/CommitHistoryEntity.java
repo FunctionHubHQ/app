@@ -33,6 +33,10 @@ public class CommitHistoryEntity {
     @Column(name = "version")
     private String version;
 
+    @JsonProperty("code")
+    @Column(name = "code")
+    private String code;
+
     @JsonProperty("message")
     @Column(name = "message")
     private String message;

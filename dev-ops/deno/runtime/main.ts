@@ -1,23 +1,32 @@
 import { Application, isHttpError } from "https://deno.land/x/oak/mod.ts";
 
+
 const devHost = 'http://host.docker.internal:8080';
-const prodHost = 'http://api:8080/';
-async function sendResult(ctx, result, error) {
-  const body = JSON.parse(await ctx.request.body().value);
-  const environment = body.env
-  let resultCallBackUrl;
-  if (environment === "prod") {
-    resultCallBackUrl = `${prodHost}/result`;
-  } else {
-    resultCallBackUrl = `${devHost}/result`;
+const prodHost = 'http://api:8080';
+
+function getHost(env) {
+  return env === "prod" ? prodHost : devHost
+}
+
+async function getBody(ctx) {
+  let body;
+  try {
+    body = JSON.parse(await ctx.request.body().value);
+  } catch (e) {
+    body =await ctx.request.body().value;
   }
+  return body;
+}
+
+async function sendResult(ctx, result, error) {
+  const body = await getBody(ctx);
   const data = {
     fcm_token: body.fcmToken,
     uid: body.uid,
     error: error,
     result: result
   }
-  const x = await fetch(resultCallBackUrl, {
+  await fetch(getHost(body.env) + "/e-result", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -28,14 +37,9 @@ async function sendResult(ctx, result, error) {
 }
 
 async function executeUserCode(ctx) {
-  const body = JSON.parse(await ctx.request.body().value);
-  const environment = body.env
-  let module
-  if (environment === "prod") {
-    module = await import(`${prodHost}/npm/${body.uid}.ts`);
-  } else {
-    module = await import(`${devHost}/npm/${body.uid}.ts`);
-  }
+  const body = await getBody(ctx);
+  const host = getHost(body.env);
+  const module = await import(`${host}/npm/${body.uid}.ts`);
   const result = await module.default(body.payload);
   await sendResult(ctx, result, null);
   ctx.response.body = {status: "ok"}
