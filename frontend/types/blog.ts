@@ -69,3 +69,44 @@ export interface RequestPayload {
   /** RequestPayload.publishDate */
   publishDate: string;
 }
+
+import moment from "npm:moment";
+
+export async function handler(params: RequestPayload) {
+  console.log(`${moment().format('MMMM Do YYYY, h:mm:ss a')} DEBUG: Event received...thank you!`);
+  console.log("// 1. Test ability to send the result back\n" +
+      "// 2. Test ability to catch all errors\n" +
+      "// ✅ 3. Test ability to re-direct console.log\n" +
+      "// 4. Test all sandbox permissions are enforced\n" +
+      "// 5. Test ability to import npm modules from inside a worker");
+  console.log("payload: ", params);
+  return 17;
+}
+
+// Worker Boundary
+
+// 1. Test ability to send the result back
+// ✅ 2. Test ability to catch all errors
+// ✅ 3. Test ability to re-direct console.log
+// ✅ 4. Test all sandbox permissions are enforced
+// ✅ 5. Test ability to import npm modules from inside a worker
+
+self.onmessage = async (event) => {
+  const uid = event.data.uid;
+  try {
+    // Re-direct console.log statements
+    // TODO: may need to handle other console calls
+    console.log = (...args) => {
+      const message = args.map(it => JSON.stringify(it)).join(' ');
+      self.postMessage({ stdout: message, uid: uid });
+    }
+    const result = await handler(event.data.payload);
+    self.postMessage({ result: result, uid: uid });
+  } catch (e) {
+    self.postMessage({ error: e.message, uid: uid });
+  }
+  self.close();
+};
+
+
+

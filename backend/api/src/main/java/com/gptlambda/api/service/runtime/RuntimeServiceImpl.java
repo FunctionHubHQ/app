@@ -66,7 +66,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     Map<String, Object> payload = new HashMap<>();
     payload.put("day", "Monday");
     payload.put("greeting", "Hello, Spring!");
-    body.put("hash", GPTLambdaUtils.generateUid(GPTLambdaUtils.LONG_UID_LENGTH));
+    body.put("uid", GPTLambdaUtils.generateUid(GPTLambdaUtils.LONG_UID_LENGTH));
     body.put("payload", payload);
     body.put("fcmToken", execRequest.getFcmToken());
     body.put("env", sourceProps.getProfile());
@@ -77,18 +77,64 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public String getUserCode(String uid) {
-    CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
-    if (entity != null && !ObjectUtils.isEmpty(entity.getCode())) {
-      return new String(new Base64().decode(entity.getCode().getBytes()));
-    }
-    return null;
+//    CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
+//    if (entity != null && !ObjectUtils.isEmpty(entity.getCode())) {
+//      return new String(new Base64().decode(entity.getCode().getBytes()));
+//    }
+//    return null;
+    return "\n"
+        + "import moment from \"npm:moment\";\n"
+        + "\n"
+        + "export async function handler(params: RequestPayload) {\n"
+        + "  console.log(`${moment().format('MMMM Do YYYY, h:mm:ss a')} DEBUG: Event received...thank you!`);\n"
+        + "  console.log(\"// 1. Test ability to send the result back\\n\" +\n"
+        + "      \"// 2. Test ability to catch all errors\\n\" +\n"
+        + "      \"// ✅ 3. Test ability to re-direct console.log\\n\" +\n"
+        + "      \"// 4. Test all sandbox permissions are enforced\\n\" +\n"
+        + "      \"// 5. Test ability to import npm modules from inside a worker\");\n"
+        + "  console.log(\"payload: \", params);\n"
+        + "  return 17;\n"
+        + "}\n"
+        + "\n"
+        + "// Worker Boundary\n"
+        + "\n"
+        + "// 1. Test ability to send the result back\n"
+        + "// ✅ 2. Test ability to catch all errors\n"
+        + "// ✅ 3. Test ability to re-direct console.log\n"
+        + "// ✅ 4. Test all sandbox permissions are enforced\n"
+        + "// ✅ 5. Test ability to import npm modules from inside a worker\n"
+        + "\n"
+        + "self.onmessage = async (event) => {\n"
+        + "  const uid = event.data.uid;\n"
+        + "  try {\n"
+        + "    // Re-direct console.log statements\n"
+        + "    // TODO: may need to handle other console calls\n"
+        + "    console.log = (...args) => {\n"
+        + "      const message = args.map(it => JSON.stringify(it)).join(' ');\n"
+        + "      self.postMessage({ stdout: message, uid: uid });\n"
+        + "    }\n"
+        + "    const result = await handler(event.data.payload);\n"
+        + "    self.postMessage({ result: result, uid: uid });\n"
+        + "  } catch (e) {\n"
+        + "    self.postMessage({ error: e.message, uid: uid });\n"
+        + "  }\n"
+        + "  self.close();\n"
+        + "};";
   }
 
   @Override
   public GenericResponse handleExecResult(ExecResult execResult) {
     if (!ObjectUtils.isEmpty(execResult.getFcmToken())) {
+      String stdout = String.join("\n", execResult.getStdOut()).replace("\\n", "\n");
+      if (!ObjectUtils.isEmpty(stdout)) {
+        log.info("{}: {}", execResult.getUid(), stdout);
+      }
+      if (!ObjectUtils.isEmpty(execResult.getError())) {
+        log.error("{}: {}", execResult.getUid(), execResult.getError());
+      }
       try {
         Message.Builder builder = Message.builder();
+        // TODO: deployable flag: has a return value and no errors
         builder.putData("type", MessageType.EXEC_RESULT);
         if (!ObjectUtils.isEmpty(execResult.getResult())) {
           builder.putData("result", objectMapper.writeValueAsString(execResult.getResult()));
@@ -97,7 +143,10 @@ public class RuntimeServiceImpl implements RuntimeService {
           builder.putData("error", execResult.getError());
         }
         if (!ObjectUtils.isEmpty(execResult.getUid())) {
-          builder.putData("hash", execResult.getUid());
+          builder.putData("uid", execResult.getUid());
+        }
+        if (!ObjectUtils.isEmpty(stdout)) {
+          builder.putData("std_out", stdout);
         }
         Message message = builder.setToken(execResult.getFcmToken()).build();
         sendFcmMessage(message);

@@ -24,3 +24,5 @@ hs_err_pid*
 replay_pid*
 /backend/deno/deno-dir/
 /dev-ops/deno/deno-dir/
+/dev-ops/deno/internal/deno-dir/
+/dev-ops/deno/runtime/deno-dir/
