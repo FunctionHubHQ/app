@@ -1,6 +1,8 @@
 package com.gptlambda.api.service.runtime;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
@@ -288,7 +290,6 @@ public class RuntimeServiceImpl implements RuntimeService {
   public GenericResponse handleSpecResult(SpecResult specResult) {
     String spec = specResult.getSpec().getValue();
     String format = specResult.getSpec().getFormat();
-    log.info("Spec: {}", spec);
     if (format.equals("ts")) {
       spec = spec.replace("/**", "\n/**");
     }
@@ -296,7 +297,20 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(specResult.getUid()));
       if (codeCell != null) {
         if (format.equals("json")) {
-          codeCell.setOpenApiSchema(spec);
+          try {
+            JsonNode node = objectMapper.readValue(spec, JsonNode.class)
+                .get("components").get("schemas").get("RequestPayload");
+            TypeReference<HashMap<String, Object>> typeRef = new TypeReference<>() { };
+            Map<String, Object> dto = objectMapper.readValue(node.traverse(),
+                typeRef);
+            dto.remove("additionalProperties");
+            String requestDto = objectMapper.writeValueAsString(dto);
+            codeCell.setOpenApiSchema(requestDto);
+          } catch (IOException e) {
+            log.error("{}.handleSpecResult: {}",
+                getClass().getSimpleName(),
+                e.getMessage());
+          }
         } else if (format.equals("ts")) {
           codeCell.setInterfaces(Base64.getEncoder().encodeToString(spec.getBytes()));
         }
@@ -312,7 +326,8 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(execRequest.getUid()));
       if (codeCell != null) {
         if (codeCell.getIsDeployable()) {
-          generateOpenApiSpec(codeCell.getInterfaces(), codeCell.getUid().toString());
+          generateOpenApiSpec(new String(Base64.getDecoder().decode(codeCell.getInterfaces().getBytes())),
+              codeCell.getUid().toString());
           codeCell.setDeployed(true);
           codeCellRepo.save(codeCell);
           return new GenericResponse().status("ok");
@@ -332,7 +347,9 @@ public class RuntimeServiceImpl implements RuntimeService {
     try {
       FirebaseMessaging.getInstance().send(message);
     } catch (FirebaseMessagingException e) {
-      log.error(e.getLocalizedMessage());
+      log.error("{}.sendFcmMessage: {}",
+          getClass().getSimpleName(),
+          e.getMessage());
     }
   }
 
@@ -354,7 +371,9 @@ public class RuntimeServiceImpl implements RuntimeService {
     try {
       return new StringEntity(objectMapper.writeValueAsString(body));
     } catch (JsonProcessingException | UnsupportedEncodingException e) {
-      log.error(e.getLocalizedMessage());
+      log.error("{}.getEntityBody: {}",
+          getClass().getSimpleName(),
+          e.getMessage());
     }
     return null;
   }

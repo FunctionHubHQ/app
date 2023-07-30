@@ -25,24 +25,20 @@ async function getBody(ctx) {
   return body;
 }
 
-async function sendResult(ctx, result, error) {
+async function sendResult(ctx, spec, error) {
   const body = await getBody(ctx);
   const data = {
     uid: body.uid,
     error: error,
-    result: result
+    spec
   }
-  console.log("About to send data: ", JSON.stringify(data));
-  console.log("url: ", getHost(body.env) + "/s-result");
-  const x = await fetch(getHost(body.env) + "/s-result", {
+  await fetch(getHost(body.env) + "/s-result", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
-  console.log("Server response: ", x);
-  ctx.response.body = {status: "ok"};
 }
 
 async function generateOpenApiSpec(ctx) {
@@ -55,9 +51,10 @@ async function generateOpenApiSpec(ctx) {
   } );
   const { convert } = makeConverter( reader, writer );
   const { data } = await convert( { data: body.file } );
-  await sendResult(ctx, {
-    spec: data,
-    format: "json"
+  await sendResult(ctx,
+     {
+      value: data,
+      format: "json"
   }, null);
   ctx.response.body = data
 }
@@ -72,10 +69,11 @@ async function generateTypeScript(ctx) {
   } );
   const { convert } = makeConverter( reader, writer );
   const { data } = await convert( { data: body.file } );
-  await sendResult(ctx, {
-    spec: data,
-    format: "ts"
-  }, null);
+  await sendResult(ctx,
+    {
+      value: data,
+      format: "ts"
+    }, null);
   ctx.response.body = data
 }
 

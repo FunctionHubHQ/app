@@ -20,7 +20,9 @@ public class UnsecurePaths {
       "/s-result",
       "/s-result/**",
       "/update-code",
-      "/update-code/**"
+      "/update-code/**",
+      "/deploy",
+      "/deploy/**"
   );
 
   public static Stream<String> paths() {
