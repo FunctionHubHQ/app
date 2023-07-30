@@ -18,7 +18,6 @@ import com.gptlambda.api.data.postgres.repo.CommitHistoryRepo;
 import com.gptlambda.api.props.SourceProps;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
@@ -52,7 +51,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final CodeCellRepo codeCellRepo;
   private final CommitHistoryRepo commitHistoryRepo;
   private final Slugify slugify;
-  private final String runtimeUrl = "http://localhost:8000/execute"; // in docker: http://runtime:8000/execute";
+  private final String runtimeUrl = "http://localhost:8000/execute"; // in docker: http://api:8000/execute";
   private final String tsToOaUrl = "http://localhost:9000/code-gen/ts-to-oa";
   private final String oaToTsUrl = "http://localhost:9000/code-gen/oa-to-ts";
 
@@ -97,47 +96,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         return workerScript(rawCode, interfaces);
       }
     }
-
     return null;
-////    return null;
-//    return "\n"
-//        + "import moment from \"npm:moment\";\n"
-//        + "\n"
-//        + "export async function handler(params: RequestPayload) {\n"
-//        + "  console.log(`${moment().format('MMMM Do YYYY, h:mm:ss a')} DEBUG: Event received...thank you!`);\n"
-//        + "  console.log(\"// 1. Test ability to send the result back\\n\" +\n"
-//        + "      \"// 2. Test ability to catch all errors\\n\" +\n"
-//        + "      \"// ✅ 3. Test ability to re-direct console.log\\n\" +\n"
-//        + "      \"// 4. Test all sandbox permissions are enforced\\n\" +\n"
-//        + "      \"// 5. Test ability to import npm modules from inside a worker\");\n"
-//        + "  console.log(\"payload: \", params);\n"
-//        + "  return 17;\n"
-//        + "}\n"
-//        + "\n"
-//        + "// Worker Boundary\n"
-//        + "\n"
-//        + "// 1. Test ability to send the result back\n"
-//        + "// ✅ 2. Test ability to catch all errors\n"
-//        + "// ✅ 3. Test ability to re-direct console.log\n"
-//        + "// ✅ 4. Test all sandbox permissions are enforced\n"
-//        + "// ✅ 5. Test ability to import npm modules from inside a worker\n"
-//        + "\n"
-//        + "self.onmessage = async (event) => {\n"
-//        + "  const uid = event.data.uid;\n"
-//        + "  try {\n"
-//        + "    // Re-direct console.log statements\n"
-//        + "    // TODO: may need to handle other console calls\n"
-//        + "    console.log = (...args) => {\n"
-//        + "      const message = args.map(it => JSON.stringify(it)).join(' ');\n"
-//        + "      self.postMessage({ stdout: message, uid: uid });\n"
-//        + "    }\n"
-//        + "    const result = await handler(event.data.payload);\n"
-//        + "    self.postMessage({ result: result, uid: uid });\n"
-//        + "  } catch (e) {\n"
-//        + "    self.postMessage({ error: e.message, uid: uid });\n"
-//        + "  }\n"
-//        + "  self.close();\n"
-//        + "};";
   }
 
   private String workerScript(String rawCode, String interfaces) {
@@ -207,6 +166,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   private String parseUid(String uid) {
+    return uid.split("@")[0];
   }
 
   private void validateCodeCell(ExecResult execResult, String uid) {
@@ -322,185 +282,6 @@ public class RuntimeServiceImpl implements RuntimeService {
     payload.put("env", sourceProps.getProfile());
     payload.put("uid", uid);
     submitExecutionTask(payload, tsToOaUrl);
-//    return null;
-//    String file = "export interface Author {\n"
-//        + "  name: string;\n"
-//        + "  image: string;\n"
-//        + "  designation: string;\n"
-//        + "};\n"
-//        + "\n"
-//        + "export interface Blog {\n"
-//        + "  id: number;\n"
-//        + "  title: string;\n"
-//        + "  paragraph: string;\n"
-//        + "  image: string;\n"
-//        + "  author: Author;\n"
-//        + "  tags: string[];\n"
-//        + "  publishDate: string;\n"
-//        + "};";
-//
-//    String ts = "export interface Author {\n"
-//        + "  name: string;\n"
-//        + "  image: string;\n"
-//        + "  designation: string;\n"
-//        + "};\n"
-//        + "\n"
-//        + "export interface ResponsePayload {\n"
-//        + "  id: number;\n"
-//        + "  title: string;\n"
-//        + "  paragraph: string;\n"
-//        + "  image: string;\n"
-//        + "  author: Author;\n"
-//        + "  tags: string[];\n"
-//        + "  publishDate: string;\n"
-//        + "};\n"
-//        + "\n"
-//        + "export interface RequestPayload {\n"
-//        + "  id: number;\n"
-//        + "  title: string;\n"
-//        + "  paragraph: string;\n"
-//        + "  image: string;\n"
-//        + "  author: Author;\n"
-//        + "  tags: string[];\n"
-//        + "  publishDate: string;\n"
-//        + "};\n"
-//        + "\n"
-//        + "export default async function(payload: RequestPayload) {\n"
-//        + "  console.log(\"Hello, world!\")\n"
-//        + "}";
-//    String json = "{\n"
-//        + "  \"openapi\": \"3.0.0\",\n"
-//        + "  \"info\": {\n"
-//        + "    \"title\": \"GPT Lambda API\",\n"
-//        + "    \"version\": \"v1\",\n"
-//        + "    \"x-comment\": \"Generated by core-types-json-schema (https://github.com/grantila/core-types-json-schema) on behalf of typeconv (https://github.com/grantila/typeconv)\"\n"
-//        + "  },\n"
-//        + "  \"paths\": {},\n"
-//        + "  \"components\": {\n"
-//        + "    \"schemas\": {\n"
-//        + "      \"Author\": {\n"
-//        + "        \"properties\": {\n"
-//        + "          \"name\": {\n"
-//        + "            \"description\": \"Author.name\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          },\n"
-//        + "          \"image\": {\n"
-//        + "            \"description\": \"Author.image\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          },\n"
-//        + "          \"designation\": {\n"
-//        + "            \"description\": \"Author.designation\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          }\n"
-//        + "        },\n"
-//        + "        \"required\": [\n"
-//        + "          \"name\",\n"
-//        + "          \"image\",\n"
-//        + "          \"designation\"\n"
-//        + "        ],\n"
-//        + "        \"additionalProperties\": false,\n"
-//        + "        \"description\": \"Author\",\n"
-//        + "        \"type\": \"object\"\n"
-//        + "      },\n"
-//        + "      \"ResponsePayload\": {\n"
-//        + "        \"properties\": {\n"
-//        + "          \"id\": {\n"
-//        + "            \"description\": \"ResponsePayload.id\",\n"
-//        + "            \"type\": \"number\"\n"
-//        + "          },\n"
-//        + "          \"title\": {\n"
-//        + "            \"description\": \"ResponsePayload.title\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          },\n"
-//        + "          \"paragraph\": {\n"
-//        + "            \"description\": \"ResponsePayload.paragraph\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          },\n"
-//        + "          \"image\": {\n"
-//        + "            \"description\": \"ResponsePayload.image\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          },\n"
-//        + "          \"author\": {\n"
-//        + "            \"$ref\": \"#/components/schemas/Author\",\n"
-//        + "            \"description\": \"ResponsePayload.author\"\n"
-//        + "          },\n"
-//        + "          \"tags\": {\n"
-//        + "            \"items\": {\n"
-//        + "              \"description\": \"ResponsePayload.tags.[]\",\n"
-//        + "              \"type\": \"string\"\n"
-//        + "            },\n"
-//        + "            \"description\": \"ResponsePayload.tags\",\n"
-//        + "            \"type\": \"array\"\n"
-//        + "          },\n"
-//        + "          \"publishDate\": {\n"
-//        + "            \"description\": \"ResponsePayload.publishDate\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          }\n"
-//        + "        },\n"
-//        + "        \"required\": [\n"
-//        + "          \"id\",\n"
-//        + "          \"title\",\n"
-//        + "          \"paragraph\",\n"
-//        + "          \"image\",\n"
-//        + "          \"author\",\n"
-//        + "          \"tags\",\n"
-//        + "          \"publishDate\"\n"
-//        + "        ],\n"
-//        + "        \"additionalProperties\": false,\n"
-//        + "        \"description\": \"ResponsePayload\",\n"
-//        + "        \"type\": \"object\"\n"
-//        + "      },\n"
-//        + "      \"RequestPayload\": {\n"
-//        + "        \"properties\": {\n"
-//        + "          \"id\": {\n"
-//        + "            \"description\": \"RequestPayload.id\",\n"
-//        + "            \"type\": \"number\"\n"
-//        + "          },\n"
-//        + "          \"title\": {\n"
-//        + "            \"description\": \"RequestPayload.title\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          },\n"
-//        + "          \"paragraph\": {\n"
-//        + "            \"description\": \"RequestPayload.paragraph\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          },\n"
-//        + "          \"image\": {\n"
-//        + "            \"description\": \"RequestPayload.image\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          },\n"
-//        + "          \"author\": {\n"
-//        + "            \"$ref\": \"#/components/schemas/Author\",\n"
-//        + "            \"description\": \"RequestPayload.author\"\n"
-//        + "          },\n"
-//        + "          \"tags\": {\n"
-//        + "            \"items\": {\n"
-//        + "              \"description\": \"RequestPayload.tags.[]\",\n"
-//        + "              \"type\": \"string\"\n"
-//        + "            },\n"
-//        + "            \"description\": \"RequestPayload.tags\",\n"
-//        + "            \"type\": \"array\"\n"
-//        + "          },\n"
-//        + "          \"publishDate\": {\n"
-//        + "            \"description\": \"RequestPayload.publishDate\",\n"
-//        + "            \"type\": \"string\"\n"
-//        + "          }\n"
-//        + "        },\n"
-//        + "        \"required\": [\n"
-//        + "          \"id\",\n"
-//        + "          \"title\",\n"
-//        + "          \"paragraph\",\n"
-//        + "          \"image\",\n"
-//        + "          \"author\",\n"
-//        + "          \"tags\",\n"
-//        + "          \"publishDate\"\n"
-//        + "        ],\n"
-//        + "        \"additionalProperties\": false,\n"
-//        + "        \"description\": \"RequestPayload\",\n"
-//        + "        \"type\": \"object\"\n"
-//        + "      }\n"
-//        + "    }\n"
-//        + "  }\n"
-//        + "}";
   }
 
   @Override
@@ -541,15 +322,6 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
     }
     return new GenericResponse().status("ok");
-  }
-
-  private String oToString(Object o) {
-    try {
-      return objectMapper.writeValueAsString(o);
-    } catch (JsonProcessingException e) {
-      // pass
-    }
-    return "{}";
   }
 
   private Boolean isBelowActiveLimit(String userId) {
