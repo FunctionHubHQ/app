@@ -17,6 +17,7 @@ import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
 import com.gptlambda.api.data.postgres.entity.CommitHistoryEntity;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
 import com.gptlambda.api.data.postgres.repo.CommitHistoryRepo;
+import com.gptlambda.api.props.DenoProps;
 import com.gptlambda.api.props.SourceProps;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import java.io.File;
@@ -53,9 +54,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final CodeCellRepo codeCellRepo;
   private final CommitHistoryRepo commitHistoryRepo;
   private final Slugify slugify;
-  private final String runtimeUrl = "http://localhost:8000/execute"; // in docker: http://api:8000/execute";
-  private final String tsToOaUrl = "http://localhost:9000/code-gen/ts-to-oa";
-  private final String oaToTsUrl = "http://localhost:9000/code-gen/oa-to-ts";
+  private final DenoProps denoProps;
 
   public static final class MessageType {
     public static final String EXEC_RESULT = "EXEC_RESULT";
@@ -81,7 +80,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         body.put("fcmToken", execRequest.getFcmToken());
         body.put("env", sourceProps.getProfile());
         body.put("timeout", 5000);
-        Thread.startVirtualThread(() -> submitExecutionTask(body, runtimeUrl));
+        Thread.startVirtualThread(() -> submitExecutionTask(body, getRuntimeUrl()));
       }
     }
     return new GenericResponse().status("ok");
@@ -283,7 +282,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     payload.put("file", interfaces);
     payload.put("env", sourceProps.getProfile());
     payload.put("uid", uid);
-    submitExecutionTask(payload, tsToOaUrl);
+    submitExecutionTask(payload, getOpenApiUrl());
   }
 
   @Override
@@ -376,5 +375,18 @@ public class RuntimeServiceImpl implements RuntimeService {
           e.getMessage());
     }
     return null;
+  }
+
+  private String getRuntimeUrl() {
+    return String.format("%s%s",
+        denoProps.getRuntime().getUrl(),
+        denoProps.getRuntime().getPath());
+  }
+
+
+  private String getOpenApiUrl() {
+    return String.format("%s%s",
+        denoProps.getInternal().getUrl(),
+        denoProps.getInternal().getTsToOaPath());
   }
 }

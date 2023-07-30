@@ -1,0 +1,14 @@
+package com.gptlambda.api.dto;
+
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * @author Biz Melesse created on 6/5/23
+ */
+@Getter @Setter
+public class DenoInternal {
+  private String url;
+  private String tsToOaPath;
+  private String oaToTsPath;
+}
