@@ -8,6 +8,7 @@ configurations {
 //    all*.exclude group: 'org.springframework.boot', module: 'spring-boot-starter-security'
 }
 dependencies {
+    implementation 'io.jsonwebtoken:jjwt'
     implementation 'com.vladmihalcea:hibernate-types-60'
     implementation 'org.hibernate:hibernate-core'
     implementation 'org.springframework.boot:spring-boot-starter-amqp'

@@ -23,7 +23,8 @@ import org.springframework.context.annotation.Configuration;
     CorsProps.class,
     DenoProps.class,
     OpenAiProps.class,
-    EntitlementProps.class
+    EntitlementProps.class,
+    JwtProps.class
 })
 public class PropConfiguration {
 }

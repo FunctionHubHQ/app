@@ -20,6 +20,7 @@ import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
 import com.gptlambda.api.data.postgres.entity.UserEntity;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
 import com.gptlambda.api.data.postgres.repo.UserRepo;
+import com.gptlambda.api.service.token.TokenService;
 import com.gptlambda.api.service.user.UserService;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import com.gptlambda.api.utils.ServiceTestHelper;
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
@@ -58,6 +61,9 @@ import org.testng.annotations.Test;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContextTests {
     @Autowired
+    private TokenService tokenService;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
@@ -79,6 +85,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     private UserRepo userRepo;
 
     private UserEntity user;
+    private String authToken;
 
     private final String interfaces = "interface RequestEntity {\n"
         + "    /**\n"
@@ -113,6 +120,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String userId = "u_" + GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH);
         testHelper.prepareSecurity(userId);
         userService.getOrCreateUserprofile();
+        authToken = tokenService.generateJwtToken();
         try {
             Thread.sleep(5000L);
             user = userRepo.findByUid(userId);
@@ -193,14 +201,16 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String host = "localhost";
         String port = "8080";
         String fullUrl = String.format("http://%s:%s%s", host, port, path);
-
-        if (httpMethod == "POST") {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + authToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (Objects.equals(httpMethod, "POST")) {
             HttpEntity<Object> request = new HttpEntity<>(payload, headers);
             return testRestTemplate.postForObject(fullUrl, request, String.class);
         }
-        return testRestTemplate.getForObject(fullUrl, String.class);
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+        return testRestTemplate.exchange(fullUrl, HttpMethod.GET, requestEntity, String.class)
+            .getBody();
     }
 }
 

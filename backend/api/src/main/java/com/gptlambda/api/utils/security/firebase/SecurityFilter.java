@@ -3,10 +3,12 @@ package com.gptlambda.api.utils.security.firebase;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import com.gptlambda.api.dto.DecodedJwt;
 import com.gptlambda.api.utils.firebase.FirebaseService;
 import com.gptlambda.api.utils.security.Credentials;
 import com.gptlambda.api.UserProfile;
 import com.gptlambda.api.utils.security.UnsecurePaths;
+import com.gptlambda.api.utils.security.jwt.JwtValidationService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -56,6 +58,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class SecurityFilter extends OncePerRequestFilter {
     private final FirebaseService firebaseService;
     private final UnsecurePaths unsecurePaths;
+    private final JwtValidationService jwtValidationService;
 
   @Override
   protected void doFilterInternal(HttpServletRequest httpServletRequest,
@@ -75,83 +78,97 @@ public class SecurityFilter extends OncePerRequestFilter {
     }
   }
 
-    private void verifyToken(HttpServletRequest httpServletRequest) {
-        try {
-            String bearerToken = getBearerToken(httpServletRequest);
-            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(bearerToken);
-            UserProfile user = firebaseTokenToUser(decodedToken);
-            Credentials credentials = new Credentials();
-            credentials.setDecodedToken(decodedToken);
-            credentials.setAuthToken(bearerToken);
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, credentials,
-                    getAuthorities(user.getRoles()));
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        } catch (IllegalArgumentException | FirebaseAuthException | IOException e) {
-            log.error("SecurityFilter.verifyToken Authentication Error: {}", e.getLocalizedMessage());
+  private void verifyToken(HttpServletRequest httpServletRequest) {
+      try {
+        String bearerToken = getBearerToken(httpServletRequest);
+        UserProfile user;
+        Credentials credentials = new Credentials();
+        try{
+          DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);
+          user = jwtTokenToUser(decodedToken);
+          credentials.setDecodedJwtToken(decodedToken);
+          credentials.setAuthToken(bearerToken);
+        } catch (Exception e) {
+          FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(bearerToken);
+          user = firebaseTokenToUser(decodedToken);
+          credentials.setAuthToken(bearerToken);
+          credentials.setDecodedFirebaseToken(decodedToken);
         }
-    }
+        assert user != null;
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, credentials,
+                getAuthorities(user.getRoles()));
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+      } catch (IllegalArgumentException | FirebaseAuthException | IOException e) {
+          log.error("SecurityFilter.verifyToken Authentication Error: {}", e.getLocalizedMessage());
+      }
+  }
 
-    private UserProfile firebaseTokenToUser(FirebaseToken decodedToken) {
-      UserProfile user = new UserProfile();
-        if (decodedToken != null) {
-            user.setUid(decodedToken.getUid());
-            user.setName(decodedToken.getName());
-            user.setEmail(decodedToken.getEmail());
-            user.setPicture(decodedToken.getPicture());
-            Map<String, Boolean> parsedClaims = new HashMap<>();
-            final Map<String, Object> claimsToParse = decodedToken.getClaims();
-            for (Map.Entry<String, Object> entry : claimsToParse.entrySet()) {
-                if (entry.getKey().startsWith("ROLE_")) {
-                    parsedClaims.put(entry.getKey(), (Boolean) entry.getValue());
-                }
-            }
-            user.setRoles(parsedClaims);
-        }
-        return user;
-    }
+  private UserProfile jwtTokenToUser(DecodedJwt decodedToken) {
+    return new UserProfile()
+        .uid(decodedToken.getUserId());
+  }
 
-    private String getBearerToken(HttpServletRequest httpServletRequest) throws IOException {
-        String bearerToken = "";
-        String authorization = httpServletRequest.getHeader("Authorization");
-        if (StringUtils.hasText(authorization)) {
-            if (authorization.startsWith("Bearer ")) {
-                bearerToken = authorization.substring(7);
-            } else if (authorization.startsWith("Token ")) {
-                bearerToken = authorization.substring(6);
-            } else if (authorization.startsWith("Basic ")) {
-                String credentials = new String(Base64.getDecoder().decode(authorization.substring(6)), UTF_8);
-                String email = credentials.split(":")[0];
-                String password = credentials.split(":")[1];
-                bearerToken = firebaseService.login(email, password);
-            } else {
-                bearerToken = authorization;
-            }
-        }
-        return bearerToken;
-    }
+  private UserProfile firebaseTokenToUser(FirebaseToken decodedToken) {
+    UserProfile user = new UserProfile();
+      if (decodedToken != null) {
+          user.setUid(decodedToken.getUid());
+          user.setName(decodedToken.getName());
+          user.setEmail(decodedToken.getEmail());
+          user.setPicture(decodedToken.getPicture());
+          Map<String, Boolean> parsedClaims = new HashMap<>();
+          final Map<String, Object> claimsToParse = decodedToken.getClaims();
+          for (Map.Entry<String, Object> entry : claimsToParse.entrySet()) {
+              if (entry.getKey().startsWith("ROLE_")) {
+                  parsedClaims.put(entry.getKey(), (Boolean) entry.getValue());
+              }
+          }
+          user.setRoles(parsedClaims);
+      }
+      return user;
+  }
 
-    private Collection<GrantedAuthority> getAuthorities(Map<String, Boolean> claims) {
-        Collection<GrantedAuthority> authorities = new ArrayList<>();
-        for (Map.Entry<String, Boolean> claim: claims.entrySet()) {
-            if (claim.getKey().startsWith("ROLE_") && claim.getValue()) {
-                authorities.add(new SimpleGrantedAuthority(claim.getKey()));
-            }
-        }
-        return authorities;
-    }
+  private String getBearerToken(@NotNull HttpServletRequest httpServletRequest) throws IOException {
+      String bearerToken = "";
+      String authorization = httpServletRequest.getHeader("Authorization");
+      if (StringUtils.hasText(authorization)) {
+          if (authorization.startsWith("Bearer ")) {
+              bearerToken = authorization.substring(7);
+          } else if (authorization.startsWith("Token ")) {
+              bearerToken = authorization.substring(6);
+          } else if (authorization.startsWith("Basic ")) {
+              String credentials = new String(Base64.getDecoder().decode(authorization.substring(6)), UTF_8);
+              String email = credentials.split(":")[0];
+              String password = credentials.split(":")[1];
+              bearerToken = firebaseService.login(email, password);
+          } else {
+              bearerToken = authorization;
+          }
+      }
+      return bearerToken;
+  }
 
-    public UserProfile getUser() {
-        UserProfile userProfile = null;
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        Object principal = securityContext.getAuthentication().getPrincipal();
-        if (principal instanceof UserProfile) {
-          userProfile = (UserProfile) principal;
-        }
-        return userProfile;
-    }
+  private Collection<GrantedAuthority> getAuthorities(Map<String, Boolean> claims) {
+      Collection<GrantedAuthority> authorities = new ArrayList<>();
+      for (Map.Entry<String, Boolean> claim: claims.entrySet()) {
+          if (claim.getKey().startsWith("ROLE_") && claim.getValue()) {
+              authorities.add(new SimpleGrantedAuthority(claim.getKey()));
+          }
+      }
+      return authorities;
+  }
 
-    public Credentials getCredentials() {
+  public UserProfile getUser() {
+      UserProfile userProfile = null;
+      SecurityContext securityContext = SecurityContextHolder.getContext();
+      Object principal = securityContext.getAuthentication().getPrincipal();
+      if (principal instanceof UserProfile) {
+        userProfile = (UserProfile) principal;
+      }
+      return userProfile;
+  }
+
+  public Credentials getCredentials() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         return (Credentials) securityContext.getAuthentication().getCredentials();
     }
