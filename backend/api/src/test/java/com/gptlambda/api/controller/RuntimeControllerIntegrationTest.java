@@ -13,20 +13,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
-import com.gptlambda.api.ExecResultAsync;
 import com.gptlambda.api.ExecResultSync;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
 import com.gptlambda.api.data.postgres.entity.UserEntity;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
 import com.gptlambda.api.data.postgres.repo.UserRepo;
+import com.gptlambda.api.service.runtime.RuntimeService;
 import com.gptlambda.api.service.token.TokenService;
 import com.gptlambda.api.service.user.UserService;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import com.gptlambda.api.utils.ServiceTestHelper;
 import com.gptlambda.api.utils.migration.FlywayMigration;
 import java.lang.reflect.Method;
-import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,10 +48,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-/**
- * @author Sergei Golitsyn
- * created on 19/01/22
- */
 
 @Slf4j
 @Transactional
@@ -84,19 +79,28 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     @Autowired
     private UserRepo userRepo;
 
+    @Autowired
+    private RuntimeService runtimeService;
+
     private UserEntity user;
     private String authToken;
 
-    private final String interfaces = "interface RequestEntity {\n"
+    private final String interfaces = "interface Author {\n"
+        + "  name: string;\n"
+        + "  image: string;\n"
+        + "  designation: string;\n"
+        + "};\n"
+        + "\nexport interface RequestEntity {\n"
         + "    /**\n"
         + "     * The name of the city I am interested in\n"
         + "     */\n"
         + "    location?: string\n"
         + "}\n"
         + "\n"
-        + "interface ResponseEntity {\n"
+        + "export interface ResponseEntity {\n"
         + "    message?: string,\n"
         + "    random?: number,\n"
+        + "    author: Author[];\n"
         + "    time?: string\n"
         + "}";
     private final String code = "import moment from \"npm:moment\";\n"
@@ -157,6 +161,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
         CodeUpdateResponse updateResponse = objectMapper
             .readValue(updateResponseStr, CodeUpdateResponse.class);
+        assertNotNull(updateResponse.getUid());
 
         // 2. Run it
         String city = "Chicago, IL";
@@ -168,9 +173,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
                 .payload(payload));
 
         // 3. Fetch the result
-        log.info("Sleeping....: {}", LocalDateTime.now());
         Thread.sleep(5000L);
-        log.info("Done with sleep....: {}", LocalDateTime.now());
         String execResultStr = request("/e-result?uid=" + updateResponse.getUid(),
             "GET", new ExecRequest()
             .fcmToken(UUID.randomUUID().toString())
@@ -190,11 +193,10 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
         assertNotNull(deployResponse.getStatus());
 
+        Thread.sleep(5000L);
         CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResponse.getUid()));
-        assertNotNull(codeCell);
-        assertNotNull(codeCell.getJsonSchema());
-
         assertTrue(codeCell.getDeployed());
+        assertNotNull(runtimeService.getJsonSchema(updateResponse.getUid()));
     }
 
     private String request(String path, String httpMethod, Object payload) {

@@ -68,7 +68,9 @@ public class SecurityFilter extends OncePerRequestFilter {
     boolean methodExcluded = Stream.of("options")
       .anyMatch(method -> httpServletRequest.getMethod().toLowerCase().contains(method));
     boolean uriExcluded = unsecurePaths.allow(httpServletRequest.getRequestURI());
-    if (!(methodExcluded || uriExcluded)) {
+    if (!(methodExcluded || uriExcluded ||
+        unsecurePaths.allowedOrigin(httpServletRequest.getRemoteHost(),
+            httpServletRequest.getRequestURI()))) {
       verifyToken(httpServletRequest);
     }
     try {

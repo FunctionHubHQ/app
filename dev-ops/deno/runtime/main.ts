@@ -2,6 +2,7 @@ import { Application, isHttpError } from "https://deno.land/x/oak/mod.ts";
 
 const devHost = 'http://host.docker.internal:8080';
 const prodHost = 'http://api:8080';
+const token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJwYXlsb2FkIjoie1wiZXhwXCI6MTc3NzE1MDc0MCxcImlhdFwiOjE2OTA3NTA3NDAsXCJqdWlkXCI6XCJlNjE5ZDc2Ni0zYWIyLTQ3N2EtOTQwNS1lZmUwMDljYTAwZDdcIixcImd1aWRcIjpcInVfZ1hxWjkxcmpcIn0ifQ.eK0ZTJLN26RP0ZrxnjjPG0uNtI5larWNBmv-3Fl_mhwbudj81xlb4wZnUnHOwYJZ33X0JW8TvRN20ueYAD4cKw';
 
 /**
  * Keeps track of console logs from user scripts workers
@@ -63,8 +64,8 @@ function executeUserScript(ctx, userScriptUrl, body) {
 
   // Handle errors from the Web Worker
   worker.onerror = (error) => {
+    error.preventDefault();
     clearTimeout(timeoutId);
-    console.error('Error in the user script:', error.message);
     sendResult(ctx, null,
         [...stdout[body.uid]],
         error.message)
@@ -101,6 +102,7 @@ async function sendResult(ctx, result, stdout, error) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
     },
     body: JSON.stringify(data),
   });

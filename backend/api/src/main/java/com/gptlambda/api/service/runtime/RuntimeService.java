@@ -22,6 +22,11 @@ public interface RuntimeService {
    */
   ConcurrentMap<String, ExecResultSync> executionResults = new ConcurrentHashMap<>();
 
+  /**
+   * For dev/test use due to transaction issues
+   */
+  ConcurrentMap<String, String> jsonSchema = new ConcurrentHashMap<>();
+
   GenericResponse exec(ExecRequest execRequest);
   ExecResultSync getExecResult(String uid);
   String getUserCode(String uid);
@@ -29,7 +34,8 @@ public interface RuntimeService {
   String generateCodeVersion();
   CodeUpdateResponse updateCode(Code code);
   Code getCodeDetail(String uid);
-  void generateOpenApiSpec(String interfaces, String uid);
+  void generateJsonSchema(String interfaces, String uid);
+  String getJsonSchema(String uid);
   GenericResponse handleSpecResult(SpecResult specResult);
   GenericResponse deploy(ExecRequest execRequest);
 }

@@ -14,7 +14,6 @@ import com.gptlambda.api.service.user.UserService;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import com.gptlambda.api.utils.ServiceTestHelper;
 import com.gptlambda.api.utils.migration.FlywayMigration;
-import java.io.File;
 import java.lang.reflect.Method;
 import java.util.Base64;
 import java.util.List;
@@ -23,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
-import org.springframework.util.ResourceUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
@@ -179,7 +177,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
             + "  tags: string[];\n"
             + "  publishDate: string;\n"
             + "};\n";
-        runtimeService.generateOpenApiSpec(Base64.getEncoder().encodeToString(tsSpec.getBytes()),
+        runtimeService.generateJsonSchema(Base64.getEncoder().encodeToString(tsSpec.getBytes()),
             UUID.randomUUID().toString());
     }
 }

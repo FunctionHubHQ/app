@@ -1,5 +1,6 @@
 package com.gptlambda.api.utils.security;
 
+import com.gptlambda.api.props.CorsProps;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +14,13 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class UnsecurePaths {
+  private final CorsProps corsProps;
+
   private final List<String> paths = new ArrayList<>(List.of(
       "/actuator/health",
-      "/actuator/health/**"
+      "/actuator/health/**",
+      "/npm",
+      "/npm/**"
   ));
 
   public boolean allow(String path) {
@@ -26,5 +31,10 @@ public class UnsecurePaths {
   public String[] wildcardPaths() {
     return paths.stream().filter(p -> p.endsWith("**"))
         .toArray(String[]::new);
+  }
+
+  public boolean allowedOrigin(String remoteAddr, String path) {
+    return corsProps.getAllowedOriginPatterns().contains(remoteAddr) &&
+        paths.contains(path);
   }
 }

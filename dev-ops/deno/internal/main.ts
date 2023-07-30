@@ -10,6 +10,7 @@ import {
   getJsonSchemaWriter
 } from 'npm:typeconv';
 
+const token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJwYXlsb2FkIjoie1wiZXhwXCI6MTc3NzE1MDc0MCxcImlhdFwiOjE2OTA3NTA3NDAsXCJqdWlkXCI6XCJlNjE5ZDc2Ni0zYWIyLTQ3N2EtOTQwNS1lZmUwMDljYTAwZDdcIixcImd1aWRcIjpcInVfZ1hxWjkxcmpcIn0ifQ.eK0ZTJLN26RP0ZrxnjjPG0uNtI5larWNBmv-3Fl_mhwbudj81xlb4wZnUnHOwYJZ33X0JW8TvRN20ueYAD4cKw';
 const devHost = 'http://host.docker.internal:8080';
 const prodHost = 'http://api:8080';
 
@@ -38,6 +39,7 @@ async function sendResult(ctx, spec, error) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
     },
     body: JSON.stringify(data),
   });
@@ -62,11 +64,7 @@ async function generateSchema(ctx, from, to) {
       version: 'v1'
     } );
   } else if (to === "jsc") {
-    writer = writer = getJsonSchemaWriter( {
-      format: 'json',
-      title: 'GPT Lambda API',
-      version: 'v1'
-    } );
+    writer = getJsonSchemaWriter();
   } else if (to === "oapi") {
     writer = getOpenApiWriter( {
       format: 'json',
@@ -74,6 +72,7 @@ async function generateSchema(ctx, from, to) {
       version: 'v1'
     } );
   }
+
   if (reader && writer) {
     const { convert } = makeConverter( reader, writer );
     const { data } = await convert( { data: body.file } );

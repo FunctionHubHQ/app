@@ -94,7 +94,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   public ExecResultSync getExecResult(String uid) {
     ExecResultSync result = executionResults.get(uid);
     if (result != null) {
-      executionResults.put(uid, null);
+      executionResults.remove(uid);
     }
     return result;
   }
@@ -154,13 +154,6 @@ public class RuntimeServiceImpl implements RuntimeService {
     if (!ObjectUtils.isEmpty(execResult.getFcmToken()) && !ObjectUtils.isEmpty(execResult.getUid())) {
       ExecResultSync execResultSync = new ExecResultSync();
       String uid = parseUid(execResult.getUid());
-      String stdout = String.join("\n", execResult.getStdOut()).replace("\\n", "\n");
-      if (!ObjectUtils.isEmpty(stdout)) {
-        log.info("{} stdout: {}", uid, stdout);
-      }
-      if (!ObjectUtils.isEmpty(execResult.getError())) {
-        log.error("{} error: {}", uid, execResult.getError());
-      }
       try {
         validateCodeCell(execResult, uid);
         execResultSync.setUid(uid);
@@ -168,20 +161,25 @@ public class RuntimeServiceImpl implements RuntimeService {
         builder.putData("uid", uid);
         builder.putData("type", MessageType.EXEC_RESULT);
         if (!ObjectUtils.isEmpty(execResult.getResult())) {
-          String o = objectMapper.writeValueAsString(execResult.getResult());
+          String o = secureString(objectMapper.writeValueAsString(execResult.getResult()));
           builder.putData("result", o);
           execResultSync.setResult(o);
           log.info("{} result: {}", uid, o);
         }
         if (!ObjectUtils.isEmpty(execResult.getError())) {
-          builder.putData("error", execResult.getError());
-          execResultSync.setError(execResult.getError());
+          String error = secureString(execResult.getError());
+          log.error("{} error: {}", uid, error);
+          builder.putData("error", error);
+          execResultSync.setError(error);
         }
-        if (!ObjectUtils.isEmpty(stdout)) {
+        if (!ObjectUtils.isEmpty(execResult.getStdOut())) {
+          String stdout = secureString(String.join("\n", execResult.getStdOut())
+              .replace("\\n", "\n"));
+          log.info("{} stdout: {}", uid, stdout);
           builder.putData("std_out", stdout);
           execResultSync.setStdOut(stdout);
         }
-        executionResults.put(execResult.getUid(), execResultSync);
+        executionResults.put(execResult.getUid().split("@")[0], execResultSync);
         Message message = builder.setToken(execResult.getFcmToken()).build();
         sendFcmMessage(message);
       } catch (JsonProcessingException e) {
@@ -191,6 +189,16 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
     }
     return new GenericResponse().status("ok");
+  }
+
+  private String secureString(String s) {
+    // Remove any references to internal directories or state
+    return s
+        .replace("deno", "...")
+        .replace("Deno", "...")
+        .replace("http://host.docker.internal:8080", "node_modules")
+        .replace(getCodeGenUrl(), "node_modules")
+        .replace(getRuntimeUrl(), "node_modules");
   }
 
   private String parseUid(String uid) {
@@ -304,14 +312,23 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public void generateOpenApiSpec(String interfaces, String uid) {
+  public void generateJsonSchema(String interfaces, String uid) {
     GenerateSpecRequest request = new GenerateSpecRequest();
     request.setFile(interfaces);
     request.setEnv(sourceProps.getProfile());
     request.setUid(uid);
     request.setFrom("ts");
     request.setTo("jsc");
-    submitExecutionTask(request, getOpenApiUrl());
+    submitExecutionTask(request, getCodeGenUrl());
+  }
+
+  @Override
+  public String getJsonSchema(String uid) {
+    String schema = jsonSchema.get(uid);
+    if (schema != null) {
+      jsonSchema.remove(uid);
+    }
+    return schema;
   }
 
   @Override
@@ -327,13 +344,14 @@ public class RuntimeServiceImpl implements RuntimeService {
         if (format.equals("json")) {
           try {
             JsonNode node = objectMapper.readValue(spec, JsonNode.class)
-                .get("components").get("schemas").get("RequestPayload");
+                .get("definitions").get("RequestEntity");
             TypeReference<HashMap<String, Object>> typeRef = new TypeReference<>() { };
             Map<String, Object> dto = objectMapper.readValue(node.traverse(),
                 typeRef);
             dto.remove("additionalProperties");
             String requestDto = objectMapper.writeValueAsString(dto);
             codeCell.setJsonSchema(requestDto);
+            jsonSchema.put(codeCell.getUid().toString(), requestDto);
           } catch (IOException e) {
             log.error("{}.handleSpecResult: {}",
                 getClass().getSimpleName(),
@@ -342,10 +360,12 @@ public class RuntimeServiceImpl implements RuntimeService {
         } else if (format.equals("ts")) {
           codeCell.setInterfaces(Base64.getEncoder().encodeToString(spec.getBytes()));
         }
+        codeCell.setUpdatedAt(LocalDateTime.now());
         codeCellRepo.save(codeCell);
+        return new GenericResponse().status("ok");
       }
     }
-    return new GenericResponse().status("ok");
+    return new GenericResponse().error("Something went wrong");
   }
 
   @Override
@@ -354,7 +374,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(execRequest.getUid()));
       if (codeCell != null) {
         if (codeCell.getIsDeployable()) {
-          generateOpenApiSpec(new String(Base64.getDecoder().decode(codeCell.getInterfaces().getBytes())),
+          generateJsonSchema(new String(Base64.getDecoder().decode(codeCell.getInterfaces().getBytes())),
               codeCell.getUid().toString());
           codeCell.setDeployed(true);
           codeCellRepo.save(codeCell);
@@ -413,7 +433,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
 
-  private String getOpenApiUrl() {
+  private String getCodeGenUrl() {
     return String.format("%s%s",
         denoProps.getInternal().getUrl(),
         denoProps.getInternal().getPath());
