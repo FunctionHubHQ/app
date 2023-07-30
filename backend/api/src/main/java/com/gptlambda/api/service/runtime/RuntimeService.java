@@ -17,7 +17,7 @@ public interface RuntimeService {
   String generateCodeVersion();
   CodeUpdateResponse updateCode(Code code);
   Code getCodeDetail(String uid);
-  String deleteMe(String uid);
-  String generateOpenApiSpec(String tsInterface);
+  void generateOpenApiSpec(String interfaces, String uid);
   GenericResponse handleSpecResult(SpecResult specResult);
+  GenericResponse deploy(ExecRequest execRequest);
 }

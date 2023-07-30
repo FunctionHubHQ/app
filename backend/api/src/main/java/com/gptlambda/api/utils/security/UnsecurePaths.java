@@ -19,8 +19,8 @@ public class UnsecurePaths {
       "/e-result/**",
       "/s-result",
       "/s-result/**",
-      "/spec",
-      "/spec/**"
+      "/update-code",
+      "/update-code/**"
   );
 
   public static Stream<String> paths() {

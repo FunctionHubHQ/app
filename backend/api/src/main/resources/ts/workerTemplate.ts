@@ -1,0 +1,17 @@
+// Worker Boundary b7dbbfbb7723221173444ae44b734f5b5cbaa465b9cfa2a70c9819394acc1291
+self.onmessage = async (event) => {
+  const uid = event.data.uid;
+  try {
+    // Re-direct console.log statements
+    // TODO: may need to handle other console calls
+    console.log = (...args) => {
+      const message = args.map(it => JSON.stringify(it)).join(' ');
+      self.postMessage({ stdout: message, uid: uid });
+    }
+    const result = await handler(event.data.payload);
+    self.postMessage({ result: result, uid: uid });
+  } catch (e) {
+    self.postMessage({ error: e.message, uid: uid });
+  }
+  self.close();
+};

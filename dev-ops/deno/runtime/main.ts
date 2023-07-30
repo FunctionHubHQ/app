@@ -1,6 +1,5 @@
 import { Application, isHttpError } from "https://deno.land/x/oak/mod.ts";
 
-
 const devHost = 'http://host.docker.internal:8080';
 const prodHost = 'http://api:8080';
 
@@ -22,49 +21,6 @@ async function getBody(ctx) {
   }
   return body;
 }
-//
-// const timeoutPromise = new Promise((_resolve, reject) => {
-//   setTimeout(
-//       () => reject(new Error('Async call timeout limit reached')),
-//       time
-//   );
-// });
-
-// const timeout = (userPromise, time) =>
-//     Promise.race([userPromise,
-//       new Promise((_r, rej) => setTimeout(rej, time))]);
-
-// const timeout = (userPromise, time) =>
-//     Promise.race([userPromise,
-//       new Promise((_r, rej) => setTimeout(
-//           () => rej(new Error('Async call timeout limit reached')),
-//           time
-//       ))
-//     ]);
-
-// /**
-//  * Call an async function with a maximum time limit (in milliseconds) for the timeout
-//  * @param {Promise<any>} asyncPromise An asynchronous promise to resolve
-//  * @param {number} timeLimit Time limit to attempt function in milliseconds
-//  * @returns {Promise<any> | undefined} Resolved promise for async function call, or an error if time limit reached
-//  * Credit: https://javascript.plainenglish.io/how-to-add-a-timeout-limit-to-asynchronous-javascript-functions-3676d89c186d
-//  */
-// const asyncCallWithTimeout = async (asyncPromise, timeLimit) => {
-//   let timeoutHandle;
-//
-//   const timeoutPromise = new Promise((_resolve, reject) => {
-//     timeoutHandle = setTimeout(
-//         () => reject(new Error('Async call timeout limit reached')),
-//         timeLimit
-//     );
-//   });
-//
-//   return Promise.race([asyncPromise, timeoutPromise]).then(result => {
-//     clearTimeout(timeoutHandle);
-//     return result;
-//   })
-// }
-
 
 function executeUserScript(ctx, userScriptUrl, body) {
   // Create a new Web Worker
@@ -95,7 +51,6 @@ function executeUserScript(ctx, userScriptUrl, body) {
       stdout[uid] = [];
     } else if (event.data.error) {
       worker.terminate();
-      console.log("END TIME: ", Date.now()/1000);
       clearTimeout(timeoutId);
       sendResult(ctx,
           null,
@@ -153,11 +108,8 @@ async function sendResult(ctx, result, stdout, error) {
 
 async function executeUserCode(ctx) {
   const body = await getBody(ctx);
-  // const timeoutFunc = fetch('https://baconipsum.com/api/?type=meat-and-filler');
   const host = getHost(body.env);
-  // const module = await import(`${host}/npm/${body.uid}.ts`);
-  const url = `${host}/npm/${body.uid}.ts`;
-  console.log("DEBUG 1 - calling executeUserScript: ", url);
+  const url = `${host}/npm/${body.uid}`;
   executeUserScript(ctx, url, body);
 }
 

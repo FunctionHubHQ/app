@@ -34,8 +34,8 @@ public class RuntimeController implements RuntimeApi {
   }
 
   @Override
-  public ResponseEntity<String> deleteMe(String uid) {
-    return ResponseEntity.ok(runtimeService.deleteMe(uid));
+  public ResponseEntity<GenericResponse> deploy(ExecRequest execRequest) {
+    return ResponseEntity.ok(runtimeService.deploy(execRequest));
   }
 
   @Override

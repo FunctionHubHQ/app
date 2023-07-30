@@ -51,14 +51,15 @@ public class CodeCellEntity {
     private String code;
 
     @Basic
-    @JsonProperty("request_dto")
-    @Column(name = "request_dto")
-    private String requestDto;
+    @JsonProperty("interfaces")
+    @Column(name = "interfaces")
+    private String interfaces;
 
     @Basic
-    @JsonProperty("response_dto")
-    @Column(name = "response_dto")
-    private String responseDto;
+    @JsonProperty("openapi_schema")
+    @Column(name = "openapi_schema")
+    private String openApiSchema;
+
 
     @Basic
     @JsonProperty("version")
@@ -69,6 +70,21 @@ public class CodeCellEntity {
     @JsonProperty("slug")
     @Column(name = "slug")
     private String slug;
+
+    @Basic
+    @JsonProperty("reason_not_deployable")
+    @Column(name = "reason_not_deployable")
+    private String reasonNotDeployable;
+
+    @Basic
+    @JsonProperty("deployed")
+    @Column(name = "deployed")
+    private Boolean deployed = false;
+
+    @Basic
+    @JsonProperty("is_deployable")
+    @Column(name = "is_deployable")
+    private Boolean isDeployable = true;
 
     @Basic
     @JsonProperty("is_active")

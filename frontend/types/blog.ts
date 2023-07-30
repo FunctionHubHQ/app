@@ -83,7 +83,7 @@ export async function handler(params: RequestPayload) {
   return 17;
 }
 
-// Worker Boundary
+// Worker Boundary b7dbbfbb7723221173444ae44b734f5b5cbaa465b9cfa2a70c9819394acc1291
 
 // 1. Test ability to send the result back
 // ✅ 2. Test ability to catch all errors

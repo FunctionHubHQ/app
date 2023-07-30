@@ -46,36 +46,6 @@
         }
       }
     },
-    "/spec/{uid}": {
-      "get": {
-        "tags": [
-          "runtime"
-        ],
-        "operationId": "deleteMe",
-        "parameters": [
-          {
-            "name": "uid",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "User code",
-            "content": {
-              "application/typescript": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/run": {
       "post": {
         "tags": [
@@ -98,6 +68,39 @@
         "responses": {
           "200": {
             "description": "Runtime Info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/deploy": {
+      "post": {
+        "tags": [
+          "runtime"
+        ],
+        "summary": "Deploy user code",
+        "description": "Allows user code execution if all validations pass",
+        "operationId": "deploy",
+        "requestBody": {
+          "required": true,
+          "description": "Deploy request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deploy response",
             "content": {
               "application/json": {
                 "schema": {
@@ -285,10 +288,7 @@
           "code": {
             "type": "string"
           },
-          "request_dto": {
-            "type": "string"
-          },
-          "response_dto": {
+          "interfaces": {
             "type": "string"
           },
           "is_public": {
