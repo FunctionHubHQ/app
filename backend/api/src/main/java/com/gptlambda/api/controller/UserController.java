@@ -19,6 +19,6 @@ public class UserController implements UserApi {
   private final UserService userService;
   @Override
   public ResponseEntity<UserProfileResponse> getUserprofile() {
-    return ResponseEntity.ok(userService.getOrCreateUserprofileAsync());
+    return ResponseEntity.ok(userService.getOrCreateUserprofile());
   }
 }

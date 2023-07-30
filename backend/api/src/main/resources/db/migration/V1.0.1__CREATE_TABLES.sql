@@ -38,6 +38,15 @@ CREATE TABLE IF NOT EXISTS public.code_cell (
 );
 ALTER TABLE public.code_cell OWNER TO root;
 
+CREATE TABLE IF NOT EXISTS public.entitlement (
+    uid uuid NOT NULL primary key,
+    user_id varchar(255) NOT NULL,
+    timeout bigint NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.entitlement OWNER TO root;
+
 CREATE TABLE IF NOT EXISTS public.commit_history (
     uid uuid NOT NULL primary key,
     code_cell_id uuid NOT NULL,

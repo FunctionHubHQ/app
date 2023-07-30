@@ -5,7 +5,9 @@ import {
   getOpenApiWriter,
   makeConverter,
   getOpenApiReader,
-  getTypeScriptWriter
+  getTypeScriptWriter,
+  getJsonSchemaReader,
+  getJsonSchemaWriter
 } from 'npm:typeconv';
 
 const devHost = 'http://host.docker.internal:8080';
@@ -41,40 +43,48 @@ async function sendResult(ctx, spec, error) {
   });
 }
 
-async function generateOpenApiSpec(ctx) {
+async function generateSchema(ctx, from, to) {
   const body = await getBody(ctx);
-  const reader = getTypeScriptReader( );
-  const writer = getOpenApiWriter( {
-    format: 'json',
-    title: 'GPT Lambda API',
-    version: 'v1'
-  } );
-  const { convert } = makeConverter( reader, writer );
-  const { data } = await convert( { data: body.file } );
-  await sendResult(ctx,
-     {
-      value: data,
-      format: "json"
-  }, null);
-  ctx.response.body = data
-}
+  let reader;
+  let writer;
+  if (from === "ts") {
+    reader = getTypeScriptReader();
+  } else if (from === "oapi") {
+    reader = getOpenApiReader();
+  } else if (from === "jsc") {
+    reader = getJsonSchemaReader();
+  }
 
-async function generateTypeScript(ctx) {
-  const body = await getBody(ctx);
-  const reader = getOpenApiReader( );
-  const writer = getTypeScriptWriter( {
-    format: 'ts',
-    title: 'GPT Lambda API',
-    version: 'v1'
-  } );
-  const { convert } = makeConverter( reader, writer );
-  const { data } = await convert( { data: body.file } );
-  await sendResult(ctx,
-    {
-      value: data,
-      format: "ts"
-    }, null);
-  ctx.response.body = data
+  if (to === "ts") {
+    writer = writer = getTypeScriptWriter( {
+      format: 'ts',
+      title: 'GPT Lambda API',
+      version: 'v1'
+    } );
+  } else if (to === "jsc") {
+    writer = writer = getJsonSchemaWriter( {
+      format: 'json',
+      title: 'GPT Lambda API',
+      version: 'v1'
+    } );
+  } else if (to === "oapi") {
+    writer = getOpenApiWriter( {
+      format: 'json',
+      title: 'GPT Lambda API',
+      version: 'v1'
+    } );
+  }
+  if (reader && writer) {
+    const { convert } = makeConverter( reader, writer );
+    const { data } = await convert( { data: body.file } );
+    await sendResult(ctx,
+        {
+          value: data,
+          format: "json"
+        }, null);
+    ctx.response.body = data
+  }
+
 }
 
 const app = new Application();
@@ -117,10 +127,9 @@ app.use(async (context, next) => {
   app.use(async (ctx) => {
     ctx.response.type = "application/json";
     const path = ctx.request.url.pathname;
-    if (path.includes("/code-gen/ts-to-oa") ) {
-      await generateOpenApiSpec(ctx);
-    } else if (path.includes("/code-gen/oa-to-ts") ) {
-      await generateTypeScript(ctx);
+    if (path.includes("/spec") ) {
+      const body = await getBody(ctx);
+      await generateSchema(ctx, body.from, body.to);
     } else {
         ctx.response.body = {status: "Deno Internal Server is healthy"} ;
     }

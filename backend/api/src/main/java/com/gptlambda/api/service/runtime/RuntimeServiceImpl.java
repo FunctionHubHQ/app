@@ -15,8 +15,12 @@ import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.SpecResult;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
 import com.gptlambda.api.data.postgres.entity.CommitHistoryEntity;
+import com.gptlambda.api.data.postgres.entity.EntitlementEntity;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
 import com.gptlambda.api.data.postgres.repo.CommitHistoryRepo;
+import com.gptlambda.api.data.postgres.repo.EntitlementRepo;
+import com.gptlambda.api.dto.ExecRequestPayload;
+import com.gptlambda.api.dto.GenerateSpecRequest;
 import com.gptlambda.api.props.DenoProps;
 import com.gptlambda.api.props.SourceProps;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
@@ -52,6 +56,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final SourceProps sourceProps;
   private final ObjectMapper objectMapper;
   private final CodeCellRepo codeCellRepo;
+  private final EntitlementRepo entitlementRepo;
   private final CommitHistoryRepo commitHistoryRepo;
   private final Slugify slugify;
   private final DenoProps denoProps;
@@ -70,17 +75,15 @@ public class RuntimeServiceImpl implements RuntimeService {
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(execRequest.getUid()));
       if (codeCell != null) {
+        EntitlementEntity entitlements = entitlementRepo.findByUserId(codeCell.getUserId());
         String version = codeCell.getVersion();
-        Map<String, Object> body = new HashMap<>();
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("day", "Monday");
-        payload.put("greeting", "Hello, Spring!");
-        body.put("uid", execRequest.getUid() + "@" +version);
-        body.put("payload", payload);
-        body.put("fcmToken", execRequest.getFcmToken());
-        body.put("env", sourceProps.getProfile());
-        body.put("timeout", 5000);
-        Thread.startVirtualThread(() -> submitExecutionTask(body, getRuntimeUrl()));
+        ExecRequestPayload request = new ExecRequestPayload();
+        request.setPayload(execRequest.getPayload());
+        request.setEnv(sourceProps.getProfile());
+        request.setUid(execRequest.getUid() + "@" +version);
+        request.setFcmToken(execRequest.getFcmToken());
+        request.setTimeout(entitlements.getTimeout());
+        Thread.startVirtualThread(() -> submitExecutionTask(request, getRuntimeUrl()));
       }
     }
     return new GenericResponse().status("ok");
@@ -278,11 +281,13 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public void generateOpenApiSpec(String interfaces, String uid) {
-    Map<String, Object> payload = new HashMap<>();
-    payload.put("file", interfaces);
-    payload.put("env", sourceProps.getProfile());
-    payload.put("uid", uid);
-    submitExecutionTask(payload, getOpenApiUrl());
+    GenerateSpecRequest request = new GenerateSpecRequest();
+    request.setFile(interfaces);
+    request.setEnv(sourceProps.getProfile());
+    request.setUid(uid);
+    request.setFrom("ts");
+    request.setTo("jsc");
+    submitExecutionTask(request, getOpenApiUrl());
   }
 
   @Override
@@ -352,7 +357,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     }
   }
 
-  private void submitExecutionTask(Map<String, Object> body, String url) {
+  private void submitExecutionTask(Object body, String url) {
       try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
         HttpPost httpPost = new HttpPost(url);
         StringEntity entityBody = getEntityBody(body);
@@ -366,7 +371,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
   }
 
-  private StringEntity getEntityBody(Map<String, Object> body) {
+  private StringEntity getEntityBody(Object body) {
     try {
       return new StringEntity(objectMapper.writeValueAsString(body));
     } catch (JsonProcessingException | UnsupportedEncodingException e) {
@@ -387,6 +392,6 @@ public class RuntimeServiceImpl implements RuntimeService {
   private String getOpenApiUrl() {
     return String.format("%s%s",
         denoProps.getInternal().getUrl(),
-        denoProps.getInternal().getTsToOaPath());
+        denoProps.getInternal().getPath());
   }
 }

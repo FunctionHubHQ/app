@@ -1,11 +1,17 @@
 package com.gptlambda.api.service.user;
 
+import com.gptlambda.api.data.postgres.entity.EntitlementEntity;
+import com.gptlambda.api.data.postgres.entity.UserEntity;
+import com.gptlambda.api.data.postgres.repo.EntitlementRepo;
+import com.gptlambda.api.data.postgres.repo.UserRepo;
+import com.gptlambda.api.props.EntitlementProps;
 import com.gptlambda.api.utils.security.firebase.SecurityFilter;
 import com.gptlambda.api.UserProfile;
 import com.gptlambda.api.UserProfileResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @author Biz Melesse
@@ -16,24 +22,33 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
   private final SecurityFilter securityFilter;
-  private final UserServiceHelper userServiceHelper;
+  private final UserRepo userRepo;
+  private final EntitlementRepo entitlementRepo;
+  private final EntitlementProps entitlementProps;
 
-  @Override
-  public UserProfileResponse getOrCreateUserprofileAsync() {
-    UserProfile userProfile = securityFilter.getUser();
-    userServiceHelper.createDbUserAsync(userProfile);
-    return new UserProfileResponse().profile(userProfile);
-  }
 
   @Override
   public UserProfileResponse getOrCreateUserprofile() {
     UserProfile userProfile = securityFilter.getUser();
-    userServiceHelper.createDbUser(userProfile);
+    Thread.startVirtualThread(() -> createDbUser(userProfile));
     return new UserProfileResponse().profile(userProfile);
   }
 
   @Override
-  public void createUser() {
-    userServiceHelper.createDbUser(securityFilter.getUser());
+  public void createDbUser(UserProfile userProfile) {
+    if (userProfile != null && !ObjectUtils.isEmpty(userProfile.getUid())) {
+      UserEntity entity = userRepo.findByUid(userProfile.getUid());
+      if (entity == null) {
+        UserEntity newUser = new UserEntity();
+        newUser.setEmail(userProfile.getEmail());
+        newUser.setUid(userProfile.getUid());
+        log.info("Creating new user with  uid = {}", newUser.getUid());
+        userRepo.save(newUser);
+        EntitlementEntity entitlements = new EntitlementEntity();
+        entitlements.setUserId(userProfile.getUid());
+        entitlements.setTimeout(entitlementProps.getTimeout());
+        entitlementRepo.save(entitlements);
+      }
+    }
   }
 }

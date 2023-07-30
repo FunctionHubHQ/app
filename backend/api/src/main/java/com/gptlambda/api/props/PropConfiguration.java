@@ -22,7 +22,8 @@ import org.springframework.context.annotation.Configuration;
     RabbitMQProps.class,
     CorsProps.class,
     DenoProps.class,
-    OpenAiProps.class
+    OpenAiProps.class,
+    EntitlementProps.class
 })
 public class PropConfiguration {
 }

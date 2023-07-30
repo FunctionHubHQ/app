@@ -386,6 +386,10 @@
           },
           "fcm_token": {
             "type": "string"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": true
           }
         }
       },

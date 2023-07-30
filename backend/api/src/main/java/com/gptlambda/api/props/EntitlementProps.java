@@ -1,6 +1,5 @@
 package com.gptlambda.api.props;
 
-import com.gptlambda.api.dto.DenoInstance;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -14,8 +13,7 @@ import org.springframework.context.annotation.Primary;
 @Primary
 @Getter @Setter
 @Configuration
-@ConfigurationProperties(prefix = "deno")
-public class DenoProps {
-    private DenoInstance runtime;
-    private DenoInstance internal;
+@ConfigurationProperties(prefix = "entitlement")
+public class EntitlementProps {
+    private Long timeout = 15000L;
 }

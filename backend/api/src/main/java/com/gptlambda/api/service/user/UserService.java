@@ -1,5 +1,6 @@
 package com.gptlambda.api.service.user;
 
+import com.gptlambda.api.UserProfile;
 import com.gptlambda.api.UserProfileResponse;
 
 /**
@@ -12,12 +13,10 @@ public interface UserService {
    * Get session user profile. If the user does not exist, create a new record.
    * @return
    */
-  UserProfileResponse getOrCreateUserprofileAsync();
-
   UserProfileResponse getOrCreateUserprofile();
 
   /**
-   * Create a user if not already in the database.
+   * Create a db user with default entitlements
    */
-  void createUser();
+  void createDbUser(UserProfile userProfile);
 }
