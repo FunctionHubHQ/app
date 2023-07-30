@@ -10,7 +10,8 @@ import com.google.firebase.messaging.Message;
 import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
-import com.gptlambda.api.ExecResult;
+import com.gptlambda.api.ExecResultAsync;
+import com.gptlambda.api.ExecResultSync;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.SpecResult;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
@@ -90,13 +91,28 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
+  public ExecResultSync getExecResult(String uid) {
+    ExecResultSync result = executionResults.get(uid);
+    if (result != null) {
+      executionResults.put(uid, null);
+    }
+    return result;
+  }
+
+  @Override
   public String getUserCode(String uid) {
     if (uid != null) {
       uid = parseUid(uid);
       CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
       if (entity != null && !ObjectUtils.isEmpty(entity.getCode())) {
-        String rawCode = new String(Base64.getDecoder().decode(entity.getCode().getBytes()));
-        String interfaces = new String(Base64.getDecoder().decode(entity.getInterfaces().getBytes()));
+        String rawCode = "";
+        if (!ObjectUtils.isEmpty(entity.getCode())) {
+          rawCode = new String(Base64.getDecoder().decode(entity.getCode().getBytes()));
+        }
+        String interfaces = "";
+        if (!ObjectUtils.isEmpty(entity.getInterfaces())) {
+          interfaces = new String(Base64.getDecoder().decode(entity.getInterfaces().getBytes()));
+        }
         return workerScript(rawCode, interfaces);
       }
     }
@@ -134,30 +150,38 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public GenericResponse handleExecResult(ExecResult execResult) {
+  public GenericResponse handleExecResult(ExecResultAsync execResult) {
     if (!ObjectUtils.isEmpty(execResult.getFcmToken()) && !ObjectUtils.isEmpty(execResult.getUid())) {
+      ExecResultSync execResultSync = new ExecResultSync();
       String uid = parseUid(execResult.getUid());
       String stdout = String.join("\n", execResult.getStdOut()).replace("\\n", "\n");
       if (!ObjectUtils.isEmpty(stdout)) {
-        log.info("{}: {}", uid, stdout);
+        log.info("{} stdout: {}", uid, stdout);
       }
       if (!ObjectUtils.isEmpty(execResult.getError())) {
-        log.error("{}: {}", uid, execResult.getError());
+        log.error("{} error: {}", uid, execResult.getError());
       }
       try {
         validateCodeCell(execResult, uid);
+        execResultSync.setUid(uid);
         Message.Builder builder = Message.builder();
         builder.putData("uid", uid);
         builder.putData("type", MessageType.EXEC_RESULT);
         if (!ObjectUtils.isEmpty(execResult.getResult())) {
-          builder.putData("result", objectMapper.writeValueAsString(execResult.getResult()));
+          String o = objectMapper.writeValueAsString(execResult.getResult());
+          builder.putData("result", o);
+          execResultSync.setResult(o);
+          log.info("{} result: {}", uid, o);
         }
         if (!ObjectUtils.isEmpty(execResult.getError())) {
           builder.putData("error", execResult.getError());
+          execResultSync.setError(execResult.getError());
         }
         if (!ObjectUtils.isEmpty(stdout)) {
           builder.putData("std_out", stdout);
+          execResultSync.setStdOut(stdout);
         }
+        executionResults.put(execResult.getUid(), execResultSync);
         Message message = builder.setToken(execResult.getFcmToken()).build();
         sendFcmMessage(message);
       } catch (JsonProcessingException e) {
@@ -173,7 +197,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     return uid.split("@")[0];
   }
 
-  private void validateCodeCell(ExecResult execResult, String uid) {
+  private void validateCodeCell(ExecResultAsync execResult, String uid) {
     CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
     if (codeCell != null) {
       if (!ObjectUtils.isEmpty(execResult.getResult())) {
@@ -309,7 +333,7 @@ public class RuntimeServiceImpl implements RuntimeService {
                 typeRef);
             dto.remove("additionalProperties");
             String requestDto = objectMapper.writeValueAsString(dto);
-            codeCell.setOpenApiSchema(requestDto);
+            codeCell.setJsonSchema(requestDto);
           } catch (IOException e) {
             log.error("{}.handleSpecResult: {}",
                 getClass().getSimpleName(),

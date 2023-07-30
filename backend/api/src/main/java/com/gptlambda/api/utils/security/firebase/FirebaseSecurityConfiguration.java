@@ -62,6 +62,7 @@ public class FirebaseSecurityConfiguration {
     private final SecurityFilter securityFilter;
     private final ObjectMapper objectMapper;
     private final CorsProps corsProps;
+    private final UnsecurePaths unsecurePaths;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -73,7 +74,7 @@ public class FirebaseSecurityConfiguration {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(UnsecurePaths.wildcardPaths()).permitAll()
+                .requestMatchers(unsecurePaths.wildcardPaths()).permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

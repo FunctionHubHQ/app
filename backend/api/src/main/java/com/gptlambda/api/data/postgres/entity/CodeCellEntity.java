@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -56,9 +53,9 @@ public class CodeCellEntity {
     private String interfaces;
 
     @Basic
-    @JsonProperty("openapi_schema")
-    @Column(name = "openapi_schema")
-    private String openApiSchema;
+    @JsonProperty("json_schema")
+    @Column(name = "json_schema")
+    private String jsonSchema;
 
 
     @Basic

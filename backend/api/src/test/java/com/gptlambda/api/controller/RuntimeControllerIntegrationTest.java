@@ -1,0 +1,206 @@
+package com.gptlambda.api.controller;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.testng.AssertJUnit.assertNotNull;
+import static org.testng.AssertJUnit.assertTrue;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gptlambda.api.Code;
+import com.gptlambda.api.CodeUpdateResponse;
+import com.gptlambda.api.ExecRequest;
+import com.gptlambda.api.ExecResultAsync;
+import com.gptlambda.api.ExecResultSync;
+import com.gptlambda.api.GenericResponse;
+import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
+import com.gptlambda.api.data.postgres.entity.UserEntity;
+import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
+import com.gptlambda.api.data.postgres.repo.UserRepo;
+import com.gptlambda.api.service.user.UserService;
+import com.gptlambda.api.service.utils.GPTLambdaUtils;
+import com.gptlambda.api.utils.ServiceTestHelper;
+import com.gptlambda.api.utils.migration.FlywayMigration;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.springframework.transaction.annotation.Transactional;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+/**
+ * @author Sergei Golitsyn
+ * created on 19/01/22
+ */
+
+@Slf4j
+@Transactional
+@SpringBootTest(classes = ControllerTestConfiguration.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContextTests {
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private CodeCellRepo codeCellRepo;
+
+    @Autowired
+    private TestRestTemplate testRestTemplate;
+
+    @Autowired
+    private FlywayMigration flywayMigration;
+
+    @Autowired
+    private ServiceTestHelper testHelper;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserRepo userRepo;
+
+    private UserEntity user;
+
+    private final String interfaces = "interface RequestEntity {\n"
+        + "    /**\n"
+        + "     * The name of the city I am interested in\n"
+        + "     */\n"
+        + "    location?: string\n"
+        + "}\n"
+        + "\n"
+        + "interface ResponseEntity {\n"
+        + "    message?: string,\n"
+        + "    random?: number,\n"
+        + "    time?: string\n"
+        + "}";
+    private final String code = "import moment from \"npm:moment\";\n"
+        + "\n"
+        + "function getRandomInt(max) {\n"
+        + "  return Math.floor(Math.random() * max);\n"
+        + "}\n"
+        + "\n"
+        + "export async function handler(request: RequestEntity): Promise<ResponseEntity> {\n"
+        + "    console.log(\"Request Payload: \", request);\n"
+        + "    return {\n"
+        + "    message: `Your location is: ${request.location}`,\n"
+        + "    random: getRandomInt(100),\n"
+        + "    time: moment().format('MMMM Do YYYY, h:mm:ss a')\n"
+        + "  };\n"
+        + "}";
+
+    @BeforeClass
+    public void setup() {
+        flywayMigration.migrate(true);
+        String userId = "u_" + GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH);
+        testHelper.prepareSecurity(userId);
+        userService.getOrCreateUserprofile();
+        try {
+            Thread.sleep(5000L);
+            user = userRepo.findByUid(userId);
+        } catch (InterruptedException e) {
+            log.error(e.getLocalizedMessage());
+        }
+    }
+
+    @AfterTest
+    public void teardown() {
+    }
+
+
+    @BeforeMethod
+    public void beforeEachTest(Method method) {
+        log.info("  Testcase: " + method.getName() + " has started");
+    }
+
+    @AfterMethod
+    public void afterEachTest(Method method) {
+        log.info("  Testcase: " + method.getName() + " has ended");
+    }
+
+    @Test
+    public void fullFlowTest() throws InterruptedException, JsonProcessingException {
+        String interfacesEncoded = Base64.getEncoder().encodeToString(interfaces.getBytes());
+        String codeEncoded = Base64.getEncoder().encodeToString(code.getBytes());
+
+        // 1. Create code cell
+        String updateResponseStr = request("/update-code", "POST", new Code()
+            .code(codeEncoded)
+            .interfaces(interfacesEncoded)
+            .userId(user.getUid()));
+
+        CodeUpdateResponse updateResponse = objectMapper
+            .readValue(updateResponseStr, CodeUpdateResponse.class);
+
+        // 2. Run it
+        String city = "Chicago, IL";
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("location", city);
+        request("/run", "POST", new ExecRequest()
+                .fcmToken(UUID.randomUUID().toString())
+                .uid(updateResponse.getUid())
+                .payload(payload));
+
+        // 3. Fetch the result
+        log.info("Sleeping....: {}", LocalDateTime.now());
+        Thread.sleep(5000L);
+        log.info("Done with sleep....: {}", LocalDateTime.now());
+        String execResultStr = request("/e-result?uid=" + updateResponse.getUid(),
+            "GET", new ExecRequest()
+            .fcmToken(UUID.randomUUID().toString())
+            .uid(updateResponse.getUid())
+            .payload(payload));
+
+        ExecResultSync execResult = objectMapper.readValue(execResultStr, ExecResultSync.class);
+        assertNotNull(execResult);
+        assertTrue(execResult.getStdOut().contains(city));
+
+        // 4. Deploy it
+        String deployResponseStr = request("/deploy",
+            "POST", new ExecRequest()
+                .fcmToken(UUID.randomUUID().toString())
+                .uid(updateResponse.getUid()));
+
+        GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
+        assertNotNull(deployResponse.getStatus());
+
+        CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResponse.getUid()));
+        assertNotNull(codeCell);
+        assertNotNull(codeCell.getJsonSchema());
+
+        assertTrue(codeCell.getDeployed());
+    }
+
+    private String request(String path, String httpMethod, Object payload) {
+        String host = "localhost";
+        String port = "8080";
+        String fullUrl = String.format("http://%s:%s%s", host, port, path);
+
+        if (httpMethod == "POST") {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Object> request = new HttpEntity<>(payload, headers);
+            return testRestTemplate.postForObject(fullUrl, request, String.class);
+        }
+        return testRestTemplate.getForObject(fullUrl, String.class);
+    }
+}
+

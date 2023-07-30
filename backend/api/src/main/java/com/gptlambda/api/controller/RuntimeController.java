@@ -3,7 +3,8 @@ package com.gptlambda.api.controller;
 import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
-import com.gptlambda.api.ExecResult;
+import com.gptlambda.api.ExecResultAsync;
+import com.gptlambda.api.ExecResultSync;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.RuntimeApi;
 import com.gptlambda.api.SpecResult;
@@ -34,6 +35,11 @@ public class RuntimeController implements RuntimeApi {
   }
 
   @Override
+  public ResponseEntity<ExecResultSync> getExecResult(String uid) {
+    return ResponseEntity.ok(runtimeService.getExecResult(uid));
+  }
+
+  @Override
   public ResponseEntity<GenericResponse> deploy(ExecRequest execRequest) {
     return ResponseEntity.ok(runtimeService.deploy(execRequest));
   }
@@ -44,7 +50,7 @@ public class RuntimeController implements RuntimeApi {
   }
 
   @Override
-  public ResponseEntity<GenericResponse> handleExecResult(ExecResult execResult) {
+  public ResponseEntity<GenericResponse> handleExecResult(ExecResultAsync execResult) {
     return ResponseEntity.ok(runtimeService.handleExecResult(execResult));
   }
 

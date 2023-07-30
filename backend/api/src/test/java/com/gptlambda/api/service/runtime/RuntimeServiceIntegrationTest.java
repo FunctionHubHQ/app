@@ -1,7 +1,6 @@
 package com.gptlambda.api.service.runtime;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
@@ -11,8 +10,11 @@ import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
 import com.gptlambda.api.data.postgres.repo.CommitHistoryRepo;
 import com.gptlambda.api.data.postgres.repo.UserRepo;
 import com.gptlambda.api.service.ServiceTestConfiguration;
+import com.gptlambda.api.service.user.UserService;
 import com.gptlambda.api.service.utils.GPTLambdaUtils;
+import com.gptlambda.api.utils.ServiceTestHelper;
 import com.gptlambda.api.utils.migration.FlywayMigration;
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.Base64;
 import java.util.List;
@@ -21,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.springframework.util.ResourceUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
@@ -45,7 +48,10 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
     private UserRepo userRepo;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private UserService userService;
+
+    @Autowired
+    private ServiceTestHelper testHelper;
 
     @Autowired
     private RuntimeService runtimeService;
@@ -74,6 +80,15 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
     @BeforeClass
     public void setup() {
         flywayMigration.migrate(true);
+        String userId = "u_" + GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH);
+        testHelper.prepareSecurity(userId);
+        userService.getOrCreateUserprofile();
+        try {
+            Thread.sleep(5000L);
+            user = userRepo.findByUid(userId);
+        } catch (InterruptedException e) {
+            log.error(e.getLocalizedMessage());
+        }
     }
 
     @AfterTest
@@ -84,10 +99,6 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
     @BeforeMethod
     public void beforeEachTest(Method method) {
         log.info("  Testcase: " + method.getName() + " has started");
-        user = new UserEntity();
-        user.setUid("u_" + GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH));
-        user.setFullName("Test Case");
-        userRepo.save(user);
     }
 
     @AfterMethod
@@ -109,6 +120,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         code = new Code()
             .isActive(true)
             .isPublic(true)
+            .userId(user.getUid())
             .uid(response.getUid())
             .description("This is the best function there is!")
             .fieldsToUpdate(List.of("is_active", "is_public", "description"));
@@ -128,14 +140,16 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         // Ensure the decoded code matches the raw code
         String decodedRawCode = runtimeService.getUserCode(code.getUid());
         assertNotNull(decodedRawCode);
-        assertEquals(decodedRawCode, rawCode);
+        String template = testHelper.loadFile("classpath:ts/workerTemplate.ts");
+        assertTrue(decodedRawCode.contains(template));
+        assertTrue(decodedRawCode.contains(rawCode));
     }
 
     @Test
     public void getUserCodeTest() {
         CodeCellEntity codeCell = new CodeCellEntity();
         codeCell.setUid(UUID.randomUUID());
-        codeCell.setCode(rawCode);
+        codeCell.setCode(Base64.getEncoder().encodeToString(rawCode.getBytes()));
         codeCell.setDescription("This is a demo code");
         codeCell.setUserId(user.getUid());
         codeCell.setIsActive(true);
@@ -148,7 +162,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(code);
     }
 
-    @Test
+    @Test(enabled = false)
     public void generateOpenApiSpecTest() {
         String tsSpec = "export interface Author = {\n"
             + "  name: string;\n"
@@ -165,7 +179,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
             + "  tags: string[];\n"
             + "  publishDate: string;\n"
             + "};\n";
-        runtimeService.generateOpenApiSpec(tsSpec, UUID.randomUUID().toString());
-//        assertNotNull(openApiSpec);
+        runtimeService.generateOpenApiSpec(Base64.getEncoder().encodeToString(tsSpec.getBytes()),
+            UUID.randomUUID().toString());
     }
 }

@@ -113,6 +113,36 @@
       }
     },
     "/e-result": {
+      "get": {
+        "tags": [
+          "runtime"
+        ],
+        "operationId": "getExecResult",
+        "summary": "Get result of completed execution",
+        "description": "Execution results are short-lived",
+        "parameters": [
+          {
+            "name": "uid",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecResultSync"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "runtime"
@@ -126,7 +156,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ExecResult"
+                "$ref": "#/components/schemas/ExecResultAsync"
               }
             }
           }
@@ -330,7 +360,24 @@
           }
         }
       },
-      "ExecResult":  {
+      "ExecResultSync":  {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object"
+          },
+          "std_out": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ExecResultAsync":  {
         "type": "object",
         "properties": {
           "uid": {

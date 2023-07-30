@@ -8,6 +8,7 @@ import com.gptlambda.api.props.EntitlementProps;
 import com.gptlambda.api.utils.security.firebase.SecurityFilter;
 import com.gptlambda.api.UserProfile;
 import com.gptlambda.api.UserProfileResponse;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ public class UserServiceImpl implements UserService {
         log.info("Creating new user with  uid = {}", newUser.getUid());
         userRepo.save(newUser);
         EntitlementEntity entitlements = new EntitlementEntity();
+        entitlements.setUid(UUID.randomUUID());
         entitlements.setUserId(userProfile.getUid());
         entitlements.setTimeout(entitlementProps.getTimeout());
         entitlementRepo.save(entitlements);

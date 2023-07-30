@@ -2,6 +2,7 @@ package com.gptlambda.api.utils;
 
 import com.gptlambda.api.UserProfile;
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,12 +42,21 @@ public class ServiceTestHelper {
     }
 
 
-    public static String loadFile(String fileName) throws IOException {
-        File file = ResourceUtils.getFile("classpath:testData/" + fileName);
-        return new String(Files.readAllBytes(file.toPath()));
+    public String loadFile(String path) {
+        File file = null;
+        try {
+            file = ResourceUtils.getFile(path);
+            try {
+                return new String(Files.readAllBytes(file.toPath()));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static String loadFromFile(String path) {
+    public String loadFromFile(String path) {
         InputStream resource = null;
         try {
             resource = new ClassPathResource(path).getInputStream();

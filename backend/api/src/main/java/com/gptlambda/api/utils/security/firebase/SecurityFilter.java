@@ -8,12 +8,12 @@ import com.gptlambda.api.utils.security.Credentials;
 import com.gptlambda.api.UserProfile;
 import com.gptlambda.api.utils.security.UnsecurePaths;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -55,15 +55,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
     private final FirebaseService firebaseService;
+    private final UnsecurePaths unsecurePaths;
 
   @Override
-  protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,
-                                  FilterChain filterChain){
+  protected void doFilterInternal(HttpServletRequest httpServletRequest,
+      @NotNull HttpServletResponse httpServletResponse,
+      @NotNull FilterChain filterChain) {
     // All non-preflight requests must have a valid authorization token
     boolean methodExcluded = Stream.of("options")
       .anyMatch(method -> httpServletRequest.getMethod().toLowerCase().contains(method));
-    boolean uriExcluded = UnsecurePaths.paths()
-      .anyMatch(uri -> httpServletRequest.getRequestURI().toLowerCase().contains(uri));
+    boolean uriExcluded = unsecurePaths.allow(httpServletRequest.getRequestURI());
     if (!(methodExcluded || uriExcluded)) {
       verifyToken(httpServletRequest);
     }

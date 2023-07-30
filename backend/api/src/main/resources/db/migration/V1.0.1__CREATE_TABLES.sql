@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.code_cell (
     description varchar(255),
     code varchar,
     interfaces varchar,
-    openapi_schema varchar,
+    json_schema varchar,
     version varchar(32),
     slug varchar(32),
     reason_not_deployable varchar(255),

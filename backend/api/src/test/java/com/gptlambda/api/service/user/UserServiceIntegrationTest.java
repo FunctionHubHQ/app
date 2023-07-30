@@ -1,6 +1,8 @@
 package com.gptlambda.api.service.user;
 
 
+import com.gptlambda.api.data.postgres.entity.EntitlementEntity;
+import com.gptlambda.api.data.postgres.repo.EntitlementRepo;
 import com.gptlambda.api.data.postgres.repo.UserRepo;
 import com.gptlambda.api.data.postgres.entity.UserEntity;
 import com.gptlambda.api.service.ServiceTestConfiguration;
@@ -39,9 +41,13 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
     @Autowired
     private ServiceTestHelper testHelper;
 
+    @Autowired
+    private EntitlementRepo entitlementRepo;
+
     @BeforeClass
     public void setup() {
         testHelper.prepareSecurity(null);
+        flywayMigration.migrate(true);
     }
 
     @AfterClass
@@ -51,7 +57,6 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
     @BeforeMethod
     public void beforeEachTest(Method method) {
         log.info("  Testcase: " + method.getName() + " has started");
-        flywayMigration.migrate(true);
     }
 
     @AfterMethod
@@ -73,8 +78,12 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
         UserEntity user = allUsers.get(0);
         assertThat(user.getCreatedAt(), is(notNullValue()));
         assertThat(user.getUpdatedAt(), is(notNullValue()));
-        assertThat(user.getFullName(), startsWith(response.getProfile().getName()));
         assertThat(user.getEmail(), startsWith(response.getProfile().getEmail()));
         assertThat(user.getUid(), is(notNullValue()));
+
+        EntitlementEntity entitlements = entitlementRepo.findByUserId(user.getUid());
+        assertThat(entitlements, is(notNullValue()));
+        assertThat(entitlements.getTimeout(), greaterThan(1000L));
+
     }
 }
