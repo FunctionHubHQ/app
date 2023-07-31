@@ -7,6 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
@@ -33,7 +36,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -154,39 +159,33 @@ public class RuntimeServiceImpl implements RuntimeService {
     if (!ObjectUtils.isEmpty(execResult.getFcmToken()) && !ObjectUtils.isEmpty(execResult.getUid())) {
       ExecResultSync execResultSync = new ExecResultSync();
       String uid = parseUid(execResult.getUid());
-      try {
-        validateCodeCell(execResult, uid);
-        execResultSync.setUid(uid);
-        Message.Builder builder = Message.builder();
-        builder.putData("uid", uid);
-        builder.putData("type", MessageType.EXEC_RESULT);
-        if (!ObjectUtils.isEmpty(execResult.getResult())) {
-          String o = secureString(objectMapper.writeValueAsString(execResult.getResult()));
-          builder.putData("result", o);
-          execResultSync.setResult(o);
-          log.info("{} result: {}", uid, o);
-        }
-        if (!ObjectUtils.isEmpty(execResult.getError())) {
-          String error = secureString(execResult.getError());
-          log.error("{} error: {}", uid, error);
-          builder.putData("error", error);
-          execResultSync.setError(error);
-        }
-        if (!ObjectUtils.isEmpty(execResult.getStdOut())) {
-          String stdout = secureString(String.join("\n", execResult.getStdOut())
-              .replace("\\n", "\n"));
-          log.info("{} stdout: {}", uid, stdout);
-          builder.putData("std_out", stdout);
-          execResultSync.setStdOut(stdout);
-        }
-        executionResults.put(execResult.getUid().split("@")[0], execResultSync);
-        Message message = builder.setToken(execResult.getFcmToken()).build();
-        sendFcmMessage(message);
-      } catch (JsonProcessingException e) {
-        log.error("{}.submitExecutionTask: {}",
-            getClass().getSimpleName(),
-            e.getMessage());
+      validateCodeCell(execResult, uid);
+      execResultSync.setUid(uid);
+      Message.Builder builder = Message.builder();
+      builder.putData("uid", uid);
+      builder.putData("type", MessageType.EXEC_RESULT);
+      if (!ObjectUtils.isEmpty(execResult.getResult())) {
+        String o = secureString(new Gson().toJson(execResult.getResult()));
+        builder.putData("result", o);
+        execResultSync.setResult(o);
+        log.info("{} result: {}", uid, o);
       }
+      if (!ObjectUtils.isEmpty(execResult.getError())) {
+        String error = secureString(execResult.getError());
+        log.error("{} error: {}", uid, error);
+        builder.putData("error", error);
+        execResultSync.setError(error);
+      }
+      if (!ObjectUtils.isEmpty(execResult.getStdOut())) {
+        String stdout = secureString(String.join("\n", execResult.getStdOut())
+            .replace("\\n", "\n"));
+        log.info("{} stdout: {}", uid, stdout);
+        builder.putData("std_out", stdout);
+        execResultSync.setStdOut(stdout);
+      }
+      executionResults.put(execResult.getUid().split("@")[0], execResultSync);
+      Message message = builder.setToken(execResult.getFcmToken()).build();
+      sendFcmMessage(message);
     }
     return new GenericResponse().status("ok");
   }
@@ -342,21 +341,9 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(specResult.getUid()));
       if (codeCell != null) {
         if (format.equals("json")) {
-          try {
-            JsonNode node = objectMapper.readValue(spec, JsonNode.class)
-                .get("definitions").get("RequestEntity");
-            TypeReference<HashMap<String, Object>> typeRef = new TypeReference<>() { };
-            Map<String, Object> dto = objectMapper.readValue(node.traverse(),
-                typeRef);
-            dto.remove("additionalProperties");
-            String requestDto = objectMapper.writeValueAsString(dto);
-            codeCell.setJsonSchema(requestDto);
-            jsonSchema.put(codeCell.getUid().toString(), requestDto);
-          } catch (IOException e) {
-            log.error("{}.handleSpecResult: {}",
-                getClass().getSimpleName(),
-                e.getMessage());
-          }
+          String requestDto = constructDto(spec);
+          codeCell.setJsonSchema(constructDto(spec));
+          jsonSchema.put(codeCell.getUid().toString(), requestDto);
         } else if (format.equals("ts")) {
           codeCell.setInterfaces(Base64.getEncoder().encodeToString(spec.getBytes()));
         }
@@ -366,6 +353,80 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
     }
     return new GenericResponse().error("Something went wrong");
+  }
+
+  private String constructDto(String spec) {
+    try {
+      Map<String, Object> cleanObjects = new HashMap<>();
+      Map<String, Object> lookupObjects = new HashMap<>();
+      Map<String, Object> mergedObject = new HashMap<>();
+      Set<String> refs = new HashSet<>();
+      JsonNode node = objectMapper.readValue(spec, JsonNode.class)
+          .get("definitions");
+      JsonObject jsonObject = (new JsonParser()).parse(
+              objectMapper.writeValueAsString(node))
+          .getAsJsonObject();
+      walkSchema(jsonObject, cleanObjects, refs, lookupObjects);
+      if (refs.size() > 0) {
+        jsonObject = (new JsonParser()).parse(
+                new Gson().toJson(cleanObjects))
+            .getAsJsonObject();
+        mergeRefs(jsonObject, mergedObject, lookupObjects);
+      }
+      return new Gson().toJson(mergedObject.get("RequestEntity"));
+    } catch (IOException e) {
+      log.error("{}.handleSpecResult: {}",
+          getClass().getSimpleName(),
+          e.getMessage());
+    }
+    return null;
+  }
+
+  private void mergeRefs(JsonObject schema, Map<String, Object> objects,
+      Map<String, Object> lookupObjects) {
+    schema.keySet().forEach(key -> {
+      Object value = schema.get(key);
+      if (key.equals("$ref")) {
+        value = lookupObjects.get(schema.get(key).getAsString());
+        value = (new JsonParser()).parse(
+                new Gson().toJson(value))
+            .getAsJsonObject();
+      }
+      if (value instanceof JsonObject childValue) {
+        Map<String, Object> currentObject = new HashMap<>();
+        mergeRefs(childValue, currentObject, lookupObjects);
+        if (key.equals("$ref")) {
+          objects.putAll(currentObject);
+        } else {
+          objects.put(key, currentObject);
+        }
+      } else  {
+        objects.put(key, value);
+      }
+    });
+  }
+
+  private void walkSchema(JsonObject schema, Map<String, Object> objects, Set<String> refs,
+      Map<String, Object> lookupObjects) {
+    schema.keySet().forEach(key -> {
+      Object value = schema.get(key);
+      if (key.equals("$ref")) {
+        refs.add(value.toString());
+      }
+      if (value instanceof JsonObject) {
+        Map<String, Object> currentObject = new HashMap<>();
+        JsonObject childValue = (JsonObject) value;
+        if (childValue.get("type") != null && childValue.get("type").toString()
+            .replace("\"","")
+            .equals("object") || childValue.get("enum") != null) {
+          lookupObjects.put("#/definitions/" + key, currentObject);
+        }
+        walkSchema(childValue, currentObject, refs, lookupObjects);
+        objects.put(key, currentObject);
+      } else if (!key.equals("additionalProperties"))  {
+        objects.put(key, value);
+      }
+    });
   }
 
   @Override
@@ -402,23 +463,23 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   private void submitExecutionTask(Object body, String url) {
-      try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
-        HttpPost httpPost = new HttpPost(url);
-        StringEntity entityBody = getEntityBody(body);
-        httpPost.setEntity(entityBody);
-        CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
-        httpResponse.close();
-      } catch (IOException e) {
-        log.error("{}.submitExecutionTask: {}",
-            getClass().getSimpleName(),
-            e.getMessage());
-      }
+    try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
+      HttpPost httpPost = new HttpPost(url);
+      StringEntity entityBody = getEntityBody(body);
+      httpPost.setEntity(entityBody);
+      CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
+      httpResponse.close();
+    } catch (IOException e) {
+      log.error("{}.submitExecutionTask: {}",
+          getClass().getSimpleName(),
+          e.getMessage());
+    }
   }
 
   private StringEntity getEntityBody(Object body) {
     try {
-      return new StringEntity(objectMapper.writeValueAsString(body));
-    } catch (JsonProcessingException | UnsupportedEncodingException e) {
+      return new StringEntity(new Gson().toJson(body));
+    } catch (UnsupportedEncodingException e) {
       log.error("{}.getEntityBody: {}",
           getClass().getSimpleName(),
           e.getMessage());

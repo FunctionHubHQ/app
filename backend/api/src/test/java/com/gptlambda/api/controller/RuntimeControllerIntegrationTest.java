@@ -85,36 +85,37 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     private UserEntity user;
     private String authToken;
 
-    private final String interfaces = "interface Author {\n"
-        + "  name: string;\n"
-        + "  image: string;\n"
-        + "  designation: string;\n"
-        + "};\n"
-        + "\nexport interface RequestEntity {\n"
-        + "    /**\n"
-        + "     * The name of the city I am interested in\n"
-        + "     */\n"
-        + "    location?: string\n"
+    private final String interfaces = "type TempUnit = \"CELCIUS\" | \"FAHRENHEIT\";\n"
+        + "\n"
+        + "export interface RequestEntity {\n"
+        + "  /**\n"
+        + "   * The city and state, e.g. San Francisco, CA\n"
+        + "   */\n"
+        + "  location: string,\n"
+        + "  unit?: TempUnit\n"
         + "}\n"
         + "\n"
         + "export interface ResponseEntity {\n"
-        + "    message?: string,\n"
-        + "    random?: number,\n"
-        + "    author: Author[];\n"
-        + "    time?: string\n"
+        + "    location?: string,\n"
+        + "    temperature?: string,\n"
+        + "    unit?: TempUnit,\n"
+        + "    forecast: string[],\n"
+        + "    current_time: string\n"
         + "}";
     private final String code = "import moment from \"npm:moment\";\n"
         + "\n"
-        + "function getRandomInt(max) {\n"
-        + "  return Math.floor(Math.random() * max);\n"
+        + "async function getForecast(): string[] {\n"
+        + "  return [\"rainy\", \"windy\"];\n"
         + "}\n"
         + "\n"
         + "export async function handler(request: RequestEntity): Promise<ResponseEntity> {\n"
-        + "    console.log(\"Request Payload: \", request);\n"
-        + "    return {\n"
-        + "    message: `Your location is: ${request.location}`,\n"
-        + "    random: getRandomInt(100),\n"
-        + "    time: moment().format('MMMM Do YYYY, h:mm:ss a')\n"
+        + "  console.log(\"Inside child worker\")\n"
+        + "  return {\n"
+        + "  location: request.location,\n"
+        + "   temperature: \"35\",\n"
+        + "   unit: request.unit,\n"
+        + "   forecast: await getForecast(),\n"
+        + "   current_time: moment().format('MMMM Do YYYY, h:mm:ss a')\n"
         + "  };\n"
         + "}";
 
@@ -182,7 +183,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
         ExecResultSync execResult = objectMapper.readValue(execResultStr, ExecResultSync.class);
         assertNotNull(execResult);
-        assertTrue(execResult.getStdOut().contains(city));
+        assertTrue(execResult.getStdOut().contains("child"));
 
         // 4. Deploy it
         String deployResponseStr = request("/deploy",
@@ -197,6 +198,10 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResponse.getUid()));
         assertTrue(codeCell.getDeployed());
         assertNotNull(runtimeService.getJsonSchema(updateResponse.getUid()));
+
+        // 5. Make GPT function call
+        int x = 1;
+
     }
 
     private String request(String path, String httpMethod, Object payload) {
