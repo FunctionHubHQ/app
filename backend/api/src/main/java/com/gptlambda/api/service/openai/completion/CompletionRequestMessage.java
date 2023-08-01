@@ -1,5 +1,7 @@
 package com.gptlambda.api.service.openai.completion;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.gptlambda.api.dto.GPTFunctionCall;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CompletionMessage {
+public class CompletionRequestMessage {
   private String role;
   private String content;
 }

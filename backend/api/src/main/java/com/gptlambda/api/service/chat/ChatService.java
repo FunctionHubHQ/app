@@ -1,7 +1,9 @@
 package com.gptlambda.api.service.chat;
 
 
-import com.gptlambda.api.service.openai.completion.CompletionMessage;
+import com.gptlambda.api.GLCompletionResponse;
+import com.gptlambda.api.GLCompletionTestRequest;
+import com.gptlambda.api.dto.GPTFunction;
 import com.gptlambda.api.service.openai.completion.CompletionRequest;
 import java.util.List;
 
@@ -10,9 +12,22 @@ import java.util.List;
  */
 public interface ChatService {
 
-  CompletionRequest buildGptRequest(String query, String fcmToken,  String productSku);
-  void callGpt(String query, String fcmToken, String productSku);
-  void addQueryToQueue(String query, String fcmToken, String productSku);
-  String queryBuilder(String query, List<CompletionMessage> conversationHistory, String productSku);
+  CompletionRequest buildGptRequest(String prompt, List<GPTFunction> functions, String userId);
+//  void callGpt(String query, String fcmToken, String productSku);
+//  void addQueryToQueue(String query, String fcmToken, String productSku);
+//  String queryBuilder(String query, List<CompletionMessage> conversationHistory, String productSku);
+
+
+
+  /**
+   * Run user GPT completion test request. In production, send the response back to the client
+   * via FCM. That way, users don't exploit this route for deployed use case. This route has
+   * different usage limitations that are more appropriate for testing. Dev use case is for
+   * local frontend development.
+   *
+   * @param glCompletionRequest
+   * @return
+   */
+  GLCompletionResponse gptCompletionTest(GLCompletionTestRequest glCompletionRequest);
 
 }

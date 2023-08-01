@@ -1,6 +1,7 @@
 package com.gptlambda.api.service.openai.completion;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.gptlambda.api.dto.GPTFunction;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,6 +40,11 @@ public class CompletionRequest {
      * Try 0.9 for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer.
      */
     Double temperature;
+
+    List<GPTFunction> functions;
+
+    @JsonProperty("function_call")
+    String functionCall;
 
 //    /**
 //     * An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of
@@ -132,5 +138,5 @@ public class CompletionRequest {
      *         {"role": "user", "content": "Where was it played?"}
      *     ])
      */
-    List<CompletionMessage> messages;
+    List<CompletionRequestMessage> messages;
 }
