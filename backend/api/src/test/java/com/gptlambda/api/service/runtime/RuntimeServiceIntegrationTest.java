@@ -109,8 +109,8 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         String encodedCode = Base64.getEncoder().encodeToString(rawCode.getBytes());
         Code code = new Code()
             .code(encodedCode)
-            .userId(user.getUid())
-            .functionName("theVeryBestFunction");
+            .userId(user.getUid());
+//            .functionName("theVeryBestFunction");
         CodeUpdateResponse response = runtimeService.updateCode(code);
         assertNotNull(response);
         assertNotNull(response.getUid());
@@ -120,8 +120,8 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
             .isPublic(true)
             .userId(user.getUid())
             .uid(response.getUid())
-            .description("This is the best function there is!")
-            .fieldsToUpdate(List.of("is_active", "is_public", "description"));
+//            .description("This is the best function there is!")
+            .fieldsToUpdate(List.of("is_active", "is_public"));
 
         response = runtimeService.updateCode(code);
         assertNotNull(response);

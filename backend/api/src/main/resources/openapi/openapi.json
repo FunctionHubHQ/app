@@ -241,6 +241,39 @@
         }
       }
     },
+    "/gpt-completion/test": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Call GPT completion endpoint",
+        "description": "Call GPT completion endpoint",
+        "operationId": "gptCompletionTest",
+        "requestBody": {
+          "required": true,
+          "description": "GPT Completion request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GLCompletionTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "GPT completion response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GLCompletionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/code/{uid}": {
       "get": {
         "tags": [
@@ -305,6 +338,41 @@
       }
     },
     "schemas": {
+      "GLCompletionTestRequest":  {
+        "type": "object",
+        "properties": {
+          "code_id": {
+            "type": "string",
+            "description": "Code cell uid"
+          },
+          "fcm_token": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          }
+        }
+      },
+      "GLCompletionResponse":  {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string"
+          },
+          "code_cell_id": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "fcm_token": {
+            "type": "string"
+          }
+        }
+      },
       "Code":  {
         "type": "object",
         "properties": {
@@ -318,20 +386,11 @@
           "code": {
             "type": "string"
           },
-          "interfaces": {
-            "type": "string"
-          },
           "is_public": {
             "type": "boolean"
           },
           "is_active": {
             "type": "boolean"
-          },
-          "function_name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
           },
           "updated_at": {
             "type": "integer",

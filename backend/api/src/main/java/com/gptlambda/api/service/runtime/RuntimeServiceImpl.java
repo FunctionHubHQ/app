@@ -1,7 +1,5 @@
 package com.gptlambda.api.service.runtime;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -34,13 +32,16 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -207,13 +208,25 @@ public class RuntimeServiceImpl implements RuntimeService {
   private void validateCodeCell(ExecResultAsync execResult, String uid) {
     CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
     if (codeCell != null) {
-      if (!ObjectUtils.isEmpty(execResult.getResult())) {
-        codeCell.setIsDeployable(true);
-        codeCell.setReasonNotDeployable(null);
-        codeCellRepo.save(codeCell);
-      } else if (!ObjectUtils.isEmpty(execResult.getError())) {
+      String error = null;
+      if (ObjectUtils.isEmpty(codeCell.getFunctionName())) {
+        error = "Please provide a function name and description";
+      } else if (ObjectUtils.isEmpty(codeCell.getJsonSchema())) {
+        error = "Missing request/response interface definitions";
+      } else {
+        if (!ObjectUtils.isEmpty(execResult.getResult())) {
+          codeCell.setIsDeployable(true);
+          codeCell.setReasonNotDeployable(null);
+          codeCellRepo.save(codeCell);
+        } else if (!ObjectUtils.isEmpty(execResult.getError())) {
+          error = "Functions with unresolved errors cannot be deployed";
+        } else {
+          error = "Your function must have a return value";
+        }
+      }
+      if (error != null) {
         codeCell.setIsDeployable(false);
-        codeCell.setReasonNotDeployable("Functions with unresolved errors cannot be deployed");
+        codeCell.setReasonNotDeployable(error);
         codeCellRepo.save(codeCell);
       }
     }
@@ -227,23 +240,28 @@ public class RuntimeServiceImpl implements RuntimeService {
   @Override
   public CodeUpdateResponse updateCode(Code code) {
     String userId = code.getUserId();
+    String rawCode = null;
     CodeCellEntity updatedCell = null;
     if (!ObjectUtils.isEmpty(userId)) {
       if (ObjectUtils.isEmpty(code.getUid())) {
+        if (!ObjectUtils.isEmpty(code.getCode())) {
+          rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
+        }
         CodeCellEntity codeCell = new CodeCellEntity();
         codeCell.setUid(UUID.randomUUID());
         codeCell.setCode(code.getCode());
-        codeCell.setDescription(code.getDescription());
+        codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
         codeCell.setUserId(userId);
         codeCell.setIsActive(isBelowActiveLimit(code.getUserId()));
         codeCell.setIsPublic(false);
-        codeCell.setFunctionName(code.getFunctionName());
-        codeCell.setSlug(slugify.toSlug(code.getFunctionName()));
+        codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
+        codeCell.setSlug(slugify.toSlug(codeCell.getFunctionName()));
         codeCell.setVersion(generateCodeVersion());
-        codeCell.setInterfaces(code.getInterfaces());
         if (!ObjectUtils.isEmpty(code.getParentId())) {
           codeCell.setParentId(UUID.fromString(code.getParentId()));
         }
+        codeCell.setDeployed(false);
+
         codeCellRepo.save(codeCell);
         updatedCell = codeCell;
       }
@@ -254,20 +272,29 @@ public class RuntimeServiceImpl implements RuntimeService {
             if (field.equals("code")) {
               codeCell.setCode(code.getCode());
               codeCell.setVersion(generateCodeVersion());
-            } else if (field.equals("description")) {
-              codeCell.setDescription(code.getDescription());
-            } else if (field.equals("is_active")) {
+              rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
+              codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
+              codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
+              codeCell.setSlug(slugify.toSlug(codeCell.getFunctionName()));
+            }
+//            else if (field.equals("description")) {
+//              codeCell.setDescription(code.getDescription());
+//            }
+            else if (field.equals("is_active")) {
               if (isBelowActiveLimit(userId) || !code.getIsActive()) {
                 codeCell.setIsActive(code.getIsActive());
               }
             } else if (field.equals("is_public")) {
               codeCell.setIsPublic(code.getIsPublic());
-            } else if (field.equals("function_name")) {
-              codeCell.setFunctionName(code.getFunctionName());
-              codeCell.setSlug(slugify.toSlug(code.getFunctionName()));
-            } else if (field.equals("interfaces")) {
-              codeCell.setInterfaces(code.getInterfaces());
             }
+
+//            else if (field.equals("function_name")) {
+//              codeCell.setFunctionName(code.getFunctionName());
+//              codeCell.setSlug(slugify.toSlug(code.getFunctionName()));
+//            }
+//            else if (field.equals("interfaces")) {
+//              codeCell.setInterfaces(code.getInterfaces());
+//            }
           }
           codeCell.setDeployed(false);
           codeCell.setUpdatedAt(LocalDateTime.now());
@@ -283,10 +310,44 @@ public class RuntimeServiceImpl implements RuntimeService {
         commitHistory.setMessage(null);
         commitHistory.setCode(updatedCell.getCode());
         commitHistoryRepo.save(commitHistory);
+        final CodeCellEntity cell = updatedCell;
+        Thread.startVirtualThread(() -> generateJsonSchema(
+            new String(Base64.getDecoder()
+                .decode(cell.getCode()
+                    .getBytes())), cell.getUid()
+                .toString()));
         return new CodeUpdateResponse().uid(updatedCell.getUid().toString());
       }
     }
     return new CodeUpdateResponse();
+  }
+
+  private String parseCodeComment(String rawCode, String property) {
+    StringJoiner joiner = new StringJoiner(" ");
+    if (!ObjectUtils.isEmpty(rawCode)) {
+      List<String> lines = new ArrayList<>(
+          List.of(rawCode
+          .replace("/", "")
+          .replace("*", "").split("\n")))
+          .stream().map(it -> it
+              .trim()
+              .strip()).toList();
+      boolean propertyStart = false, propertyEnd = false;
+      for (String line : lines) {
+        if (line.startsWith(property)) {
+          propertyStart = true;
+        }
+        if (propertyStart && line.startsWith("@") && !line.startsWith(property)) {
+          propertyEnd = true;
+        }
+        if (propertyStart && !propertyEnd) {
+          joiner.add(line.replace(property, "")
+              .replace("\n", "")
+              .strip());
+        }
+      }
+    }
+    return joiner.toString();
   }
 
   @Override
@@ -300,9 +361,9 @@ public class RuntimeServiceImpl implements RuntimeService {
             .userId(codeCell.getUserId())
             .isActive(codeCell.getIsActive())
             .isPublic(codeCell.getIsPublic())
-            .interfaces(codeCell.getInterfaces())
-            .description(codeCell.getDescription())
-            .functionName(codeCell.getFunctionName())
+//            .interfaces(codeCell.getInterfaces())
+//            .description(codeCell.getDescription())
+//            .functionName(codeCell.getFunctionName())
             .updatedAt(codeCell.getUpdatedAt().toEpochSecond(ZoneOffset.UTC))
             .createdAt(codeCell.getCreatedAt().toEpochSecond(ZoneOffset.UTC));
       }
@@ -311,9 +372,9 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public void generateJsonSchema(String interfaces, String uid) {
+  public void generateJsonSchema(String code, String uid) {
     GenerateSpecRequest request = new GenerateSpecRequest();
-    request.setFile(interfaces);
+    request.setFile(code);
     request.setEnv(sourceProps.getProfile());
     request.setUid(uid);
     request.setFrom("ts");
@@ -435,8 +496,6 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(execRequest.getUid()));
       if (codeCell != null) {
         if (codeCell.getIsDeployable()) {
-          generateJsonSchema(new String(Base64.getDecoder().decode(codeCell.getInterfaces().getBytes())),
-              codeCell.getUid().toString());
           codeCell.setDeployed(true);
           codeCellRepo.save(codeCell);
           return new GenericResponse().status("ok");

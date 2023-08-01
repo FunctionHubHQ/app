@@ -14,11 +14,14 @@ import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
 import com.gptlambda.api.ExecResultSync;
+import com.gptlambda.api.GLCompletionResponse;
+import com.gptlambda.api.GLCompletionTestRequest;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
 import com.gptlambda.api.data.postgres.entity.UserEntity;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
 import com.gptlambda.api.data.postgres.repo.UserRepo;
+import com.gptlambda.api.service.chat.ChatService;
 import com.gptlambda.api.service.runtime.RuntimeService;
 import com.gptlambda.api.service.token.TokenService;
 import com.gptlambda.api.service.user.UserService;
@@ -80,18 +83,26 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     private UserRepo userRepo;
 
     @Autowired
+    private ChatService chatService;
+
+    @Autowired
     private RuntimeService runtimeService;
 
     private UserEntity user;
     private String authToken;
-
-    private final String interfaces = "type TempUnit = \"CELCIUS\" | \"FAHRENHEIT\";\n"
+    private final String code = "import moment from \"npm:moment\";\n"
+        + "\n"
+        + "type TempUnit = \"CELCIUS\" | \"FAHRENHEIT\";\n"
         + "\n"
         + "export interface RequestEntity {\n"
         + "  /**\n"
         + "   * The city and state, e.g. San Francisco, CA\n"
         + "   */\n"
         + "  location: string,\n"
+        + "\n"
+        + "  /**\n"
+        + "   * Unit of temperature\n"
+        + "   */\n"
         + "  unit?: TempUnit\n"
         + "}\n"
         + "\n"
@@ -101,13 +112,19 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         + "    unit?: TempUnit,\n"
         + "    forecast: string[],\n"
         + "    current_time: string\n"
-        + "}";
-    private final String code = "import moment from \"npm:moment\";\n"
+        + "}\n"
         + "\n"
         + "async function getForecast(): string[] {\n"
         + "  return [\"rainy\", \"windy\"];\n"
         + "}\n"
         + "\n"
+        + "/**\n"
+        + " * @name get_city_time_and_weather\n"
+        + " * @summary Get the current time and weather of any given city. The city must\n"
+        + " *              be valid for us to be able to parse and lookup. Temperature unit is\n"
+        + " *              optional and will default to celcius.\n"
+        + " * @return A valid time and temp\n"
+        + " */\n"
         + "export async function handler(request: RequestEntity): Promise<ResponseEntity> {\n"
         + "  console.log(\"Inside child worker\")\n"
         + "  return {\n"
@@ -118,6 +135,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         + "   current_time: moment().format('MMMM Do YYYY, h:mm:ss a')\n"
         + "  };\n"
         + "}";
+
 
     @BeforeClass
     public void setup() {
@@ -151,13 +169,15 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @Test
     public void fullFlowTest() throws InterruptedException, JsonProcessingException {
-        String interfacesEncoded = Base64.getEncoder().encodeToString(interfaces.getBytes());
+//        String interfacesEncoded = Base64.getEncoder().encodeToString(interfaces.getBytes());
         String codeEncoded = Base64.getEncoder().encodeToString(code.getBytes());
 
         // 1. Create code cell
         String updateResponseStr = request("/update-code", "POST", new Code()
             .code(codeEncoded)
-            .interfaces(interfacesEncoded)
+//            .functionName("get_time_and_weather")
+//            .description("Gets the current time and weather of a given city")
+//            .interfaces(interfacesEncoded)
             .userId(user.getUid()));
 
         CodeUpdateResponse updateResponse = objectMapper
@@ -197,9 +217,16 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         Thread.sleep(5000L);
         CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResponse.getUid()));
         assertTrue(codeCell.getDeployed());
-        assertNotNull(runtimeService.getJsonSchema(updateResponse.getUid()));
+        String schema = runtimeService.getJsonSchema(updateResponse.getUid());
+        assertNotNull(schema);
 
         // 5. Make GPT function call
+        GLCompletionTestRequest completionRequest = new GLCompletionTestRequest();
+        completionRequest.setCodeId(updateResponse.getUid());
+        completionRequest.setUserId(user.getUid());
+        completionRequest.setPrompt("What is the current time and weather in Boston?");
+        GLCompletionResponse completionResponse = chatService.gptCompletionTest(completionRequest);
+        assertNotNull(completionResponse);
         int x = 1;
 
     }
