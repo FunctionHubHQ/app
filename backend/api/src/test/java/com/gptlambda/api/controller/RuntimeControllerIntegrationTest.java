@@ -1,10 +1,5 @@
 package com.gptlambda.api.controller;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
@@ -13,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
-import com.gptlambda.api.ExecResultSync;
+import com.gptlambda.api.ExecResultAsync;
 import com.gptlambda.api.GLCompletionResponse;
 import com.gptlambda.api.GLCompletionTestRequest;
 import com.gptlambda.api.GenericResponse;
@@ -169,15 +164,11 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @Test
     public void fullFlowTest() throws InterruptedException, JsonProcessingException {
-//        String interfacesEncoded = Base64.getEncoder().encodeToString(interfaces.getBytes());
         String codeEncoded = Base64.getEncoder().encodeToString(code.getBytes());
 
         // 1. Create code cell
         String updateResponseStr = request("/update-code", "POST", new Code()
             .code(codeEncoded)
-//            .functionName("get_time_and_weather")
-//            .description("Gets the current time and weather of a given city")
-//            .interfaces(interfacesEncoded)
             .userId(user.getUid()));
 
         CodeUpdateResponse updateResponse = objectMapper
@@ -188,22 +179,25 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String city = "Chicago, IL";
         Map<String, Object> payload = new HashMap<>();
         payload.put("location", city);
-        request("/run", "POST", new ExecRequest()
-                .fcmToken(UUID.randomUUID().toString())
-                .uid(updateResponse.getUid())
-                .payload(payload));
+        ExecRequest execRequest =  new ExecRequest()
+            .fcmToken(UUID.randomUUID().toString())
+            .uid(updateResponse.getUid())
+            .execId(UUID.randomUUID().toString())
+            .validate(true)
+            .payload(payload);
+        request("/run", "POST", execRequest);
 
         // 3. Fetch the result
         Thread.sleep(5000L);
-        String execResultStr = request("/e-result?uid=" + updateResponse.getUid(),
+        String execResultStr = request("/e-result?exec_id=" + execRequest.getExecId(),
             "GET", new ExecRequest()
             .fcmToken(UUID.randomUUID().toString())
             .uid(updateResponse.getUid())
             .payload(payload));
 
-        ExecResultSync execResult = objectMapper.readValue(execResultStr, ExecResultSync.class);
+        ExecResultAsync execResult = objectMapper.readValue(execResultStr, ExecResultAsync.class);
         assertNotNull(execResult);
-        assertTrue(execResult.getStdOut().contains("child"));
+        assertTrue(execResult.getStdOutStr().contains("child"));
 
         // 4. Deploy it
         String deployResponseStr = request("/deploy",
@@ -224,7 +218,8 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         GLCompletionTestRequest completionRequest = new GLCompletionTestRequest();
         completionRequest.setCodeId(updateResponse.getUid());
         completionRequest.setUserId(user.getUid());
-        completionRequest.setPrompt("What is the current time and weather in Boston?");
+        completionRequest.setFcmToken(UUID.randomUUID().toString());
+        completionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
         GLCompletionResponse completionResponse = chatService.gptCompletionTest(completionRequest);
         assertNotNull(completionResponse);
         int x = 1;

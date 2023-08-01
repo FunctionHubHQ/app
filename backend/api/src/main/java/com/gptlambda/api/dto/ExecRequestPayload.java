@@ -14,4 +14,6 @@ public class ExecRequestPayload {
   private String uid;
   private String fcmToken;
   private Long timeout;
+  private String execId;
+  private Boolean validate;
 }

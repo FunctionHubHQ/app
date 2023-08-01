@@ -122,7 +122,7 @@
         "description": "Execution results are short-lived",
         "parameters": [
           {
-            "name": "uid",
+            "name": "exec_id",
             "required": true,
             "in": "query",
             "schema": {
@@ -136,7 +136,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExecResultSync"
+                  "$ref": "#/components/schemas/ExecResultAsync"
                 }
               }
             }
@@ -419,23 +419,6 @@
           }
         }
       },
-      "ExecResultSync":  {
-        "type": "object",
-        "properties": {
-          "uid": {
-            "type": "string"
-          },
-          "result": {
-            "type": "object"
-          },
-          "std_out": {
-            "type": "string"
-          },
-          "error": {
-            "type": "string"
-          }
-        }
-      },
       "ExecResultAsync":  {
         "type": "object",
         "properties": {
@@ -445,14 +428,24 @@
           "fcm_token": {
             "type": "string"
           },
+          "exec_id": {
+            "type": "string"
+          },
+          "validate": {
+            "type": "boolean",
+            "default": false
+          },
           "result": {
-            "type": "object"
+            "type": "string"
           },
           "std_out": {
             "type": "array",
             "items": {
               "type": "string"
             }
+          },
+          "std_out-str": {
+            "type": "string"
           },
           "error": {
             "type": "string"
@@ -490,8 +483,15 @@
           "uid": {
             "type": "string"
           },
+          "exec_id": {
+            "type": "string"
+          },
           "fcm_token": {
             "type": "string"
+          },
+          "validate": {
+            "type": "boolean",
+            "default": true
           },
           "payload": {
             "type": "object",

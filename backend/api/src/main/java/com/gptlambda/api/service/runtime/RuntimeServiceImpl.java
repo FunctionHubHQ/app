@@ -1,5 +1,7 @@
 package com.gptlambda.api.service.runtime;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -12,7 +14,6 @@ import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
 import com.gptlambda.api.ExecResultAsync;
-import com.gptlambda.api.ExecResultSync;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.SpecResult;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
@@ -41,7 +42,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -67,6 +71,10 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final CommitHistoryRepo commitHistoryRepo;
   private final Slugify slugify;
   private final DenoProps denoProps;
+  private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+
+  // Define a unique version key to avoid conflicts
+  public final static String versionKey = "version_" + GPTLambdaUtils.generateUid(6);
 
   public static final class MessageType {
     public static final String EXEC_RESULT = "EXEC_RESULT";
@@ -76,6 +84,31 @@ public class RuntimeServiceImpl implements RuntimeService {
     public static final String FCM_TOKEN = "FCM_TOKEN";
     public static final String PRODUCT_INFO_REQUEST = "PRODUCT_INFO_REQUEST";
   }
+
+  @Override
+  public ExecResultAsync getExecutionResult(final String execId) {
+    // TODO: We should probably use a redis for this
+    Future<ExecResultAsync> task = executorService.submit(() -> {
+      ExecResultAsync result = null;
+      while (result == null) {
+        result = executionResults.get(execId);
+        if (result == null) {
+          Thread.sleep(10);
+        }
+      }
+      executionResults.remove(execId);
+      return result;
+    });
+    try {
+      return task.get();
+    } catch (InterruptedException | ExecutionException e) {
+      log.error("{}.handleSpecResult: {}",
+          getClass().getSimpleName(),
+          e.getMessage());
+    }
+    return new ExecResultAsync();
+  }
+
 
   @Override
   public GenericResponse exec(ExecRequest execRequest) {
@@ -90,19 +123,12 @@ public class RuntimeServiceImpl implements RuntimeService {
         request.setUid(execRequest.getUid() + "@" +version);
         request.setFcmToken(execRequest.getFcmToken());
         request.setTimeout(entitlements.getTimeout());
+        request.setValidate(execRequest.getValidate());
+        request.setExecId(execRequest.getExecId());
         Thread.startVirtualThread(() -> submitExecutionTask(request, getRuntimeUrl()));
       }
     }
     return new GenericResponse().status("ok");
-  }
-
-  @Override
-  public ExecResultSync getExecResult(String uid) {
-    ExecResultSync result = executionResults.get(uid);
-    if (result != null) {
-      executionResults.remove(uid);
-    }
-    return result;
   }
 
   @Override
@@ -158,33 +184,38 @@ public class RuntimeServiceImpl implements RuntimeService {
   @Override
   public GenericResponse handleExecResult(ExecResultAsync execResult) {
     if (!ObjectUtils.isEmpty(execResult.getFcmToken()) && !ObjectUtils.isEmpty(execResult.getUid())) {
-      ExecResultSync execResultSync = new ExecResultSync();
+      // TODO: No need to validate code in active use by gpt
+      ExecResultAsync execResultAsync = new ExecResultAsync();
       String uid = parseUid(execResult.getUid());
-      validateCodeCell(execResult, uid);
-      execResultSync.setUid(uid);
+      if (execResult.getValidate() != null && execResult.getValidate()) {
+        Thread.startVirtualThread(() -> validateCodeCell(execResult, uid));
+      }
+      execResultAsync.setUid(uid);
+      execResultAsync.setExecId(execResult.getExecId());
+      execResultAsync.setFcmToken(execResult.getFcmToken());
       Message.Builder builder = Message.builder();
       builder.putData("uid", uid);
       builder.putData("type", MessageType.EXEC_RESULT);
       if (!ObjectUtils.isEmpty(execResult.getResult())) {
         String o = secureString(new Gson().toJson(execResult.getResult()));
         builder.putData("result", o);
-        execResultSync.setResult(o);
+        execResultAsync.setResult(o);
         log.info("{} result: {}", uid, o);
       }
       if (!ObjectUtils.isEmpty(execResult.getError())) {
         String error = secureString(execResult.getError());
         log.error("{} error: {}", uid, error);
         builder.putData("error", error);
-        execResultSync.setError(error);
+        execResultAsync.setError(error);
       }
       if (!ObjectUtils.isEmpty(execResult.getStdOut())) {
         String stdout = secureString(String.join("\n", execResult.getStdOut())
             .replace("\\n", "\n"));
         log.info("{} stdout: {}", uid, stdout);
         builder.putData("std_out", stdout);
-        execResultSync.setStdOut(stdout);
+        execResultAsync.setStdOutStr(stdout);
       }
-      executionResults.put(execResult.getUid().split("@")[0], execResultSync);
+      executionResults.put(execResult.getExecId(), execResultAsync);
       Message message = builder.setToken(execResult.getFcmToken()).build();
       sendFcmMessage(message);
     }
@@ -209,6 +240,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
     if (codeCell != null) {
       String error = null;
+      // TODO: ensure function name is unique within the user's namespace
       if (ObjectUtils.isEmpty(codeCell.getFunctionName())) {
         error = "Please provide a function name and description";
       } else if (ObjectUtils.isEmpty(codeCell.getJsonSchema())) {
@@ -261,7 +293,6 @@ public class RuntimeServiceImpl implements RuntimeService {
           codeCell.setParentId(UUID.fromString(code.getParentId()));
         }
         codeCell.setDeployed(false);
-
         codeCellRepo.save(codeCell);
         updatedCell = codeCell;
       }
@@ -277,9 +308,6 @@ public class RuntimeServiceImpl implements RuntimeService {
               codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
               codeCell.setSlug(slugify.toSlug(codeCell.getFunctionName()));
             }
-//            else if (field.equals("description")) {
-//              codeCell.setDescription(code.getDescription());
-//            }
             else if (field.equals("is_active")) {
               if (isBelowActiveLimit(userId) || !code.getIsActive()) {
                 codeCell.setIsActive(code.getIsActive());
@@ -287,14 +315,6 @@ public class RuntimeServiceImpl implements RuntimeService {
             } else if (field.equals("is_public")) {
               codeCell.setIsPublic(code.getIsPublic());
             }
-
-//            else if (field.equals("function_name")) {
-//              codeCell.setFunctionName(code.getFunctionName());
-//              codeCell.setSlug(slugify.toSlug(code.getFunctionName()));
-//            }
-//            else if (field.equals("interfaces")) {
-//              codeCell.setInterfaces(code.getInterfaces());
-//            }
           }
           codeCell.setDeployed(false);
           codeCell.setUpdatedAt(LocalDateTime.now());
@@ -361,9 +381,6 @@ public class RuntimeServiceImpl implements RuntimeService {
             .userId(codeCell.getUserId())
             .isActive(codeCell.getIsActive())
             .isPublic(codeCell.getIsPublic())
-//            .interfaces(codeCell.getInterfaces())
-//            .description(codeCell.getDescription())
-//            .functionName(codeCell.getFunctionName())
             .updatedAt(codeCell.getUpdatedAt().toEpochSecond(ZoneOffset.UTC))
             .createdAt(codeCell.getCreatedAt().toEpochSecond(ZoneOffset.UTC));
       }
@@ -402,10 +419,13 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(specResult.getUid()));
       if (codeCell != null) {
         if (format.equals("json")) {
-          String requestDto = constructDto(spec);
-          codeCell.setJsonSchema(constructDto(spec));
-          jsonSchema.put(codeCell.getUid().toString(), requestDto);
+          Map<String, Object> requestDto  = injectVersion(constructDto(spec), codeCell.getVersion());
+          String requestDtoStr = new Gson().toJson(requestDto);
+          codeCell.setJsonSchema(requestDtoStr);
+          jsonSchema.put(codeCell.getUid().toString(), requestDtoStr);
         } else if (format.equals("ts")) {
+          // TODO: this field is not used for anything so may remove it. We'll never need to convert
+          // to TypeScript
           codeCell.setInterfaces(Base64.getEncoder().encodeToString(spec.getBytes()));
         }
         codeCell.setUpdatedAt(LocalDateTime.now());
@@ -416,7 +436,35 @@ public class RuntimeServiceImpl implements RuntimeService {
     return new GenericResponse().error("Something went wrong");
   }
 
-  private String constructDto(String spec) {
+  private Map<String, Object> injectVersion(Map<String, Object> requestDto, String version) {
+    TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
+    TypeReference<List<String>> listTypeRef = new TypeReference<>() {};
+    try {
+      Map<String, Object> modifiedDto = objectMapper.readValue(
+          new Gson().toJson(requestDto.get("RequestEntity")),
+          typeRef);
+      List<String> required = objectMapper.readValue(new Gson().toJson(modifiedDto.get("required")),
+          listTypeRef);
+      Map<String, Object> properties = objectMapper.readValue(new Gson().toJson(modifiedDto.get("properties")),
+          typeRef);
+      Map<String, Object> field = new HashMap<>();
+      field.put("type", "string");
+      field.put("default", version);
+      properties.put(versionKey, field);
+      required.add(versionKey);
+      modifiedDto.put("required", required);
+      modifiedDto.put("properties", properties);
+      return modifiedDto;
+    } catch (JsonProcessingException e) {
+      log.error("{}.handleSpecResult: {}",
+          getClass().getSimpleName(),
+          e.getMessage());
+    }
+    return requestDto;
+
+  }
+
+  private Map<String, Object> constructDto(String spec) {
     try {
       Map<String, Object> cleanObjects = new HashMap<>();
       Map<String, Object> lookupObjects = new HashMap<>();
@@ -424,23 +472,23 @@ public class RuntimeServiceImpl implements RuntimeService {
       Set<String> refs = new HashSet<>();
       JsonNode node = objectMapper.readValue(spec, JsonNode.class)
           .get("definitions");
-      JsonObject jsonObject = (new JsonParser()).parse(
+      JsonObject jsonObject = JsonParser.parseString(
               objectMapper.writeValueAsString(node))
           .getAsJsonObject();
       walkSchema(jsonObject, cleanObjects, refs, lookupObjects);
       if (refs.size() > 0) {
-        jsonObject = (new JsonParser()).parse(
+        jsonObject = JsonParser.parseString(
                 new Gson().toJson(cleanObjects))
             .getAsJsonObject();
         mergeRefs(jsonObject, mergedObject, lookupObjects);
       }
-      return new Gson().toJson(mergedObject.get("RequestEntity"));
+      return mergedObject;
     } catch (IOException e) {
       log.error("{}.handleSpecResult: {}",
           getClass().getSimpleName(),
           e.getMessage());
     }
-    return null;
+    return new HashMap<>();
   }
 
   private void mergeRefs(JsonObject schema, Map<String, Object> objects,
@@ -449,7 +497,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       Object value = schema.get(key);
       if (key.equals("$ref")) {
         value = lookupObjects.get(schema.get(key).getAsString());
-        value = (new JsonParser()).parse(
+        value = JsonParser.parseString(
                 new Gson().toJson(value))
             .getAsJsonObject();
       }
@@ -474,9 +522,8 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (key.equals("$ref")) {
         refs.add(value.toString());
       }
-      if (value instanceof JsonObject) {
+      if (value instanceof JsonObject childValue) {
         Map<String, Object> currentObject = new HashMap<>();
-        JsonObject childValue = (JsonObject) value;
         if (childValue.get("type") != null && childValue.get("type").toString()
             .replace("\"","")
             .equals("object") || childValue.get("enum") != null) {

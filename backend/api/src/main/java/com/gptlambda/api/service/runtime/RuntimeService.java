@@ -4,7 +4,6 @@ import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
 import com.gptlambda.api.ExecResultAsync;
-import com.gptlambda.api.ExecResultSync;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.SpecResult;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,15 +19,15 @@ public interface RuntimeService {
    * In production, we use FCM messaging to send the result to the client.
    * Results are purged after one consumption.
    */
-  ConcurrentMap<String, ExecResultSync> executionResults = new ConcurrentHashMap<>();
+  ConcurrentMap<String, ExecResultAsync> executionResults = new ConcurrentHashMap<>();
 
   /**
    * For dev/test use due to transaction issues
    */
   ConcurrentMap<String, String> jsonSchema = new ConcurrentHashMap<>();
 
+  ExecResultAsync getExecutionResult(String executionId);
   GenericResponse exec(ExecRequest execRequest);
-  ExecResultSync getExecResult(String uid);
   String getUserCode(String uid);
   GenericResponse handleExecResult(ExecResultAsync execResult);
   String generateCodeVersion();

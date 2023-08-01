@@ -94,11 +94,14 @@ async function sendResult(ctx, result, stdout, error) {
   const data = {
     fcm_token: body.fcmToken,
     uid: body.uid,
+    exec_id: body.execId,
+    validate: body.validate,
     error: error,
-    result: result,
+    result: JSON.stringify(result),
     std_out: stdout,
   }
-  await fetch(getHost(body.env) + "/e-result", {
+  const url = getHost(body.env) + "/e-result";
+  const sendStatus = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -106,6 +109,7 @@ async function sendResult(ctx, result, stdout, error) {
     },
     body: JSON.stringify(data),
   });
+  console.log(`${ctx.request.method} - Egress - ${url} - ${sendStatus.status}`);
 }
 
 async function executeUserCode(ctx) {
@@ -121,7 +125,7 @@ const app = new Application();
 app.use(async (ctx, next) => {
     await next();
     const rt = ctx.response.headers.get("X-Response-Time");
-    console.log(`${ctx.request.method} ${ctx.request.url} - ${rt}`);
+    console.log(`${ctx.request.method} - Ingress - ${ctx.request.url} - ${rt}`);
 });
   
   // Timing

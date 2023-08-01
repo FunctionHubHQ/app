@@ -1,11 +1,12 @@
 package com.gptlambda.api.service.chat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.gptlambda.api.ExecRequest;
+import com.gptlambda.api.ExecResultAsync;
 import com.gptlambda.api.GLCompletionResponse;
 import com.gptlambda.api.GLCompletionTestRequest;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
@@ -18,9 +19,11 @@ import com.gptlambda.api.props.OpenAiProps;
 import com.gptlambda.api.props.RabbitMQProps;
 import com.gptlambda.api.props.SourceProps;
 import com.gptlambda.api.service.openai.completion.CompletionRequest;
+import com.gptlambda.api.service.openai.completion.CompletionRequestFunctionalCall;
 import com.gptlambda.api.service.openai.completion.CompletionResult;
 import com.gptlambda.api.service.openai.completion.CompletionRequestMessage;
 import com.gptlambda.api.service.runtime.RuntimeService;
+import com.gptlambda.api.service.runtime.RuntimeServiceImpl;
 import com.gptlambda.api.service.utils.JobSemaphore;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -76,6 +79,40 @@ public class ChatServiceImpl implements ChatService {
         .temperature(openAiProps.getTemp())
         .messages(messages)
         .build();
+  }
+
+  @Override
+  public CompletionRequestFunctionalCall buildGptRequestFunctionalCall(String prompt,
+      String functionResponse, String functionName, String userId) {
+    String content = String.format("PROMPT: %s\n\nANSWER:", prompt);
+    log.info("Generated query: {}", content);
+    Map<String, Object> userContent = new HashMap<>();
+    userContent.put("role", "user");
+    userContent.put("content", content);
+
+    Map<String, Object> functionContent = new HashMap<>();
+    functionContent.put("role", "function");
+    functionContent.put("content", functionResponse);
+    functionContent.put("name", functionName);
+    List<Map<String, Object>> messages = new ArrayList<>(List.of(
+        userContent,
+        functionContent
+    ));
+    return CompletionRequestFunctionalCall
+        .builder()
+        .user(userId)
+
+        .model(openAiProps.getCompletionModel())
+        .maxTokens(1000) // TODO: need to be able to bubble up request error messages back to the user
+//        .maxTokens(openAiProps.getMaxTokens())
+        .temperature(openAiProps.getTemp())
+        .messages(messages)
+        .build();
+  }
+
+  @Override
+  public void handleFunctionCallResult(ExecResultAsync execResultAsync) {
+
   }
 
 //  List<CompletionMessage> getChatHistory(String fcmToken, String productSku) {
@@ -227,6 +264,8 @@ public class ChatServiceImpl implements ChatService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(glCompletionRequest.getCodeId()));
 
       if (codeCell != null) {
+        // TODO: Get all the functions owned by this user
+        // We don't need code cell look up here
         GPTFunction function = new GPTFunction();
         function.setName(codeCell.getFunctionName());
         function.setDescription(codeCell.getDescription());
@@ -243,9 +282,46 @@ public class ChatServiceImpl implements ChatService {
             String content = result.getChoices().get(0).getMessage().getContent();
             GPTFunctionCall functionCall = result.getChoices().get(0).getMessage().getFunctionCall();
             if (ObjectUtils.isEmpty(content) && functionCall != null) {
+              functionCall.parseRequestPayload(objectMapper);
+              if (ObjectUtils.isEmpty(functionCall.getRequestPayload())) {
+                // TODO return the empty response to GPT
+              } else {
+//                Map<String, Object> payload= functionCall.getRequestPayload();
+//                String version = payload.remove(RuntimeServiceImpl.versionKey).toString();
 
-              int x = 1;
-//              runtimeService.exec()
+                // Get the code correct code by version in PROD. Dev/testing should use the provided code cell uid
+//                CodeCellEntity deployedCodeCell = codeCellRepo.findByVersion(version);
+                ExecRequest execRequest = new ExecRequest()
+//                    .uid(deployedCodeCell.getUid().toString())
+                    .uid(codeCell.getUid().toString())
+                    .payload(functionCall.getRequestPayload())
+                    .execId(UUID.randomUUID().toString())
+                    .validate(false)
+                    .fcmToken(glCompletionRequest.getFcmToken());
+                runtimeService.exec(execRequest);
+                ExecResultAsync execResultAsync = runtimeService.getExecutionResult(execRequest.getExecId());
+
+                // Call GPT with the function response
+                CompletionRequestFunctionalCall requestFunctionalCall = buildGptRequestFunctionalCall(
+                    glCompletionRequest.getPrompt(), execResultAsync.getResult(), codeCell.getFunctionName(),
+                    codeCell.getUserId());
+
+                json = objectMapper.writeValueAsString(requestFunctionalCall);
+                log.info("Full functional request: {}", json);
+                result = gptHttpRequest(json);
+                if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
+                    result.getChoices().get(0).getMessage() != null) {
+                  String answer = result.getChoices().get(0).getMessage().getContent();
+                  log.info("Response: {}", answer);
+                }
+
+
+
+
+                int x = 1;
+
+              }
+
             }
 //            Thread.startVirtualThread(
 //                () -> saveToChatHistory(response, productSku, fcmToken, true));
@@ -275,16 +351,17 @@ public class ChatServiceImpl implements ChatService {
 //                .setToken(fcmToken)
 //                .build();
 //            sendFcmMessage(message);
-    } else {
-      if (!ObjectUtils.isEmpty(response)) {
-        return new GLCompletionResponse()
-            .codeCellId(glCompletionRequest.getCodeId()).result(response);
-      } else {
-        return new GLCompletionResponse()
-            .codeCellId(glCompletionRequest.getCodeId()).error("Error message here");
-      }
-
     }
+//    else {
+//      if (!ObjectUtils.isEmpty(response)) {
+//        return new GLCompletionResponse()
+//            .codeCellId(glCompletionRequest.getCodeId()).result(response);
+//      } else {
+//        return new GLCompletionResponse()
+//            .codeCellId(glCompletionRequest.getCodeId()).error("Error message here");
+//      }
+//
+//    }
     return new GLCompletionResponse().error("Operation not supported");
   }
 
