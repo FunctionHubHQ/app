@@ -2,9 +2,11 @@ package com.gptlambda.api.data.postgres.repo;
 
 
 import com.gptlambda.api.data.postgres.entity.CommitHistoryEntity;
+import com.gptlambda.api.data.postgres.projection.Deployment;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,5 +18,37 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Transactional
 public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, UUID> {
-  List<CommitHistoryEntity> findByCodeCellId(UUID id);
+  List<CommitHistoryEntity> findByCodeCellId(UUID codeCellId);
+
+//  CommitHistoryEntity findByVersion(String version);
+
+  @Query(value = "SELECT "
+      + "cc.uid as code_id, "
+      + "cc.function_name as function_name, "
+      + "cc.description as description, "
+      + "ch.json_schmea as json_schema " +
+      "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
+      + "WHERE user_id = 1? AND deployed = true",
+      nativeQuery = true)
+  List<Deployment> findAllDeployedCommits(String userId);
+
+  @Query(value = "SELECT "
+      + "cc.uid as code_id, "
+      + "cc.function_name as function_name, "
+      + "cc.description as description, "
+      + "ch.json_schmea as json_schema " +
+      "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
+      + "WHERE version = 1? AND deployed = true",
+      nativeQuery = true)
+  Deployment findDeployedCommit(String version);
+
+  @Query(value = "SELECT * " +
+      "FROM commit_history " +
+      "WHERE code_cell_id = ?1 AND version = ?2",
+      nativeQuery = true)
+  List<CommitHistoryEntity> findByCodeCellIdAndVersion(UUID codeCellId, String version);
+
+
+
+
 }

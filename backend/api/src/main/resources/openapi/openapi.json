@@ -534,6 +534,13 @@
             "type": "boolean",
             "default": true
           },
+          "deployed": {
+            "type": "boolean",
+            "default": false
+          },
+          "version": {
+            "type": "string"
+          },
           "payload": {
             "type": "object",
             "additionalProperties": true

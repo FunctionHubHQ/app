@@ -96,6 +96,7 @@ async function sendResult(ctx, result, stdout, error) {
     uid: body.uid,
     exec_id: body.execId,
     validate: body.validate,
+    deployed: body.deployed,
     error: error,
     result: JSON.stringify(result),
     std_out: stdout,

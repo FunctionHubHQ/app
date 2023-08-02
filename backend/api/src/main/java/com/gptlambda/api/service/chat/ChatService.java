@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public interface ChatService {
 
-  CompletionRequest buildGptRequest(String prompt, List<GPTFunction> functions, String userId);
+  CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId);
   CompletionRequestFunctionalCall buildGptRequestFunctionalCall(String prompt,
       String functionResponse, String functionName, String userId);
 

@@ -63,7 +63,6 @@ public class SecurityFilter extends OncePerRequestFilter {
     private final FirebaseService firebaseService;
     private final UnsecurePaths unsecurePaths;
     private final JwtValidationService jwtValidationService;
-    private final RequestHeaders requestHeaders;
     private final UserRepo userRepo;
 
   @Override
@@ -96,6 +95,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         user.setEmail(userEntity.getEmail());
         user.setName(userEntity.getFullName());
         user.setUid(userEntity.getUid());
+        user.setRoles(new HashMap<>());
         user.setPicture(userEntity.getAvatarUrl());
       } else {
         try {
@@ -124,7 +124,8 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private UserProfile jwtTokenToUser(DecodedJwt decodedToken) {
     return new UserProfile()
-        .uid(decodedToken.getUserId());
+        .uid(decodedToken.getUserId())
+        .roles(new HashMap<>());
   }
 
   private UserProfile firebaseTokenToUser(FirebaseToken decodedToken) {

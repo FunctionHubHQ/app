@@ -44,6 +44,7 @@ public class UserServiceImpl implements UserService {
         UserEntity newUser = new UserEntity();
         newUser.setEmail(userProfile.getEmail());
         newUser.setUid(userProfile.getUid());
+        newUser.setFullName(userProfile.getName());
         newUser.setApiKey(apiKeyPrefix + GPTLambdaUtils.generateUid(46));
         log.info("Creating new user with  uid = {}", newUser.getUid());
         userRepo.save(newUser);
@@ -51,10 +52,10 @@ public class UserServiceImpl implements UserService {
         entitlements.setUid(UUID.randomUUID());
         entitlements.setUserId(userProfile.getUid());
         entitlements.setTimeout(entitlementProps.getWallTime());
-        entitlements.setFunctions(entitlements.getFunctions());
-        entitlements.setTokens(entitlements.getTokens());
+        entitlements.setFunctions(entitlementProps.getFunctions());
+        entitlements.setTokens(entitlementProps.getTokens());
         entitlements.setHttpEgress(entitlementProps.getHttpEgress());
-        entitlements.setDailyInvocations(entitlements.getDailyInvocations());
+        entitlements.setDailyInvocations(entitlementProps.getDailyInvocations());
         entitlementRepo.save(entitlements);
       }
     }

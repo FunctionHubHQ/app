@@ -25,6 +25,10 @@ public class CommitHistoryEntity {
     @Column(name = "uid")
     private UUID uid;
 
+    @JsonProperty("user_id")
+    @Column(name = "user_id")
+    private String userId;
+
     @JsonProperty("code_cell_id")
     @Column(name = "code_cell_id")
     private UUID codeCellId;
@@ -41,6 +45,11 @@ public class CommitHistoryEntity {
     @JsonProperty("json_schema")
     @Column(name = "json_schema")
     private String jsonSchema;
+
+    @Basic
+    @JsonProperty("deployed")
+    @Column(name = "deployed")
+    private Boolean deployed = false;
 
     @Basic
     @Column(name = "created_at")

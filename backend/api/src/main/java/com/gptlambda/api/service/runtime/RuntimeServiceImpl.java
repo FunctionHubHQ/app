@@ -22,7 +22,7 @@ import com.gptlambda.api.data.postgres.entity.EntitlementEntity;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
 import com.gptlambda.api.data.postgres.repo.CommitHistoryRepo;
 import com.gptlambda.api.data.postgres.repo.EntitlementRepo;
-import com.gptlambda.api.dto.ExecRequestPayload;
+import com.gptlambda.api.dto.ExecRequestInternal;
 import com.gptlambda.api.dto.GenerateSpecRequest;
 import com.gptlambda.api.props.DenoProps;
 import com.gptlambda.api.props.SourceProps;
@@ -75,6 +75,7 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   // Define a unique version key to avoid conflicts
   public final static String versionKey = "version_" + GPTLambdaUtils.generateUid(6);
+  private final String deployedFlag = "+deployed";
 
   public static final class MessageType {
     public static final String EXEC_RESULT = "EXEC_RESULT";
@@ -117,14 +118,23 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (codeCell != null) {
         EntitlementEntity entitlements = entitlementRepo.findByUserId(codeCell.getUserId());
         String version = codeCell.getVersion();
-        ExecRequestPayload request = new ExecRequestPayload();
+        if (!ObjectUtils.isEmpty(execRequest.getVersion())) {
+          version = execRequest.getVersion();
+        }
+        String uid = execRequest.getUid() + "@" +version;
+        if (execRequest.getDeployed() != null && execRequest.getDeployed()) {
+          uid += deployedFlag;
+        }
+        ExecRequestInternal request = new ExecRequestInternal();
         request.setPayload(execRequest.getPayload());
         request.setEnv(sourceProps.getProfile());
-        request.setUid(execRequest.getUid() + "@" +version);
+        request.setUid(uid);
         request.setFcmToken(execRequest.getFcmToken());
         request.setTimeout(entitlements.getTimeout());
         request.setValidate(execRequest.getValidate());
         request.setExecId(execRequest.getExecId());
+        request.setDeployed(execRequest.getDeployed());
+        request.setVersion(version);
         Thread.startVirtualThread(() -> submitExecutionTask(request, getRuntimeUrl()));
       }
     }
@@ -133,43 +143,54 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public String getUserCode(String uid) {
+    boolean deployed = false;
+    String version = null;
     if (uid != null) {
+      if (uid.contains(deployedFlag)) {
+        uid = uid.replace(deployedFlag, "");
+        deployed = true;
+      }
+      if (uid.contains("@")) {
+        version = parseVersion(uid);
+      }
       uid = parseUid(uid);
-      CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
-      if (entity != null && !ObjectUtils.isEmpty(entity.getCode())) {
-        String rawCode = "";
-        if (!ObjectUtils.isEmpty(entity.getCode())) {
-          rawCode = new String(Base64.getDecoder().decode(entity.getCode().getBytes()));
-        }
-        String interfaces = "";
-        if (!ObjectUtils.isEmpty(entity.getInterfaces())) {
-          interfaces = new String(Base64.getDecoder().decode(entity.getInterfaces().getBytes()));
-        }
-        return workerScript(rawCode, interfaces);
+      String code = null;
+      if (deployed && !ObjectUtils.isEmpty(version)) {
+        List<CommitHistoryEntity> commitHistoryEntities = commitHistoryRepo
+            .findByCodeCellIdAndVersion(UUID.fromString(uid), version);
+        code = commitHistoryEntities.get(0).getCode();
+      } else {
+        CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
+        code = entity.getCode();
+      }
+      if (!ObjectUtils.isEmpty(code)) {
+        String rawCode = new String(Base64.getDecoder().decode(code.getBytes()));
+        return workerScript(rawCode);
       }
     }
     return null;
   }
 
-  private String workerScript(String rawCode, String interfaces) {
+  private String workerScript(String rawCode) {
     StringJoiner joiner = new StringJoiner("\n");
-    String entryPointPrefix = "export async function handler";
-    String[] codeTokens = rawCode.split(entryPointPrefix);
-    if (codeTokens.length > 0) {
-      // Insert dto code in-between item 0 and item 1
-      // Item 0 would be npm imports or other pieces of code
-      // Item 1 would be the entry point
-      if (codeTokens.length == 2) {
-        joiner.add(codeTokens[0]);
-        joiner.add(interfaces);
-        joiner.add(entryPointPrefix + codeTokens[1]);
-      } else if (codeTokens.length == 1) {
-        joiner.add(interfaces);
-        joiner.add(entryPointPrefix + codeTokens[0]);
-      } else {
-        throw new RuntimeException("There must be exactly one handler function define");
-      }
-    }
+    joiner.add(rawCode);
+//    String entryPointPrefix = "export async function handler";
+//    String[] codeTokens = rawCode.split(entryPointPrefix);
+//    if (codeTokens.length > 0) {
+//      // Insert dto code in-between item 0 and item 1
+//      // Item 0 would be npm imports or other pieces of code
+//      // Item 1 would be the entry point
+//      if (codeTokens.length == 2) {
+//        joiner.add(codeTokens[0]);
+//        joiner.add(interfaces);
+//        joiner.add(entryPointPrefix + codeTokens[1]);
+//      } else if (codeTokens.length == 1) {
+//        joiner.add(interfaces);
+//        joiner.add(entryPointPrefix + codeTokens[0]);
+//      } else {
+//        throw new RuntimeException("There must be exactly one handler function define");
+//      }
+//    }
 
     try {
       File file = ResourceUtils.getFile("classpath:ts/workerTemplate.ts");
@@ -234,6 +255,10 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   private String parseUid(String uid) {
     return uid.split("@")[0];
+  }
+
+  private String parseVersion(String uid) {
+    return uid.split("@")[1];
   }
 
   private void validateCodeCell(ExecResultAsync execResult, String uid) {
@@ -323,18 +348,22 @@ public class RuntimeServiceImpl implements RuntimeService {
         }
       }
       if (updatedCell != null) {
-        CommitHistoryEntity commitHistory = new CommitHistoryEntity();
-        commitHistory.setUid(UUID.randomUUID());
-        commitHistory.setCodeCellId(updatedCell.getUid());
-        commitHistory.setVersion(updatedCell.getVersion());
-        commitHistory.setJsonSchema(updatedCell.getJsonSchema());
-        commitHistory.setCode(updatedCell.getCode());
-        commitHistoryRepo.save(commitHistory);
-        final CodeCellEntity cell = updatedCell;
+        final CodeCellEntity finalCell = updatedCell;
+        Thread.startVirtualThread(() -> {
+          CommitHistoryEntity commitHistory = new CommitHistoryEntity();
+          commitHistory.setUid(UUID.randomUUID());
+          commitHistory.setUserId(finalCell.getUserId());
+          commitHistory.setCodeCellId(finalCell.getUid());
+          commitHistory.setVersion(finalCell.getVersion());
+          commitHistory.setJsonSchema(finalCell.getJsonSchema());
+          commitHistory.setCode(finalCell.getCode());
+          commitHistoryRepo.save(commitHistory);
+        });
+
         Thread.startVirtualThread(() -> generateJsonSchema(
             new String(Base64.getDecoder()
-                .decode(cell.getCode()
-                    .getBytes())), cell.getUid()
+                .decode(finalCell.getCode()
+                    .getBytes())), finalCell.getUid()
                 .toString()));
         return new CodeUpdateResponse().uid(updatedCell.getUid().toString());
       }
@@ -546,6 +575,13 @@ public class RuntimeServiceImpl implements RuntimeService {
           codeCell.setDeployed(true);
           codeCell.setDeployedVersion(codeCell.getVersion());
           codeCellRepo.save(codeCell);
+          List<CommitHistoryEntity> commitHistory = commitHistoryRepo.findByCodeCellIdAndVersion(
+              codeCell.getUid(),
+              codeCell.getVersion());
+          if (!ObjectUtils.isEmpty(commitHistory)) {
+            commitHistory.get(0).setDeployed(true);
+            commitHistoryRepo.save(commitHistory.get(0));
+          }
           return new GenericResponse().status("ok");
         } else {
           return new GenericResponse().error(codeCell.getReasonNotDeployable());

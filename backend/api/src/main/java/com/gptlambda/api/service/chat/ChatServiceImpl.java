@@ -10,9 +10,13 @@ import com.gptlambda.api.ExecResultAsync;
 import com.gptlambda.api.GLCompletionResponse;
 import com.gptlambda.api.GLCompletionTestRequest;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
+import com.gptlambda.api.data.postgres.entity.UserEntity;
+import com.gptlambda.api.data.postgres.projection.Deployment;
 import com.gptlambda.api.data.postgres.repo.ChatHistoryRepo;
 import com.gptlambda.api.data.postgres.repo.CodeCellRepo;
+import com.gptlambda.api.data.postgres.repo.CommitHistoryRepo;
 import com.gptlambda.api.data.postgres.repo.FcmTokenRepo;
+import com.gptlambda.api.data.postgres.repo.UserRepo;
 import com.gptlambda.api.dto.GPTFunction;
 import com.gptlambda.api.dto.GPTFunctionCall;
 import com.gptlambda.api.props.OpenAiProps;
@@ -63,13 +67,15 @@ public class ChatServiceImpl implements ChatService {
   private final SourceProps sourceProps;
   private final RuntimeService runtimeService;
   private final RequestHeaders requestHeaders;
+  private final UserRepo userRepo;
+  private final CommitHistoryRepo commitHistoryRepo;
 
   @Override
-  public CompletionRequest buildGptRequest(String prompt, List<GPTFunction> functions, String userId) {
+  public CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId) {
     String content = String.format("PROMPT: %s\n\nANSWER:", prompt);
     log.info("Generated query: {}", content);
     List<CompletionRequestMessage> messages = new ArrayList<>();
-//    messages.add(new CompletionMessage("system", openAiProps.getSystemMessage()));
+    messages.add(new CompletionRequestMessage("system", openAiProps.getSystemMessage()));
     messages.add(new CompletionRequestMessage("user", content));
     return CompletionRequest
         .builder()
@@ -77,8 +83,8 @@ public class ChatServiceImpl implements ChatService {
         .functions(functions)
         .functionCall("auto")
         .model(openAiProps.getCompletionModel())
-        .maxTokens(1000) // TODO: need to be able to bubble up request error messages back to the user
-//        .maxTokens(openAiProps.getMaxTokens())
+//        .maxTokens(1000) // TODO: need to be able to bubble up request error messages back to the user
+        .maxTokens(openAiProps.getMaxTokens())
         .temperature(openAiProps.getTemp())
         .messages(messages)
         .build();
@@ -104,120 +110,225 @@ public class ChatServiceImpl implements ChatService {
     return CompletionRequestFunctionalCall
         .builder()
         .user(userId)
-
         .model(openAiProps.getCompletionModel())
         .maxTokens(1000) // TODO: need to be able to bubble up request error messages back to the user
-//        .maxTokens(openAiProps.getMaxTokens())
+        .maxTokens(openAiProps.getMaxTokens())
         .temperature(openAiProps.getTemp())
         .messages(messages)
         .build();
   }
 
+  private GLCompletionResponse gptRequestWithFunctionCall(String userId, String prompt, List<GPTFunction> functions,
+      CodeCellEntity codeCell, boolean deployed, String fcmToken ) {
+    CompletionRequest request = buildCompletionRequest(prompt,
+        functions, userId);
+    String json = null;
+    try {
+      json = objectMapper.writeValueAsString(request);
+    log.info("Full request: {}", json);
+    CompletionResult result = null;
+    try {
+      String resultStr = gptHttpRequest(json);
+      try {
+         result = objectMapper.readValue(resultStr, CompletionResult.class);
+         if (ObjectUtils.isEmpty(result.getChoices()) && !ObjectUtils.isEmpty(resultStr)) {
+           return new GLCompletionResponse().error(resultStr);
+         }
+      } catch (JsonProcessingException e) {
+        log.error(e.getLocalizedMessage());
+      }
+      if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
+          result.getChoices().get(0).getMessage() != null) {
+        String content = result.getChoices().get(0).getMessage().getContent();
+        GPTFunctionCall functionCall = result.getChoices().get(0).getMessage().getFunctionCall();
+        if (ObjectUtils.isEmpty(content) && functionCall != null) {
+          functionCall.parseRequestPayload(objectMapper);
+          Map<String, Object> payload = functionCall.getRequestPayload();
+          String version = payload.get(RuntimeServiceImpl.versionKey).toString();
+          payload.remove(RuntimeServiceImpl.versionKey);
+          String codeId, functionName;
+          if (deployed) {
+            Deployment deployment = commitHistoryRepo.findDeployedCommit(version);
+            codeId = deployment.getCodeId();
+            functionName = deployment.getFunctionName();
+          } else {
+            codeId = codeCell.getUid().toString();
+            functionName = codeCell.getFunctionName();
+          }
+
+          ExecRequest execRequest = new ExecRequest()
+              .uid(codeId)
+              .payload(functionCall.getRequestPayload())
+              .execId(UUID.randomUUID().toString())
+              .deployed(deployed)
+              .version(version) // The version must be specified so that a specific version of deployment can run
+              .validate(false)
+              .fcmToken(fcmToken);
+          runtimeService.exec(execRequest);
+          ExecResultAsync execResultAsync = runtimeService.getExecutionResult(
+              execRequest.getExecId());
+
+          // Call GPT with the function response
+          CompletionRequestFunctionalCall requestFunctionalCall = buildGptRequestFunctionalCall(
+              prompt, execResultAsync.getResult(),
+              functionName,
+              userId);
+
+          json = objectMapper.writeValueAsString(requestFunctionalCall);
+          log.info("Full functional request: {}", json);
+          resultStr = gptHttpRequest(json);
+          result = objectMapper.readValue(resultStr, CompletionResult.class);
+          if (ObjectUtils.isEmpty(result.getChoices()) && !ObjectUtils.isEmpty(resultStr)) {
+            return new GLCompletionResponse().error(resultStr);
+          }
+
+          if (!ObjectUtils.isEmpty(result.getChoices()) &&
+              result.getChoices().get(0).getMessage() != null) {
+            content = result.getChoices().get(0).getMessage().getContent();
+            log.info("Response: {}", content);
+            return new GLCompletionResponse().result(content);
+          }
+        }
+        else {
+          new GLCompletionResponse().result(content);
+        }
+      }
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+      return new GLCompletionResponse().error(e.getLocalizedMessage());
+    }
+    } catch (IOException e) {
+      e.printStackTrace();
+      return new GLCompletionResponse().error(e.getLocalizedMessage());
+    }
+    return new GLCompletionResponse().error("Unknown Error");
+  }
+
   @Override
   public GLCompletionResponse gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest) {
-    String response = null;
     if (!ObjectUtils.isEmpty(glCompletionRequest.getCodeId()) &&
         !ObjectUtils.isEmpty(glCompletionRequest.getUserId()) &&
         !ObjectUtils.isEmpty(glCompletionRequest.getPrompt())) {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(glCompletionRequest.getCodeId()));
-
-      if (codeCell != null) {
-        // TODO: Get all the functions owned by this user
-        // We don't need code cell look up here
-        GPTFunction function = new GPTFunction();
-        function.setName(codeCell.getFunctionName());
-        function.setDescription(codeCell.getDescription());
-        function.setParameters(codeCell.getJsonSchema(), objectMapper);
-
-        CompletionRequest request = buildGptRequest(glCompletionRequest.getPrompt(),
-            List.of(function), glCompletionRequest.getUserId());
-        try {
-          String json = objectMapper.writeValueAsString(request);
-          log.info("Full request: {}", json);
-          CompletionResult result = gptHttpRequest(json);
-          if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
-              result.getChoices().get(0).getMessage() != null) {
-            String content = result.getChoices().get(0).getMessage().getContent();
-            GPTFunctionCall functionCall = result.getChoices().get(0).getMessage().getFunctionCall();
-            if (ObjectUtils.isEmpty(content) && functionCall != null) {
-              functionCall.parseRequestPayload(objectMapper);
-              if (ObjectUtils.isEmpty(functionCall.getRequestPayload())) {
-                // TODO return the empty response to GPT
-              } else {
-                Map<String, Object> payload= functionCall.getRequestPayload();
-                String version = payload.get(RuntimeServiceImpl.versionKey).toString();
-                payload.remove(RuntimeServiceImpl.versionKey);
-
-                // Get the code correct code by version in PROD. Dev/testing should use the provided code cell uid
-//                CodeCellEntity deployedCodeCell = codeCellRepo.findByVersion(version);
-                ExecRequest execRequest = new ExecRequest()
-//                    .uid(deployedCodeCell.getUid().toString())
-                    .uid(codeCell.getUid().toString())
-                    .payload(functionCall.getRequestPayload())
-                    .execId(UUID.randomUUID().toString())
-                    .validate(false)
-                    .fcmToken(glCompletionRequest.getFcmToken());
-                runtimeService.exec(execRequest);
-                ExecResultAsync execResultAsync = runtimeService.getExecutionResult(execRequest.getExecId());
-
-                // Call GPT with the function response
-                CompletionRequestFunctionalCall requestFunctionalCall = buildGptRequestFunctionalCall(
-                    glCompletionRequest.getPrompt(), execResultAsync.getResult(), codeCell.getFunctionName(),
-                    codeCell.getUserId());
-
-                json = objectMapper.writeValueAsString(requestFunctionalCall);
-                log.info("Full functional request: {}", json);
-                result = gptHttpRequest(json);
-                if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
-                    result.getChoices().get(0).getMessage() != null) {
-                  response = result.getChoices().get(0).getMessage().getContent();
-                  log.info("Response: {}", response);
-                }
-              }
-            }
-//            Thread.startVirtualThread(
-//                () -> saveToChatHistory(response, productSku, fcmToken, true));
-//            Message message = Message.builder()
-//                .putData("content", response)
-//                .putData("productSku", productSku)
-//                .putData("type", MessageType.CHAT)
-//                .setToken(fcmToken)
-//                .build();
-//            sendFcmMessage(message);
-//            log.info("Response - SKU={} queryId={}: {}", productSku, queryId, response);
-          }
-        } catch (JsonProcessingException e) {
-          log.error(e.getLocalizedMessage());
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
+      if (codeCell == null) {
+        return new GLCompletionResponse().error("Code not found");
       }
-    }
+      GLCompletionResponse response = null;
 
-    if (sourceProps.getProfile().equals("prod") || sourceProps.getProfile().equals("dev")) {
-      // TODO: send fcm message
-      Message message = Message.builder()
-                .putData("content", response)
-                .putData("uid", glCompletionRequest.getCodeId())
-                .putData("type", MessageType.CHAT)
-                .setToken(glCompletionRequest.getFcmToken())
-                .build();
-            sendFcmMessage(message);
-    }
-    else if (!ObjectUtils.isEmpty(response)) {
-      return new GLCompletionResponse()
-          .codeCellId(glCompletionRequest.getCodeId())
-          .result(response);
-    } else {
+    // TODO: Get all the functions owned by this user
+    // We don't need code cell look up here
+       GPTFunction function = buildGptFunctionTestRequest(codeCell);
+       response = gptRequestWithFunctionCall(
+        codeCell.getUserId(),
+        glCompletionRequest.getPrompt(),
+        List.of(function), codeCell,
+        false,
+        glCompletionRequest.getFcmToken());
+
+      if (sourceProps.getProfile().equals("prod") || sourceProps.getProfile().equals("dev")) {
+        // TODO: send fcm message
+        Message message = Message.builder()
+            .putData("error", !ObjectUtils.isEmpty(response.getError()) ? response.getError() : "")
+            .putData("content", !ObjectUtils.isEmpty(response.getResult()) ? response.getResult() : "")
+            .putData("uid", glCompletionRequest.getCodeId())
+            .putData("type", MessageType.CHAT)
+            .setToken(glCompletionRequest.getFcmToken())
+            .build();
+        sendFcmMessage(message);
+      }
+      else if (!ObjectUtils.isEmpty(response)) {
+        response.setCodeCellId(glCompletionRequest.getCodeId());
+        response.setFcmToken(glCompletionRequest.getFcmToken());
+        return response;
+      } else {
         return new GLCompletionResponse()
-            .codeCellId(glCompletionRequest.getCodeId()).error("Unknown error");
+            .codeCellId(glCompletionRequest.getCodeId())
+            .error("Unknown error");
       }
+//        CompletionRequest request = buildCompletionRequest(glCompletionRequest.getPrompt(),
+//            List.of(function), glCompletionRequest.getUserId());
+//        try {
+
+
+//          String json = objectMapper.writeValueAsString(request);
+//          log.info("Full request: {}", json);
+//          CompletionResult result = gptHttpRequest(json);
+//          if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
+//              result.getChoices().get(0).getMessage() != null) {
+//            String content = result.getChoices().get(0).getMessage().getContent();
+//            GPTFunctionCall functionCall = result.getChoices().get(0).getMessage().getFunctionCall();
+//            if (ObjectUtils.isEmpty(content) && functionCall != null) {
+//              functionCall.parseRequestPayload(objectMapper);
+//
+//                Map<String, Object> payload= functionCall.getRequestPayload();
+//                String version = payload.get(RuntimeServiceImpl.versionKey).toString();
+//                payload.remove(RuntimeServiceImpl.versionKey);
+//
+//                // Get the code correct code by version in PROD. Dev/testing should use the provided code cell uid
+////                CodeCellEntity deployedCodeCell = codeCellRepo.findByVersion(version);
+//              boolean deployed = false;
+//              String codeId = codeCell.getUid().toString();
+//
+//
+//                ExecRequest execRequest = new ExecRequest()
+//                    .uid(codeId)
+//                    .payload(functionCall.getRequestPayload())
+//                    .execId(UUID.randomUUID().toString())
+//                    .deployed(deployed)
+//                    .validate(false)
+//                    .fcmToken(glCompletionRequest.getFcmToken());
+//                runtimeService.exec(execRequest);
+//                ExecResultAsync execResultAsync = runtimeService.getExecutionResult(execRequest.getExecId());
+//
+//                // Call GPT with the function response
+//                CompletionRequestFunctionalCall requestFunctionalCall = buildGptRequestFunctionalCall(
+//                    glCompletionRequest.getPrompt(), execResultAsync.getResult(), codeCell.getFunctionName(),
+//                    codeCell.getUserId());
+//
+//                json = objectMapper.writeValueAsString(requestFunctionalCall);
+//                log.info("Full functional request: {}", json);
+//                result = gptHttpRequest(json);
+//                if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
+//                    result.getChoices().get(0).getMessage() != null) {
+//                  response = result.getChoices().get(0).getMessage().getContent();
+//                  log.info("Response: {}", response);
+
+
+
+
+//                }
+
+    }
     return new GLCompletionResponse().error("Operation not supported");
+  }
+
+  private GPTFunction buildGptFunctionTestRequest(CodeCellEntity codeCell) {
+    GPTFunction function = new GPTFunction();
+    function.setName(codeCell.getFunctionName());
+    function.setDescription(codeCell.getDescription());
+    function.setParameters(codeCell.getJsonSchema(), objectMapper);
+    return function;
+  }
+
+  private GPTFunction buildGptFunctionDeployedRequest(Deployment deployment) {
+    GPTFunction function = new GPTFunction();
+    function.setName(deployment.getFunctionName());
+    function.setDescription(deployment.getDescription());
+    function.setParameters(deployment.getJsonSchema(), objectMapper);
+    return function;
   }
 
   @Override
   public Map<String, Object> gptCompletionDeployedRequest(Map<String, Object> requestBody) {
-
+    UserEntity user = userRepo.findByApiKey(requestHeaders.getHeaders().get("api-key"));
+    List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(user.getUid());
+    List<GPTFunction> functions = deployments
+        .stream()
+        .map(this::buildGptFunctionDeployedRequest)
+        .toList();
+    String prompt = requestBody.get("prompt").toString();
+    CompletionRequest request = buildCompletionRequest(prompt,
+        functions, user.getUid());
     return null;
   }
 
@@ -230,19 +341,19 @@ public class ChatServiceImpl implements ChatService {
     }
   }
 
-  private CompletionResult gptHttpRequest(String prompt) throws IOException {
+  private String gptHttpRequest(String prompt) throws IOException {
     OkHttpClient httpClient = new OkHttpClient.Builder().build();
     RequestBody body = RequestBody.create(
         MediaType.parse("application/json"), prompt);
     Request request = new Request.Builder()
         .url(openAiProps.getCompletionEndpoint())
-        .addHeader("Authorization", "Bearer " + openAiProps.getApiKey())
+        .addHeader("Authorization", "Bearer " + openAiProps.getApiKey() + 1)
         .post(body)
         .build();
     Call call = httpClient.newCall(request);
     Response response = call.execute();
     String r = response.body().string();
     response.close();
-    return objectMapper.readValue(r, CompletionResult.class);
+    return r;
   }
 }

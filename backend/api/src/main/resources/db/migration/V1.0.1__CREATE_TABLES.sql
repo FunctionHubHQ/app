@@ -64,10 +64,30 @@ CREATE TABLE IF NOT EXISTS public.usage (
 );
 ALTER TABLE public.usage OWNER TO root;
 
+-- CREATE TABLE IF NOT EXISTS public.project (
+--     uid uuid NOT NULL primary key,
+--     user_id varchar(255) NOT NULL,
+--     project_name varchar(255) NOT NULL,
+--     description varchar(255) NOT NULL,
+--     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- );
+-- ALTER TABLE public.project OWNER TO root;
+--
+-- CREATE TABLE IF NOT EXISTS public.project_item (
+--     uid uuid NOT NULL primary key,
+--     project_id varchar(255) NOT NULL,
+--     code_id varchar(255) NOT NULL,
+--     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- );
+-- ALTER TABLE public.project_item OWNER TO root;
+
 CREATE TABLE IF NOT EXISTS public.commit_history (
     uid uuid NOT NULL primary key,
     code_cell_id uuid NOT NULL,
+    user_id varchar(255) NOT NULL,
     version varchar(32),
+    deployed boolean NOT NULL default false,
     code varchar,
     json_schema varchar,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -81,6 +101,7 @@ CREATE TABLE IF NOT EXISTS public.fcm_token (
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE public.fcm_token OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.chat_history (
     id BIGSERIAL PRIMARY KEY NOT NULL,

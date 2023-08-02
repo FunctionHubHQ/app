@@ -8,7 +8,7 @@ import lombok.Setter;
  * @author Biz Melesse created on 6/5/23
  */
 @Getter @Setter
-public class ExecRequestPayload {
+public class ExecRequestInternal {
   private Map<String, Object> payload;
   private String env;
   private String uid;
@@ -16,4 +16,6 @@ public class ExecRequestPayload {
   private Long timeout;
   private String execId;
   private Boolean validate;
+  private Boolean deployed;
+  private String version;
 }
