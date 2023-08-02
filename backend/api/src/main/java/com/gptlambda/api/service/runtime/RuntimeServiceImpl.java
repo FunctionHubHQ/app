@@ -327,7 +327,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         commitHistory.setUid(UUID.randomUUID());
         commitHistory.setCodeCellId(updatedCell.getUid());
         commitHistory.setVersion(updatedCell.getVersion());
-        commitHistory.setMessage(null);
+        commitHistory.setJsonSchema(updatedCell.getJsonSchema());
         commitHistory.setCode(updatedCell.getCode());
         commitHistoryRepo.save(commitHistory);
         final CodeCellEntity cell = updatedCell;
@@ -544,6 +544,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (codeCell != null) {
         if (codeCell.getIsDeployable()) {
           codeCell.setDeployed(true);
+          codeCell.setDeployedVersion(codeCell.getVersion());
           codeCellRepo.save(codeCell);
           return new GenericResponse().status("ok");
         } else {

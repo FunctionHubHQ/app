@@ -1,7 +1,6 @@
 package com.gptlambda.api.service.chat;
 
 
-import com.gptlambda.api.ExecResultAsync;
 import com.gptlambda.api.GLCompletionResponse;
 import com.gptlambda.api.GLCompletionTestRequest;
 import com.gptlambda.api.dto.GPTFunction;
@@ -18,12 +17,6 @@ public interface ChatService {
   CompletionRequest buildGptRequest(String prompt, List<GPTFunction> functions, String userId);
   CompletionRequestFunctionalCall buildGptRequestFunctionalCall(String prompt,
       String functionResponse, String functionName, String userId);
-  void handleFunctionCallResult(ExecResultAsync execResultAsync);
-//  void callGpt(String query, String fcmToken, String productSku);
-//  void addQueryToQueue(String query, String fcmToken, String productSku);
-//  String queryBuilder(String query, List<CompletionMessage> conversationHistory, String productSku);
-
-
 
   /**
    * Run user GPT completion test request. In production, send the response back to the client
@@ -34,6 +27,8 @@ public interface ChatService {
    * @param glCompletionRequest
    * @return
    */
-  GLCompletionResponse gptCompletionTest(GLCompletionTestRequest glCompletionRequest);
+  GLCompletionResponse gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest);
+
+  Map<String, Object> gptCompletionDeployedRequest(Map<String, Object> requestBody);
 
 }

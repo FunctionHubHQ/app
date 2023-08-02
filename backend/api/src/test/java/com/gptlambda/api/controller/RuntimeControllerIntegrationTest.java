@@ -84,7 +84,6 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     private RuntimeService runtimeService;
 
     private UserEntity user;
-    private String authToken;
     private final String code = "import moment from \"npm:moment\";\n"
         + "\n"
         + "type TempUnit = \"CELCIUS\" | \"FAHRENHEIT\";\n"
@@ -138,7 +137,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String userId = "u_" + GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH);
         testHelper.prepareSecurity(userId);
         userService.getOrCreateUserprofile();
-        authToken = tokenService.generateJwtToken();
+        String authToken = tokenService.generateJwtToken();
         try {
             Thread.sleep(5000L);
             user = userRepo.findByUid(userId);
@@ -220,7 +219,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         completionRequest.setUserId(user.getUid());
         completionRequest.setFcmToken(UUID.randomUUID().toString());
         completionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
-        GLCompletionResponse completionResponse = chatService.gptCompletionTest(completionRequest);
+        GLCompletionResponse completionResponse = chatService.gptCompletionTestRequest(completionRequest);
         assertNotNull(completionResponse);
         int x = 1;
 
@@ -231,7 +230,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String port = "8080";
         String fullUrl = String.format("http://%s:%s%s", host, port, path);
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + authToken);
+        headers.add("Authorization", "Bearer " + user.getApiKey());
         headers.setContentType(MediaType.APPLICATION_JSON);
         if (Objects.equals(httpMethod, "POST")) {
             HttpEntity<Object> request = new HttpEntity<>(payload, headers);

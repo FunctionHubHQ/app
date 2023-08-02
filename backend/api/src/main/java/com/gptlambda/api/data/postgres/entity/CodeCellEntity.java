@@ -64,6 +64,11 @@ public class CodeCellEntity {
     private String version;
 
     @Basic
+    @JsonProperty("deployed_version")
+    @Column(name = "deployed_version")
+    private String deployedVersion;
+
+    @Basic
     @JsonProperty("slug")
     @Column(name = "slug")
     private String slug;

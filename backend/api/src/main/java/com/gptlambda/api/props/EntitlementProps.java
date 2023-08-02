@@ -15,5 +15,9 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 @ConfigurationProperties(prefix = "entitlement")
 public class EntitlementProps {
-    private Long timeout = 15000L;
+    private Long wallTime = 3_000L;
+    private Long tokens = 50_000L;
+    private Long httpEgress = 5L;
+    private Long dailyInvocations = 100L;
+    private Long functions = -1L;
 }

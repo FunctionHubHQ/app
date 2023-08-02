@@ -38,6 +38,26 @@ public class EntitlementEntity {
     private Long timeout;
 
     @Basic
+    @JsonProperty("tokens")
+    @Column(name = "tokens")
+    private Long tokens;
+
+    @Basic
+    @JsonProperty("http_egress")
+    @Column(name = "http_egress")
+    private Long httpEgress;
+
+    @Basic
+    @JsonProperty("daily_invocations")
+    @Column(name = "daily_invocations")
+    private Long dailyInvocations;
+
+    @Basic
+    @JsonProperty("functions")
+    @Column(name = "functions")
+    private Long functions;
+
+    @Basic
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
 

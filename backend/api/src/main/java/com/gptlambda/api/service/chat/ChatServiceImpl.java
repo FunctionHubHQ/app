@@ -17,6 +17,7 @@ import com.gptlambda.api.dto.GPTFunction;
 import com.gptlambda.api.dto.GPTFunctionCall;
 import com.gptlambda.api.props.OpenAiProps;
 import com.gptlambda.api.props.RabbitMQProps;
+import com.gptlambda.api.dto.RequestHeaders;
 import com.gptlambda.api.props.SourceProps;
 import com.gptlambda.api.service.openai.completion.CompletionRequest;
 import com.gptlambda.api.service.openai.completion.CompletionRequestFunctionalCall;
@@ -24,6 +25,7 @@ import com.gptlambda.api.service.openai.completion.CompletionResult;
 import com.gptlambda.api.service.openai.completion.CompletionRequestMessage;
 import com.gptlambda.api.service.runtime.RuntimeService;
 import com.gptlambda.api.service.runtime.RuntimeServiceImpl;
+import com.gptlambda.api.service.runtime.RuntimeServiceImpl.MessageType;
 import com.gptlambda.api.service.utils.JobSemaphore;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,6 +62,7 @@ public class ChatServiceImpl implements ChatService {
   private final CodeCellRepo codeCellRepo;
   private final SourceProps sourceProps;
   private final RuntimeService runtimeService;
+  private final RequestHeaders requestHeaders;
 
   @Override
   public CompletionRequest buildGptRequest(String prompt, List<GPTFunction> functions, String userId) {
@@ -111,152 +114,7 @@ public class ChatServiceImpl implements ChatService {
   }
 
   @Override
-  public void handleFunctionCallResult(ExecResultAsync execResultAsync) {
-
-  }
-
-//  List<CompletionMessage> getChatHistory(String fcmToken, String productSku) {
-//    List<CompletionMessage> history = new ArrayList<>();
-//    // TODO: keep track of the total length of the strings to not exceed context window limit
-//    FcmTokenEntity tokenEntity = fcmTokenRepo.findByFcmToken(fcmToken);
-//    if (tokenEntity != null) {
-//      List<ChatHistoryEntity> historyEntities = chatHistoryRepo.findLastNMessages(
-//          tokenEntity.getId(),
-//          productSku,
-//          otherProps.getLastNHistoryMessages());
-//      for (ChatHistoryEntity historyEntity : historyEntities) {
-//        history.add(new CompletionMessage(historyEntity.getIsGpt() ? "assistant" : "user",
-//            historyEntity.getMessage()));
-//      }
-//    }
-//    // Reverse the list so the messages are sorted in ascending order time-wise
-//    Collections.reverse(history);
-//    return history;
-//  }
-
-//  @Override
-//  public void callGpt(String query, String fcmToken, String productSku) {
-//    String queryId = GPTLambdaUtils.generateUid(GPTLambdaUtils.LONG_UID_LENGTH);
-//    log.info("Query - SKU={} queryId={}: {}", productSku, queryId, query);
-//    if (query.toLowerCase().contains("feedback")) {
-//      handleFeedback(query, fcmToken, productSku);
-//    } else {
-//      CompletionRequest request = buildGptRequest(query, fcmToken, productSku);
-//      Thread.startVirtualThread(
-//          () -> saveToChatHistory(query, productSku, fcmToken, false));
-//      if (request == null) {
-//        Message message = Message.builder()
-//            .putData("content", "Sorry, I'm unable to find answers for this product.")
-//            .putData("productSku", productSku)
-//            .putData("type", MessageType.CHAT)
-//            .setToken(fcmToken)
-//            .build();
-//        sendFcmMessage(message);
-//      } else {
-//        try {
-//          String json = objectMapper.writeValueAsString(request);
-//          log.info("Full request: {}", json);
-//          CompletionResult result = gptHttpRequest(json);
-//          if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
-//              result.getChoices().get(0).getMessage() != null) {
-//            String response = result.getChoices().get(0).getMessage().getContent();
-//            Thread.startVirtualThread(
-//                () -> saveToChatHistory(response, productSku, fcmToken, true));
-//            Message message = Message.builder()
-//                .putData("content", response)
-//                .putData("productSku", productSku)
-//                .putData("type", MessageType.CHAT)
-//                .setToken(fcmToken)
-//                .build();
-//            sendFcmMessage(message);
-//            log.info("Response - SKU={} queryId={}: {}", productSku, queryId, response);
-//          }
-//        } catch (JsonProcessingException e) {
-//          log.error(e.getLocalizedMessage());
-//        }
-//      }
-//    }
-//    jobSemaphore.getChatJobSemaphore().release();
-//  }
-
-//  private void handleFeedback(String query, String fcmToken, String productSku) {
-//    FeedbackEntity entity = new FeedbackEntity();
-//    entity.setBody(query);
-//    entity.setSubject(fcmToken);
-//    entity.setUserId(-1L);
-//    feedbackRepo.save(entity);
-//    Message message = Message.builder()
-//        .putData("content",
-//            String.format("We really appreciate your feedback! Please don't forget to give us 5 "
-//            + "stars <a href=%s target=\"_blank\"><strong style=\"color: red;\">here</strong></a>. This will help us "
-//                    + "continue to make Shoppiem better.",
-//                    otherProps.getChromeExtensionStoreUrl()))
-//        .putData("productSku", productSku)
-//        .putData("type", MessageType.CHAT)
-//        .setToken(fcmToken)
-//        .build();
-//    sendFcmMessage(message);
-//  }
-
-//  @Override
-//  public void addQueryToQueue(String query, String fcmToken, String productSku) {
-//    Thread.startVirtualThread(() -> {
-//      ChatJob job = new ChatJob();
-//      job.setId(GPTLambdaUtils.generateUid(GPTLambdaUtils.SHORT_UID_LENGTH));
-//      job.setQuery(query);
-//      job.setFcmToken(fcmToken);
-//      job.setProductSku(productSku);
-//      // If the product is ready, add the job to the queue immediately. Otherwise, delay the queueing
-//      try {
-//        String jobString = objectMapper.writeValueAsString(job);
-//        rabbitTemplate.convertAndSend(
-//            rabbitMQProps.getTopicExchange(),
-//            rabbitMQProps
-//                .getJobQueues()
-//                .get(RabbitMQProps.CHAT_JOB_QUEUE_KEY)
-//                .getRoutingKeyPrefix() + productSku,
-//            jobString);
-//      } catch (JsonProcessingException e) {
-//        log.error(e.getLocalizedMessage());
-//      }
-//    });
-//  }
-
-//  @Override
-//  public String queryBuilder(String query, List<CompletionMessage> conversationHistory, String productSku) {
-//    Collections.reverse(conversationHistory);
-//    String history = conversationHistory
-//        .stream()
-//        .map(it -> String.format("%s: %s", it.getRole().toUpperCase(), it.getContent()))
-//        .collect(Collectors.joining("\n"));
-//    String systemMessage = openAiProps.getQueryBuilderPrompt();
-//    String userMessage = String.format("USER PROMPT: %s\n\nCONVERSATION LOG: \n%s\n\nGENERATED QUESTION:;",
-//        query, history);
-//    CompletionRequest request =  CompletionRequest
-//        .builder()
-//        .user(productSku)
-//        .model(openAiProps.getCompletionModel())
-//        .maxTokens(openAiProps.getMaxTokens())
-//        .temperature(openAiProps.getTemp())
-//        .messages(List.of(
-//            new CompletionMessage("system", systemMessage),
-//            new CompletionMessage("user", userMessage)))
-//        .build();
-//    try {
-//      CompletionResult result = gptHttpRequest(objectMapper.writeValueAsString(request));
-//      if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
-//          result.getChoices().get(0).getMessage() != null) {
-//        return result.getChoices().get(0).getMessage().getContent();
-//      }
-//    } catch (Exception e) {
-//      log.error(e.getLocalizedMessage());
-//    }
-//    return query;
-//  }
-
-
-  @Override
-  public GLCompletionResponse gptCompletionTest(GLCompletionTestRequest glCompletionRequest) {
+  public GLCompletionResponse gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest) {
     String response = null;
     if (!ObjectUtils.isEmpty(glCompletionRequest.getCodeId()) &&
         !ObjectUtils.isEmpty(glCompletionRequest.getUserId()) &&
@@ -286,8 +144,9 @@ public class ChatServiceImpl implements ChatService {
               if (ObjectUtils.isEmpty(functionCall.getRequestPayload())) {
                 // TODO return the empty response to GPT
               } else {
-//                Map<String, Object> payload= functionCall.getRequestPayload();
-//                String version = payload.remove(RuntimeServiceImpl.versionKey).toString();
+                Map<String, Object> payload= functionCall.getRequestPayload();
+                String version = payload.get(RuntimeServiceImpl.versionKey).toString();
+                payload.remove(RuntimeServiceImpl.versionKey);
 
                 // Get the code correct code by version in PROD. Dev/testing should use the provided code cell uid
 //                CodeCellEntity deployedCodeCell = codeCellRepo.findByVersion(version);
@@ -311,17 +170,10 @@ public class ChatServiceImpl implements ChatService {
                 result = gptHttpRequest(json);
                 if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
                     result.getChoices().get(0).getMessage() != null) {
-                  String answer = result.getChoices().get(0).getMessage().getContent();
-                  log.info("Response: {}", answer);
+                  response = result.getChoices().get(0).getMessage().getContent();
+                  log.info("Response: {}", response);
                 }
-
-
-
-
-                int x = 1;
-
               }
-
             }
 //            Thread.startVirtualThread(
 //                () -> saveToChatHistory(response, productSku, fcmToken, true));
@@ -344,43 +196,31 @@ public class ChatServiceImpl implements ChatService {
 
     if (sourceProps.getProfile().equals("prod") || sourceProps.getProfile().equals("dev")) {
       // TODO: send fcm message
-//      Message message = Message.builder()
-//                .putData("content", response)
-//                .putData("productSku", productSku)
-//                .putData("type", MessageType.CHAT)
-//                .setToken(fcmToken)
-//                .build();
-//            sendFcmMessage(message);
+      Message message = Message.builder()
+                .putData("content", response)
+                .putData("uid", glCompletionRequest.getCodeId())
+                .putData("type", MessageType.CHAT)
+                .setToken(glCompletionRequest.getFcmToken())
+                .build();
+            sendFcmMessage(message);
     }
-//    else {
-//      if (!ObjectUtils.isEmpty(response)) {
-//        return new GLCompletionResponse()
-//            .codeCellId(glCompletionRequest.getCodeId()).result(response);
-//      } else {
-//        return new GLCompletionResponse()
-//            .codeCellId(glCompletionRequest.getCodeId()).error("Error message here");
-//      }
-//
-//    }
+    else if (!ObjectUtils.isEmpty(response)) {
+      return new GLCompletionResponse()
+          .codeCellId(glCompletionRequest.getCodeId())
+          .result(response);
+    } else {
+        return new GLCompletionResponse()
+            .codeCellId(glCompletionRequest.getCodeId()).error("Unknown error");
+      }
     return new GLCompletionResponse().error("Operation not supported");
   }
 
-//  private void saveToChatHistory(String query, String productSku, String fcmToken, boolean isGpt) {
-//    ChatHistoryEntity entity = new ChatHistoryEntity();
-//    entity.setMessage(query);
-//    entity.setIsGpt(isGpt);
-//    entity.setProductSku(productSku);
-//    entity.setChatId(GPTLambdaUtils.generateUid(GPTLambdaUtils.LONG_UID_LENGTH));
-//
-//    FcmTokenEntity fcmTokenEntity = fcmTokenRepo.findByFcmToken(fcmToken);
-//    if (fcmTokenEntity == null) {
-//      fcmTokenEntity = new FcmTokenEntity();
-//      fcmTokenEntity.setFcmToken(fcmToken);
-//      fcmTokenRepo.save(fcmTokenEntity);
-//    }
-//    entity.setFcmTokenId(fcmTokenEntity.getId());
-//    chatHistoryRepo.save(entity);
-//  }
+  @Override
+  public Map<String, Object> gptCompletionDeployedRequest(Map<String, Object> requestBody) {
+
+    return null;
+  }
+
 
   private void sendFcmMessage(Message message) {
     try {

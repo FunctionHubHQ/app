@@ -18,29 +18,30 @@ import lombok.Setter;
  */
 @Getter @Setter
 @Entity
-@Table(schema = "public", name = "commit_history")
-public class CommitHistoryEntity {
+@Table(schema = "public", name = "usage")
+public class UsageEntity {
     @Id
     @JsonProperty("uid")
     @Column(name = "uid")
     private UUID uid;
 
-    @JsonProperty("code_cell_id")
-    @Column(name = "code_cell_id")
-    private UUID codeCellId;
-
-    @JsonProperty("version")
-    @Column(name = "version")
-    private String version;
-
-    @JsonProperty("code")
-    @Column(name = "code")
-    private String code;
+    @JsonProperty("user_id")
+    @Column(name = "user_id")
+    private String userId;
 
     @Basic
-    @JsonProperty("json_schema")
-    @Column(name = "json_schema")
-    private String jsonSchema;
+    @JsonProperty("tokens")
+    @Column(name = "tokens")
+    private Long tokens;
+
+    @Basic
+    @JsonProperty("daily_invocations")
+    @Column(name = "daily_invocations")
+    private Long dailyInvocations;
+
+    @Basic
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Basic
     @Column(name = "created_at")

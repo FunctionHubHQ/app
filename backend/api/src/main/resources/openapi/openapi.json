@@ -241,6 +241,39 @@
         }
       }
     },
+    "/gpt-completion": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Call GPT completion endpoint",
+        "description": "Call GPT completion endpoint",
+        "operationId": "gptCompletionDeployedRequest",
+        "requestBody": {
+          "required": true,
+          "description": "GPT Completion request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GLCompletionDeployedRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "GPT completion response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GLCompletionDeployedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/gpt-completion/test": {
       "post": {
         "tags": [
@@ -372,6 +405,14 @@
             "type": "string"
           }
         }
+      },
+      "GLCompletionDeployedRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "GLCompletionDeployedResponse": {
+        "type": "object",
+        "additionalProperties": true
       },
       "Code":  {
         "type": "object",
@@ -527,14 +568,6 @@
       },
       "UserProfile":  {
         "type": "object",
-        "required": [
-          "uid",
-          "name",
-          "email",
-          "picture",
-          "roles",
-          "is_authorized"
-        ],
         "properties": {
           "uid": {
             "type": "string"
