@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS public.user (
     full_name varchar(255),
     email varchar(255),
     roles varchar(255)[],
+    api_key varchar(64),
+    avatar_url varchar,
     is_premium_user boolean NOT NULL default false,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -26,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.code_cell (
     interfaces varchar,
     json_schema varchar,
     version varchar(32),
+    deployed_version varchar(32),
     slug varchar(32),
     reason_not_deployable varchar(255),
     is_deployable boolean NOT NULL default true,
@@ -42,17 +45,31 @@ CREATE TABLE IF NOT EXISTS public.entitlement (
     uid uuid NOT NULL primary key,
     user_id varchar(255) NOT NULL,
     timeout bigint NOT NULL,
+    tokens bigint NOT NULL,
+    http_egress bigint NOT NULL,
+    daily_invocations bigint NOT NULL,
+    functions bigint NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE public.entitlement OWNER TO root;
+
+CREATE TABLE IF NOT EXISTS public.usage (
+    uid uuid NOT NULL primary key,
+    user_id varchar(255) NOT NULL,
+    tokens bigint NOT NULL,
+    daily_invocations bigint NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.usage OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.commit_history (
     uid uuid NOT NULL primary key,
     code_cell_id uuid NOT NULL,
     version varchar(32),
     code varchar,
-    message varchar(255),
+    json_schema varchar,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE public.commit_history OWNER TO root;

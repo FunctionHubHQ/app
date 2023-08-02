@@ -9,6 +9,8 @@ import com.gptlambda.api.UserProfileResponse;
  */
 public interface UserService {
 
+  String apiKeyPrefix = "gl-";
+
   /**
    * Get session user profile. If the user does not exist, create a new record.
    * @return

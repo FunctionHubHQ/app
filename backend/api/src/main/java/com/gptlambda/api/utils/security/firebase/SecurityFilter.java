@@ -3,7 +3,11 @@ package com.gptlambda.api.utils.security.firebase;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import com.gptlambda.api.data.postgres.entity.UserEntity;
+import com.gptlambda.api.data.postgres.repo.UserRepo;
 import com.gptlambda.api.dto.DecodedJwt;
+import com.gptlambda.api.dto.RequestHeaders;
+import com.gptlambda.api.service.user.UserService;
 import com.gptlambda.api.utils.firebase.FirebaseService;
 import com.gptlambda.api.utils.security.Credentials;
 import com.gptlambda.api.UserProfile;
@@ -59,11 +63,13 @@ public class SecurityFilter extends OncePerRequestFilter {
     private final FirebaseService firebaseService;
     private final UnsecurePaths unsecurePaths;
     private final JwtValidationService jwtValidationService;
+    private final RequestHeaders requestHeaders;
+    private final UserRepo userRepo;
 
   @Override
   protected void doFilterInternal(HttpServletRequest httpServletRequest,
       @NotNull HttpServletResponse httpServletResponse,
-      @NotNull FilterChain filterChain) {
+      @NotNull FilterChain filterChain) throws IOException {
     // All non-preflight requests must have a valid authorization token
     boolean methodExcluded = Stream.of("options")
       .anyMatch(method -> httpServletRequest.getMethod().toLowerCase().contains(method));
@@ -80,31 +86,41 @@ public class SecurityFilter extends OncePerRequestFilter {
     }
   }
 
-  private void verifyToken(HttpServletRequest httpServletRequest) {
-      try {
-        String bearerToken = getBearerToken(httpServletRequest);
-        UserProfile user;
-        Credentials credentials = new Credentials();
-        try{
+  private void verifyToken(HttpServletRequest httpServletRequest) throws IOException {
+      String bearerToken = getBearerToken(httpServletRequest);
+      UserProfile user = null;
+      Credentials credentials = new Credentials();
+      if (bearerToken.startsWith(UserService.apiKeyPrefix)) {
+        UserEntity userEntity = userRepo.findByApiKey(bearerToken);
+        user = new UserProfile();
+        user.setEmail(userEntity.getEmail());
+        user.setName(userEntity.getFullName());
+        user.setUid(userEntity.getUid());
+        user.setPicture(userEntity.getAvatarUrl());
+      } else {
+        try {
           DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);
           user = jwtTokenToUser(decodedToken);
           credentials.setDecodedJwtToken(decodedToken);
           credentials.setAuthToken(bearerToken);
         } catch (Exception e) {
-          FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(bearerToken);
+          FirebaseToken decodedToken = null;
+          try {
+            decodedToken = FirebaseAuth.getInstance().verifyIdToken(bearerToken);
+          } catch (FirebaseAuthException ex) {
+            throw new RuntimeException(ex);
+          }
           user = firebaseTokenToUser(decodedToken);
           credentials.setAuthToken(bearerToken);
           credentials.setDecodedFirebaseToken(decodedToken);
         }
-        assert user != null;
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, credentials,
-                getAuthorities(user.getRoles()));
-        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-      } catch (IllegalArgumentException | FirebaseAuthException | IOException e) {
-          log.error("SecurityFilter.verifyToken Authentication Error: {}", e.getLocalizedMessage());
       }
-  }
+      assert user != null;
+      UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, credentials,
+              getAuthorities(user.getRoles()));
+      authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
 
   private UserProfile jwtTokenToUser(DecodedJwt decodedToken) {
     return new UserProfile()

@@ -5,6 +5,7 @@ import com.gptlambda.api.data.postgres.entity.UserEntity;
 import com.gptlambda.api.data.postgres.repo.EntitlementRepo;
 import com.gptlambda.api.data.postgres.repo.UserRepo;
 import com.gptlambda.api.props.EntitlementProps;
+import com.gptlambda.api.service.utils.GPTLambdaUtils;
 import com.gptlambda.api.utils.security.firebase.SecurityFilter;
 import com.gptlambda.api.UserProfile;
 import com.gptlambda.api.UserProfileResponse;
@@ -43,12 +44,17 @@ public class UserServiceImpl implements UserService {
         UserEntity newUser = new UserEntity();
         newUser.setEmail(userProfile.getEmail());
         newUser.setUid(userProfile.getUid());
+        newUser.setApiKey(apiKeyPrefix + GPTLambdaUtils.generateUid(46));
         log.info("Creating new user with  uid = {}", newUser.getUid());
         userRepo.save(newUser);
         EntitlementEntity entitlements = new EntitlementEntity();
         entitlements.setUid(UUID.randomUUID());
         entitlements.setUserId(userProfile.getUid());
-        entitlements.setTimeout(entitlementProps.getTimeout());
+        entitlements.setTimeout(entitlementProps.getWallTime());
+        entitlements.setFunctions(entitlements.getFunctions());
+        entitlements.setTokens(entitlements.getTokens());
+        entitlements.setHttpEgress(entitlementProps.getHttpEgress());
+        entitlements.setDailyInvocations(entitlements.getDailyInvocations());
         entitlementRepo.save(entitlements);
       }
     }

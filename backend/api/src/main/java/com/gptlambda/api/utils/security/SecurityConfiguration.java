@@ -1,8 +1,17 @@
 package com.gptlambda.api.utils.security;
 
+import com.gptlambda.api.dto.RequestHeaders;
 import com.gptlambda.api.utils.security.firebase.FirebaseSecurityConfiguration;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.web.context.annotation.RequestScope;
 
 /**
  * @author Bizuwork Melesse
@@ -13,5 +22,20 @@ import org.springframework.context.annotation.Import;
 @Import({
         FirebaseSecurityConfiguration.class
 })
+@RequiredArgsConstructor
 public class SecurityConfiguration {
+
+  @Bean
+  @Primary
+  @RequestScope
+  public RequestHeaders requestHeader(HttpServletRequest httpServletRequest) {
+    // Normalize the headers by lower-casing all the keys
+    Map<String, String> normalized = new HashMap<>();
+    Enumeration<String> headers = httpServletRequest.getHeaderNames();
+    while (headers.hasMoreElements()) {
+      String header = headers.nextElement();
+      normalized.put(header.toLowerCase(), httpServletRequest.getHeader(header));
+    }
+    return new RequestHeaders(normalized);
+  }
 }
