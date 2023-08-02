@@ -27,7 +27,7 @@ public interface ChatService {
    * @param glCompletionRequest
    * @return
    */
-  GLCompletionResponse gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest);
+  Map<String, Object> gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest);
 
   Map<String, Object> gptCompletionDeployedRequest(Map<String, Object> requestBody);
 

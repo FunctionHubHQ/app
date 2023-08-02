@@ -1,10 +1,12 @@
 package com.gptlambda.api.service.chat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.google.gson.Gson;
 import com.gptlambda.api.ExecRequest;
 import com.gptlambda.api.ExecResultAsync;
 import com.gptlambda.api.GLCompletionResponse;
@@ -118,8 +120,9 @@ public class ChatServiceImpl implements ChatService {
         .build();
   }
 
-  private GLCompletionResponse gptRequestWithFunctionCall(String userId, String prompt, List<GPTFunction> functions,
+  private Map<String, Object> gptRequestWithFunctionCall(String userId, String prompt, List<GPTFunction> functions,
       CodeCellEntity codeCell, boolean deployed, String fcmToken ) {
+    Map<String, Object> response = new HashMap<>();
     CompletionRequest request = buildCompletionRequest(prompt,
         functions, userId);
     String json = null;
@@ -132,7 +135,9 @@ public class ChatServiceImpl implements ChatService {
       try {
          result = objectMapper.readValue(resultStr, CompletionResult.class);
          if (ObjectUtils.isEmpty(result.getChoices()) && !ObjectUtils.isEmpty(resultStr)) {
-           return new GLCompletionResponse().error(resultStr);
+           TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
+           response.putAll(objectMapper.readValue(resultStr, typeRef));
+           return response;
          }
       } catch (JsonProcessingException e) {
         log.error(e.getLocalizedMessage());
@@ -179,57 +184,74 @@ public class ChatServiceImpl implements ChatService {
           resultStr = gptHttpRequest(json);
           result = objectMapper.readValue(resultStr, CompletionResult.class);
           if (ObjectUtils.isEmpty(result.getChoices()) && !ObjectUtils.isEmpty(resultStr)) {
-            return new GLCompletionResponse().error(resultStr);
+            TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
+            response.putAll(objectMapper.readValue(resultStr, typeRef));
+            return response;
           }
 
           if (!ObjectUtils.isEmpty(result.getChoices()) &&
               result.getChoices().get(0).getMessage() != null) {
             content = result.getChoices().get(0).getMessage().getContent();
             log.info("Response: {}", content);
-            return new GLCompletionResponse().result(content);
+            response.put("content", content);
+            return response;
           }
         }
         else {
-          new GLCompletionResponse().result(content);
+          response.put("content", content);
+          return response;
         }
       }
     } catch (JsonProcessingException e) {
       e.printStackTrace();
-      return new GLCompletionResponse().error(e.getLocalizedMessage());
+      Map<String, String> error = new HashMap<>();
+      error.put("message", e.getLocalizedMessage());
+      response.put("error", error);
+      return response;
     }
     } catch (IOException e) {
       e.printStackTrace();
-      return new GLCompletionResponse().error(e.getLocalizedMessage());
+      Map<String, String> error = new HashMap<>();
+      error.put("message", e.getLocalizedMessage());
+      response.put("error", error);
+      return response;
     }
-    return new GLCompletionResponse().error("Unknown Error");
+    Map<String, String> error = new HashMap<>();
+    error.put("message", "Unknown Error");
+    response.put("error", error);
+    return response;
   }
 
   @Override
-  public GLCompletionResponse gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest) {
+  public Map<String, Object> gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest) {
+    Map<String, Object> response = new HashMap<>();
     if (!ObjectUtils.isEmpty(glCompletionRequest.getCodeId()) &&
         !ObjectUtils.isEmpty(glCompletionRequest.getUserId()) &&
         !ObjectUtils.isEmpty(glCompletionRequest.getPrompt())) {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(glCompletionRequest.getCodeId()));
       if (codeCell == null) {
-        return new GLCompletionResponse().error("Code not found");
+        Map<String, String> error = new HashMap<>();
+        error.put("message", "Code not found");
+        response.put("error", error);
+        return response;
       }
-      GLCompletionResponse response = null;
 
     // TODO: Get all the functions owned by this user
     // We don't need code cell look up here
        GPTFunction function = buildGptFunctionTestRequest(codeCell);
-       response = gptRequestWithFunctionCall(
+       response.putAll(gptRequestWithFunctionCall(
         codeCell.getUserId(),
         glCompletionRequest.getPrompt(),
         List.of(function), codeCell,
         false,
-        glCompletionRequest.getFcmToken());
+        glCompletionRequest.getFcmToken()));
 
       if (sourceProps.getProfile().equals("prod") || sourceProps.getProfile().equals("dev")) {
-        // TODO: send fcm message
         Message message = Message.builder()
-            .putData("error", !ObjectUtils.isEmpty(response.getError()) ? response.getError() : "")
-            .putData("content", !ObjectUtils.isEmpty(response.getResult()) ? response.getResult() : "")
+            .putData("error", !ObjectUtils.isEmpty(response.get("error")) ?
+                new Gson().toJson(response.get("error")) : "")
+            .putData("content", !ObjectUtils.isEmpty(response.get("result")) ?
+                response.get("result").toString() : "")
             .putData("uid", glCompletionRequest.getCodeId())
             .putData("type", MessageType.CHAT)
             .setToken(glCompletionRequest.getFcmToken())
@@ -237,13 +259,14 @@ public class ChatServiceImpl implements ChatService {
         sendFcmMessage(message);
       }
       else if (!ObjectUtils.isEmpty(response)) {
-        response.setCodeCellId(glCompletionRequest.getCodeId());
-        response.setFcmToken(glCompletionRequest.getFcmToken());
+        response.put("code_cell_id", (glCompletionRequest.getCodeId()));
+        response.put("fcm_token", (glCompletionRequest.getFcmToken()));
         return response;
       } else {
-        return new GLCompletionResponse()
-            .codeCellId(glCompletionRequest.getCodeId())
-            .error("Unknown error");
+        Map<String, String> error = new HashMap<>();
+        error.put("message", "Unknown error");
+        response.put("error", error);
+        return response;
       }
 //        CompletionRequest request = buildCompletionRequest(glCompletionRequest.getPrompt(),
 //            List.of(function), glCompletionRequest.getUserId());
@@ -299,7 +322,10 @@ public class ChatServiceImpl implements ChatService {
 //                }
 
     }
-    return new GLCompletionResponse().error("Operation not supported");
+    Map<String, String> error = new HashMap<>();
+    error.put("message", "Operation not supported");
+    response.put("error", error);
+    return response;
   }
 
   private GPTFunction buildGptFunctionTestRequest(CodeCellEntity codeCell) {

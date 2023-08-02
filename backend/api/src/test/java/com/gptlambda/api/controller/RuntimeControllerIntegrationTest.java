@@ -219,7 +219,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         completionRequest.setUserId(user.getUid());
         completionRequest.setFcmToken(UUID.randomUUID().toString());
         completionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
-        GLCompletionResponse completionResponse = chatService.gptCompletionTestRequest(completionRequest);
+        Map<String, Object> completionResponse = chatService.gptCompletionTestRequest(completionRequest);
         assertNotNull(completionResponse);
         int x = 1;
 

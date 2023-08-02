@@ -391,20 +391,7 @@
       },
       "GLCompletionResponse":  {
         "type": "object",
-        "properties": {
-          "result": {
-            "type": "string"
-          },
-          "code_cell_id": {
-            "type": "string"
-          },
-          "error": {
-            "type": "string"
-          },
-          "fcm_token": {
-            "type": "string"
-          }
-        }
+        "additionalProperties": true
       },
       "GLCompletionDeployedRequest": {
         "type": "object",
