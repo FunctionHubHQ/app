@@ -1,6 +1,7 @@
 package com.gptlambda.api.utils.security;
 
 import com.gptlambda.api.dto.RequestHeaders;
+import com.gptlambda.api.service.user.UserService;
 import com.gptlambda.api.utils.security.firebase.FirebaseSecurityConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Enumeration;
@@ -35,6 +36,13 @@ public class SecurityConfiguration {
     while (headers.hasMoreElements()) {
       String header = headers.nextElement();
       normalized.put(header.toLowerCase(), httpServletRequest.getHeader(header));
+      String key = header.toLowerCase();
+      if (key.equals("authorization")) {
+        String bearer = normalized.get(key).substring(7);
+        if (bearer.startsWith(UserService.apiKeyPrefix)) {
+          normalized.put("api-key", bearer);
+        }
+      }
     }
     return new RequestHeaders(normalized);
   }

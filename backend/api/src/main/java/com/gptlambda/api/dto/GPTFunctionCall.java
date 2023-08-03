@@ -3,6 +3,8 @@ package com.gptlambda.api.dto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,9 +20,9 @@ import org.springframework.util.ObjectUtils;
 public class GPTFunctionCall {
   private String name;
   private String arguments;
-  private Map<String, Object> requestPayload;
+  private Map<String, Object> requestPayload = new HashMap<>();
 
-  public void parseRequestPayload(ObjectMapper objectMapper) {
+  public Map<String, Object> getRequestPayload(ObjectMapper objectMapper) {
     if (!ObjectUtils.isEmpty(arguments)) {
       TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
       try {
@@ -31,5 +33,14 @@ public class GPTFunctionCall {
             e.getMessage());
       }
     }
+    return requestPayload;
+  }
+
+  public String getVersion() {
+    if (!ObjectUtils.isEmpty(name)) {
+      String[] tokens = name.split("_");
+      return tokens[tokens.length - 1];
+    }
+    return null;
   }
 }

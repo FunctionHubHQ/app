@@ -281,7 +281,7 @@
         ],
         "summary": "Call GPT completion endpoint",
         "description": "Call GPT completion endpoint",
-        "operationId": "gptCompletionTest",
+        "operationId": "gptCompletionTestRequest",
         "requestBody": {
           "required": true,
           "description": "GPT Completion request",

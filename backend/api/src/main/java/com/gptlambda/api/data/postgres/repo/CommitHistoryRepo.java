@@ -23,22 +23,24 @@ public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, UU
 //  CommitHistoryEntity findByVersion(String version);
 
   @Query(value = "SELECT "
-      + "cc.uid as code_id, "
-      + "cc.function_name as function_name, "
+      + "cc.uid as id, "
+      + "cc.function_name as name, "
+      + "cc.version as version, "
       + "cc.description as description, "
-      + "ch.json_schmea as json_schema " +
+      + "ch.json_schema as payload " +
       "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
-      + "WHERE user_id = 1? AND deployed = true",
+      + "WHERE ch.user_id = ?1 AND ch.deployed = true",
       nativeQuery = true)
   List<Deployment> findAllDeployedCommits(String userId);
 
   @Query(value = "SELECT "
-      + "cc.uid as code_id, "
-      + "cc.function_name as function_name, "
+      + "cc.uid as id, "
+      + "cc.function_name as name, "
+      + "cc.version as version, "
       + "cc.description as description, "
-      + "ch.json_schmea as json_schema " +
+      + "ch.json_schema as payload " +
       "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
-      + "WHERE version = 1? AND deployed = true",
+      + "WHERE ch.version = ?1 AND ch.deployed = true",
       nativeQuery = true)
   Deployment findDeployedCommit(String version);
 

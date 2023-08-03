@@ -204,8 +204,7 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public GenericResponse handleExecResult(ExecResultAsync execResult) {
-    if (!ObjectUtils.isEmpty(execResult.getFcmToken()) && !ObjectUtils.isEmpty(execResult.getUid())) {
-      // TODO: No need to validate code in active use by gpt
+    if (!ObjectUtils.isEmpty(execResult.getUid())) {
       ExecResultAsync execResultAsync = new ExecResultAsync();
       String uid = parseUid(execResult.getUid());
       if (execResult.getValidate() != null && execResult.getValidate()) {
@@ -237,8 +236,10 @@ public class RuntimeServiceImpl implements RuntimeService {
         execResultAsync.setStdOutStr(stdout);
       }
       executionResults.put(execResult.getExecId(), execResultAsync);
-      Message message = builder.setToken(execResult.getFcmToken()).build();
-      sendFcmMessage(message);
+      if (!ObjectUtils.isEmpty(execResultAsync.getFcmToken())) {
+        Message message = builder.setToken(execResult.getFcmToken()).build();
+        sendFcmMessage(message);
+      }
     }
     return new GenericResponse().status("ok");
   }
@@ -355,7 +356,6 @@ public class RuntimeServiceImpl implements RuntimeService {
           commitHistory.setUserId(finalCell.getUserId());
           commitHistory.setCodeCellId(finalCell.getUid());
           commitHistory.setVersion(finalCell.getVersion());
-          commitHistory.setJsonSchema(finalCell.getJsonSchema());
           commitHistory.setCode(finalCell.getCode());
           commitHistoryRepo.save(commitHistory);
         });
@@ -448,10 +448,19 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(specResult.getUid()));
       if (codeCell != null) {
         if (format.equals("json")) {
-          Map<String, Object> requestDto  = injectVersion(constructDto(spec), codeCell.getVersion());
+          Map<String, Object> requestDto  = getRequestDto(constructDto(spec), codeCell.getVersion());
           String requestDtoStr = new Gson().toJson(requestDto);
           codeCell.setJsonSchema(requestDtoStr);
           jsonSchema.put(codeCell.getUid().toString(), requestDtoStr);
+
+          // Insert the schema into an existing commit
+          List<CommitHistoryEntity> commitHistory = commitHistoryRepo.findByCodeCellIdAndVersion(
+              codeCell.getUid(), codeCell.getVersion()
+          );
+          if (!ObjectUtils.isEmpty(commitHistory)) {
+            commitHistory.get(0).setJsonSchema(requestDtoStr);
+            commitHistoryRepo.save(commitHistory.get(0));
+          }
         } else if (format.equals("ts")) {
           // TODO: this field is not used for anything so may remove it. We'll never need to convert
           // to TypeScript
@@ -465,7 +474,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     return new GenericResponse().error("Something went wrong");
   }
 
-  private Map<String, Object> injectVersion(Map<String, Object> requestDto, String version) {
+  private Map<String, Object> getRequestDto(Map<String, Object> requestDto, String version) {
     TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
     TypeReference<List<String>> listTypeRef = new TypeReference<>() {};
     try {

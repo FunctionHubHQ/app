@@ -4,12 +4,12 @@ import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gptlambda.api.Code;
 import com.gptlambda.api.CodeUpdateResponse;
 import com.gptlambda.api.ExecRequest;
 import com.gptlambda.api.ExecResultAsync;
-import com.gptlambda.api.GLCompletionResponse;
 import com.gptlambda.api.GLCompletionTestRequest;
 import com.gptlambda.api.GenericResponse;
 import com.gptlambda.api.data.postgres.entity.CodeCellEntity;
@@ -82,6 +82,8 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @Autowired
     private RuntimeService runtimeService;
+
+    private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};;
 
     private UserEntity user;
     private final String code = "import moment from \"npm:moment\";\n"
@@ -213,7 +215,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String schema = runtimeService.getJsonSchema(updateResponse.getUid());
         assertNotNull(schema);
 
-        // 5. Make GPT function call
+        // 5. Make test GPT function call
         GLCompletionTestRequest completionRequest = new GLCompletionTestRequest();
         completionRequest.setCodeId(updateResponse.getUid());
         completionRequest.setUserId(user.getUid());
@@ -221,8 +223,21 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         completionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
         Map<String, Object> completionResponse = chatService.gptCompletionTestRequest(completionRequest);
         assertNotNull(completionResponse);
-        int x = 1;
+        assertTrue(completionResponse.get("content").toString().contains("Boston"));
+        assertTrue(completionResponse.get("content").toString().contains("rainy"));
 
+
+        // 6. Make deployed GPT function call
+        Map<String, Object> requestPayload = new HashMap<>();
+        requestPayload.put("prompt", "What is the current time and weather in Chicago?");
+        String deployedCompletionResponseStr = request("/gpt-completion",
+            "POST", requestPayload);
+        assertNotNull(deployedCompletionResponseStr);
+        Map<String, Object> deployedCompletionResponse = objectMapper.readValue(
+            deployedCompletionResponseStr, typeRef);
+        assertNotNull(deployedCompletionResponse);
+        assertTrue(completionResponse.get("content").toString().contains("Chicago"));
+        assertTrue(completionResponse.get("content").toString().contains("rainy"));
     }
 
     private String request(String path, String httpMethod, Object payload) {

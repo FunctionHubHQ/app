@@ -27,7 +27,7 @@ public class ChatController implements ChatApi {
   }
 
   @Override
-  public ResponseEntity<Map<String, Object>> gptCompletionTest(
+  public ResponseEntity<Map<String, Object>> gptCompletionTestRequest(
       GLCompletionTestRequest glCompletionTestRequest) {
     return ResponseEntity.ok(chatService.gptCompletionTestRequest(glCompletionTestRequest));
   }
