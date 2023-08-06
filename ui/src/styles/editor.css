@@ -10,6 +10,12 @@
   scrollbar-width: none;
   overflow-y: auto;
 }
+.gf-test-tag {
+  /*margin-top: 2rem;*/
+}
+.gf-test-editor {
+  /*margin-top: 2rem;*/
+}
 .gf-error {
   padding: 1rem;
   /*background: #ffeff0;*/
@@ -29,4 +35,8 @@
 
 .gf-controls {
   margin-top: 2rem;
+}
+.gf-chatbox {
+  background: #f3f3f3;
+  font-family: sans-serif;
 }
