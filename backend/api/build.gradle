@@ -1,4 +1,4 @@
-mainClassName = 'com.gptlambda.api.Application'
+mainClassName = 'net.functionhub.api.Application'
 
 
 configurations {

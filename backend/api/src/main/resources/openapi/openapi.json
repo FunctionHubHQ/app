@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://api.gptlambda.com",
+      "url": "https://api.functionhub.net",
       "description": "Prod"
     },
     {

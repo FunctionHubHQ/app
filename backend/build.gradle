@@ -25,8 +25,8 @@ bootJar {
 ext {
   set('springCloudVersion', "2022.0.3")
   set('awsSDKVersion', '1.12.65')
-  set("apiPackageName", "com.gptlambda.api")
-  set("modelPackageName", "com.gptlambda.api")
+  set("apiPackageName", "net.functionhub.api")
+  set("modelPackageName", "net.functionhub.api")
   set("openApiSpecPath", "src/main/resources/openapi/openapi.json")
   set("generatedDirSpring", "generated/openapi/spring")
   set("generatedDirTypeScript", "generated/openapi/typescript")
@@ -39,7 +39,7 @@ ext {
 configure(subprojects.findAll(it ->
   it.file('src/main/java').exists()
 )) {
-  group = 'com.gptlambda'
+  group = 'net.functionhub'
   version = '1.0.0'
   sourceCompatibility = JavaVersion.VERSION_20
   targetCompatibility = JavaVersion.VERSION_20

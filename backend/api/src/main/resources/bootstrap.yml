@@ -15,7 +15,7 @@ spring:
       server:
         bootstrap: true
         git:
-          uri: https://github.com/GPT-Lambda/remote-configs.git
+          uri: https://github.com/FunctionHubHQ/remote-configs.git
           default-label: main
           clone-on-start: true
           username: ${MR_GH_USERNAME}
