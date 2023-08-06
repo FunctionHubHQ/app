@@ -1,0 +1,18 @@
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getAnalytics } from "firebase/analytics";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBMnVb8Ax2_F91lR9dnkOlJx7IByYlpcAw",
+  authDomain: "functionhub-317d3.firebaseapp.com",
+  projectId: "functionhub-317d3",
+  storageBucket: "functionhub-317d3.appspot.com",
+  messagingSenderId: "284285477716",
+  appId: "1:284285477716:web:3d00aba788f6518036dec1",
+  measurementId: "G-Z36KBJMDVV"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const analytics = getAnalytics(app);
