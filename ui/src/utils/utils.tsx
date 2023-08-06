@@ -1,5 +1,9 @@
+'use client'
+
 import moment from "moment";
-import React from "react";
+import {UserApi} from "@/codegen";
+import {auth} from "@/utils/firebase-setup";
+import {headerConfig} from "@/utils/headerConfig";
 
 export const getFormattedDate = (date: number) => {
   return moment.unix(date).format("llll")
@@ -12,19 +16,19 @@ export const getFormattedDate = (date: number) => {
 //  * route the user to the dashboard.
 //  *
 //  */
-// export const registerUser = (store: SessionDataStore) => {
-//   auth.onAuthStateChanged(user => {
-//     if (user) {
-//       user.getIdTokenResult(false)
-//       .then(tokenResult => {
-//         new UserApi(headerConfig(tokenResult.token))
-//         .getUserprofile()
-//         .then(result => {
-//           if (result.data.profile) {
-//             store?.setUser(result.data.profile)
-//           }
-//         }).catch(e => console.log(e))
-//       }).catch(e => console.log(e))
-//     }
-//   })
-// }
+export const registerUser = () => {
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      user.getIdTokenResult(false)
+      .then(tokenResult => {
+        new UserApi(headerConfig(tokenResult.token))
+        .getUserprofile()
+        .then(result => {
+          if (result.data.profile) {
+            console.log("ACK")
+          }
+        }).catch(e => console.log(e))
+      }).catch(e => console.log(e))
+    }
+  })
+}

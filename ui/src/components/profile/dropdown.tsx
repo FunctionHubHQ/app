@@ -2,17 +2,27 @@
 import * as React from "react";
 
 import { Menu, Transition } from '@headlessui/react'
-import { Fragment, useEffect, useRef, useState } from 'react'
-import { ChevronDownIcon } from '@heroicons/react/20/solid'
+import { Fragment } from 'react'
+import {useAuthContext} from "@/context/AuthContext";
+import {auth} from "@/utils/firebase-setup";
+import {useRouter} from "next/navigation";
 
 export default function ProfileDropdown() {
+  const {user} = useAuthContext()
+  const router = useRouter()
+
+  const logout = () => {
+    auth.signOut().then(_ => {
+      router.push("/")
+    }).catch(e => console.log(e))
+  }
   return (
       <div>
         <Menu as="div" >
           <div>
-            <Menu.Button className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+            <Menu.Button className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 mb-1">
               <img className="w-10 h-10 rounded-full" id="avatarButton" data-dropdown-toggle="userDropdown"  data-dropdown-placement="bottom-start"
-                   src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                   src={user.photoURL}
                    alt="User dropdown"/>
             </Menu.Button>
           </div>
@@ -122,22 +132,23 @@ export default function ProfileDropdown() {
                 <Menu.Item>
                   {({ active }) => (
                       <button
+                          onClick = {logout}
                           className={`${
                               active ? 'bg-violet-500 text-white' : 'text-gray-900'
                           } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                       >
                         {active ? (
-                            <DeleteActiveIcon
+                            <LogoutActiveIcon
                                 className="mr-2 h-5 w-5 text-violet-400"
                                 aria-hidden="true"
                             />
                         ) : (
-                            <DeleteInactiveIcon
+                            <LogoutInactiveIcon
                                 className="mr-2 h-5 w-5 text-violet-400"
                                 aria-hidden="true"
                             />
                         )}
-                        Delete
+                        Sign out
                       </button>
                   )}
                 </Menu.Item>
@@ -325,7 +336,7 @@ function MoveActiveIcon(props) {
   )
 }
 
-function DeleteInactiveIcon(props) {
+function LogoutInactiveIcon(props) {
   return (
       <svg
           {...props}
@@ -348,7 +359,7 @@ function DeleteInactiveIcon(props) {
   )
 }
 
-function DeleteActiveIcon(props) {
+function LogoutActiveIcon(props) {
   return (
       <svg
           {...props}

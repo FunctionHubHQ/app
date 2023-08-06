@@ -27,6 +27,7 @@
     "@uiw/codemirror-theme-noctis-lilac": "^4.21.9",
     "@uiw/codemirror-themes": "^4.21.9",
     "@uiw/react-codemirror": "^4.21.9",
+    "axios": "^1.4.0",
     "clsx": "^1.2.1",
     "firebase": "^10.1.0",
     "firebase-admin": "^11.10.1",

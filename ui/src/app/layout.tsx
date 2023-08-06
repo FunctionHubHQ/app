@@ -9,6 +9,7 @@ import '@/styles/editor.css'
 import { siteConfig } from '@/constant/config';
 import NavBar from "@/components/header";
 import Footer from "@/components/footer";
+import {AuthContextProvider} from "@/context/AuthContext";
 
 // !STARTERCONF Change these default meta
 // !STARTERCONF Look at @/constant/config to change them
@@ -41,26 +42,19 @@ export const metadata: Metadata = {
     title: siteConfig.title,
     description: siteConfig.description,
     images: [`${siteConfig.url}/images/og.jpg`],
-    // creator: '@th_clarence',
   },
-  // authors: [
-  //   {
-  //     name: 'Theodorus Clarence',
-  //     url: 'https://theodorusclarence.com',
-  //   },
-  // ],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html>
-    <NavBar/>
-      <body >{children}</body>
-    <Footer/>
+      <body>
+      <AuthContextProvider>
+        <NavBar/>
+          {children}
+        <Footer/>
+      </AuthContextProvider>
+      </body>
     </html>
   );
 }

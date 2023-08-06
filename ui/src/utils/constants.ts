@@ -15,5 +15,3 @@ export const PATHS = {
   TOS: '/legal/tos',
   PRIVACY: '/legal/privacy'
 }
-export const ADMIN_EMAIL = 'getkalicoai@gmail.com'
-export const INTEGER_32_MAX = 2147483647;

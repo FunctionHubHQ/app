@@ -1,15 +1,12 @@
 'use client'
 import * as React from "react";
 import ProfileDropdown from "@/components/profile/dropdown";
-import { Menu, Transition } from '@headlessui/react'
-import {Fragment} from "react";
+import {useAuthContext} from "@/context/AuthContext";
 
 
 const NavBar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [flyer, setFlyer] = React.useState(false);
-  const [flyerTwo, setFlyerTwo] = React.useState(false);
-
+  const {user} = useAuthContext()
   return (
       <>
         <nav className="bg-white dark:bg-gray-900 fixed w-full z-20 top-0 left-0 border-b border-gray-200 dark:border-gray-600">
@@ -53,12 +50,17 @@ const NavBar = () => {
               </div>
               <div
                   className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                <a href="/login"
-                   className="bg-gray-900 text-white block rounded-md px-3 py-2 text-base font-medium"
-                   aria-current="page">Sign up</a>
-                <div className="relative ml-3">
+
+                {user ? <div className="relative ml-3">
                   <ProfileDropdown/>
-                </div>
+                </div> :
+                <a href="/login">
+                <button type="button"
+                        className="text-white bg-[#4285F4] hover:bg-[#4285F4]/90 focus:ring-4 focus:outline-none focus:ring-[#4285F4]/50 font-medium rounded-lg text-sm px-5 py-2 text-center inline-flex items-center dark:focus:ring-[#4285F4]/55 mr-2 mb-1">
+                  Sign In
+                </button>
+                </a>
+                }
               </div>
             </div>
           </div>
