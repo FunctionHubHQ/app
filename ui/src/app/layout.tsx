@@ -4,6 +4,7 @@ import * as React from 'react';
 import '@/styles/globals.css';
 // !STARTERCONF This is for demo purposes, remove @/styles/colors.css import immediately
 import '@/styles/colors.css';
+import '@/styles/editor.css'
 
 import { siteConfig } from '@/constant/config';
 import NavBar from "@/components/header";
@@ -58,7 +59,7 @@ export default function RootLayout({
   return (
     <html>
     <NavBar/>
-      <body>{children}</body>
+      <body >{children}</body>
     <Footer/>
     </html>
   );

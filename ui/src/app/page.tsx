@@ -57,13 +57,6 @@ export default function HomePage() {
               alt='Deploy with Vercel'
             />
           </UnstyledLink>
-
-          {/*<footer className='absolute bottom-2 text-gray-700'>*/}
-          {/*  © {new Date().getFullYear()} By{' '}*/}
-          {/*  <UnderlineLink href='https://theodorusclarence.com?ref=tsnextstarter'>*/}
-          {/*    Theodorus Clarence*/}
-          {/*  </UnderlineLink>*/}
-          {/*</footer>*/}
         </div>
       </section>
     </main>

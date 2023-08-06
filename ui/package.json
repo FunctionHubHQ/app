@@ -17,14 +17,23 @@
     "postbuild": "next-sitemap --config next-sitemap.config.js"
   },
   "dependencies": {
+    "@codemirror/lang-javascript": "^6.1.9",
     "@headlessui/react": "^1.7.16",
     "@heroicons/react": "^2.0.18",
+    "@lezer/highlight": "^1.1.6",
+    "@uiw/codemirror-theme-bbedit": "^4.21.9",
+    "@uiw/codemirror-theme-github": "^4.21.9",
+    "@uiw/codemirror-theme-material": "^4.21.9",
+    "@uiw/codemirror-theme-noctis-lilac": "^4.21.9",
+    "@uiw/codemirror-themes": "^4.21.9",
+    "@uiw/react-codemirror": "^4.21.9",
     "clsx": "^1.2.1",
     "lucide-react": "^0.260.0",
     "next": "^13.4.10",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.10.1",
+    "react-ionicons": "^4.2.1",
     "tailwind-merge": "^1.13.2"
   },
   "devDependencies": {

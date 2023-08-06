@@ -1,0 +1,32 @@
+.gf-editor-base {
+  max-width: 772px;
+  width: 100%;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 5px 0px, rgba(0, 0, 0, 0.1) 0px 0px 1px 0px;
+  font-family: monospace;
+}
+.gf-editor {
+  max-height: 772px;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;
+  overflow-y: auto;
+}
+.gf-error {
+  padding: 1rem;
+  /*background: #ffeff0;*/
+  color: #f13232;
+}
+.gf-stdout {
+  padding: 1rem;
+  /*background: #fff8e9;*/
+}
+.gf-result {
+  padding: 1rem;
+  /*background: #def3e4;*/
+}
+.gf-editor::-webkit-scrollbar {
+  display: none;
+}
+
+.gf-controls {
+  margin-top: 2rem;
+}
