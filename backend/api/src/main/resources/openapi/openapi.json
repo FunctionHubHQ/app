@@ -529,8 +529,7 @@
             "type": "string"
           },
           "payload": {
-            "type": "object",
-            "additionalProperties": true
+            "type": "string"
           }
         }
       },

@@ -9,11 +9,13 @@ import { CodeSlashOutline } from 'react-ionicons'
 import { LockOpen } from 'react-ionicons'
 import { LockClosed } from 'react-ionicons'
 
+import {FC, useState} from "react";
 
+export interface ControlProps {
+  onRun: () => void
+}
 
-import {useState} from "react";
-
-function Controls() {
+const Controls: FC<ControlProps> = (props) => {
   const [run, setRun] = useState(false)
   const [fork, setFork] = useState(false)
   const [deploy, setDeploy] = useState(false)
@@ -24,6 +26,7 @@ function Controls() {
 
   const onRun = () => {
     setRun(!run)
+    props.onRun()
   }
 
   const onFork = () => {

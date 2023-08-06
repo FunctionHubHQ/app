@@ -139,10 +139,10 @@ export interface ExecRequest {
     version?: string;
     /**
      * 
-     * @type {{ [key: string]: object; }}
+     * @type {string}
      * @memberof ExecRequest
      */
-    payload?: { [key: string]: object; };
+    payload?: string;
 }
 /**
  * 

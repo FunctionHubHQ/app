@@ -126,7 +126,7 @@ public class RuntimeServiceImpl implements RuntimeService {
           uid += deployedFlag;
         }
         ExecRequestInternal request = new ExecRequestInternal();
-        request.setPayload(execRequest.getPayload());
+        request.setPayload(parseExecRequestPayload(execRequest.getPayload()));
         request.setEnv(sourceProps.getProfile());
         request.setUid(uid);
         request.setFcmToken(execRequest.getFcmToken());
@@ -139,6 +139,15 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
     }
     return new GenericResponse().status("ok");
+  }
+
+  private Map<String, Object> parseExecRequestPayload(String payload) {
+    TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
+    try {
+      return objectMapper.readValue(payload, typeRef);
+    } catch (JsonProcessingException e) {
+      return null;
+    }
   }
 
   @Override
@@ -174,24 +183,6 @@ public class RuntimeServiceImpl implements RuntimeService {
   private String workerScript(String rawCode) {
     StringJoiner joiner = new StringJoiner("\n");
     joiner.add(rawCode);
-//    String entryPointPrefix = "export async function handler";
-//    String[] codeTokens = rawCode.split(entryPointPrefix);
-//    if (codeTokens.length > 0) {
-//      // Insert dto code in-between item 0 and item 1
-//      // Item 0 would be npm imports or other pieces of code
-//      // Item 1 would be the entry point
-//      if (codeTokens.length == 2) {
-//        joiner.add(codeTokens[0]);
-//        joiner.add(interfaces);
-//        joiner.add(entryPointPrefix + codeTokens[1]);
-//      } else if (codeTokens.length == 1) {
-//        joiner.add(interfaces);
-//        joiner.add(entryPointPrefix + codeTokens[0]);
-//      } else {
-//        throw new RuntimeException("There must be exactly one handler function define");
-//      }
-//    }
-
     try {
       File file = ResourceUtils.getFile("classpath:ts/workerTemplate.ts");
       String workerTemplate =  new String(Files.readAllBytes(file.toPath()));
@@ -439,8 +430,12 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public GenericResponse handleSpecResult(SpecResult specResult) {
-    String spec = specResult.getSpec().getValue();
-    String format = specResult.getSpec().getFormat();
+    String spec = null;
+    String format = "json";
+    if (!ObjectUtils.isEmpty(specResult.getSpec())) {
+      spec = specResult.getSpec().getValue();
+      format = specResult.getSpec().getFormat();
+    }
     if (format.equals("ts")) {
       spec = spec.replace("/**", "\n/**");
     }
@@ -481,18 +476,22 @@ public class RuntimeServiceImpl implements RuntimeService {
       Map<String, Object> modifiedDto = objectMapper.readValue(
           new Gson().toJson(requestDto.get("RequestEntity")),
           typeRef);
-      List<String> required = objectMapper.readValue(new Gson().toJson(modifiedDto.get("required")),
-          listTypeRef);
-      Map<String, Object> properties = objectMapper.readValue(new Gson().toJson(modifiedDto.get("properties")),
-          typeRef);
-      Map<String, Object> field = new HashMap<>();
-      field.put("type", "string");
-      field.put("default", version);
-      properties.put(versionKey, field);
-      required.add(versionKey);
-      modifiedDto.put("required", required);
-      modifiedDto.put("properties", properties);
-      return modifiedDto;
+      if (modifiedDto != null) {
+        List<String> required = objectMapper.readValue(
+            new Gson().toJson(modifiedDto.get("required")),
+            listTypeRef);
+        Map<String, Object> properties = objectMapper.readValue(
+            new Gson().toJson(modifiedDto.get("properties")),
+            typeRef);
+        Map<String, Object> field = new HashMap<>();
+        field.put("type", "string");
+        field.put("default", version);
+        properties.put(versionKey, field);
+        required.add(versionKey);
+        modifiedDto.put("required", required);
+        modifiedDto.put("properties", properties);
+        return modifiedDto;
+      }
     } catch (JsonProcessingException e) {
       log.error("{}.handleSpecResult: {}",
           getClass().getSimpleName(),
@@ -520,7 +519,7 @@ public class RuntimeServiceImpl implements RuntimeService {
             .getAsJsonObject();
         mergeRefs(jsonObject, mergedObject, lookupObjects);
       }
-      return mergedObject;
+      return mergedObject.size() > 0 ? mergedObject : cleanObjects;
     } catch (IOException e) {
       log.error("{}.handleSpecResult: {}",
           getClass().getSimpleName(),

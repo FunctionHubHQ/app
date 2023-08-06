@@ -65,7 +65,7 @@ public class ChatServiceImpl implements ChatService {
   private final RequestHeaders requestHeaders;
   private final UserRepo userRepo;
   private final CommitHistoryRepo commitHistoryRepo;
-  private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};;
+  private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
   @Override
   public CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId) {
@@ -152,7 +152,7 @@ public class ChatServiceImpl implements ChatService {
 
           ExecRequest execRequest = new ExecRequest()
               .uid(codeId)
-              .payload(functionCall.getRequestPayload(objectMapper))
+              .payload(new Gson().toJson(functionCall.getRequestPayload(objectMapper)))
               .execId(UUID.randomUUID().toString())
               .deployed(deployed)
               .version(version) // The version must be specified so that a specific version of deployment can run
