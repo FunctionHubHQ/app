@@ -26,7 +26,6 @@ import net.functionhub.api.service.openai.completion.CompletionRequestFunctional
 import net.functionhub.api.service.openai.completion.CompletionResult;
 import net.functionhub.api.service.openai.completion.CompletionRequestMessage;
 import net.functionhub.api.service.runtime.RuntimeService;
-import net.functionhub.api.service.runtime.RuntimeServiceImpl.MessageType;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -54,11 +53,6 @@ import org.springframework.util.ObjectUtils;
 public class ChatServiceImpl implements ChatService {
   private final ObjectMapper objectMapper;
   private final OpenAiProps openAiProps;
-//  private final ChatHistoryRepo chatHistoryRepo;
-//  private final JobSemaphore jobSemaphore;
-//  private final FcmTokenRepo fcmTokenRepo;
-//  private final RabbitTemplate rabbitTemplate;
-//  private final RabbitMQProps rabbitMQProps;
   private final CodeCellRepo codeCellRepo;
   private final SourceProps sourceProps;
   private final RuntimeService runtimeService;
@@ -114,7 +108,7 @@ public class ChatServiceImpl implements ChatService {
   }
 
   private Map<String, Object> gptRequestWithFunctionCall(String userId, String prompt, List<GPTFunction> functions,
-      CodeCellEntity codeCell, boolean deployed, String fcmToken) {
+      CodeCellEntity codeCell, boolean deployed) {
     Map<String, Object> response = new HashMap<>();
     CompletionRequest request = buildCompletionRequest(prompt,
         functions, userId);
@@ -156,8 +150,7 @@ public class ChatServiceImpl implements ChatService {
               .execId(UUID.randomUUID().toString())
               .deployed(deployed)
               .version(version) // The version must be specified so that a specific version of deployment can run
-              .validate(false)
-              .fcmToken(fcmToken);
+              .validate(false);
           runtimeService.exec(execRequest);
           ExecResultAsync execResultAsync = runtimeService.getExecutionResult(
               execRequest.getExecId());
@@ -228,24 +221,13 @@ public class ChatServiceImpl implements ChatService {
         codeCell.getUserId(),
         glCompletionRequest.getPrompt(),
         List.of(function), codeCell,
-        false,
-        glCompletionRequest.getFcmToken()));
+        false));
 
       if (sourceProps.getProfile().equals("prod") || sourceProps.getProfile().equals("dev")) {
-        Message message = Message.builder()
-            .putData("error", !ObjectUtils.isEmpty(response.get("error")) ?
-                new Gson().toJson(response.get("error")) : "")
-            .putData("content", !ObjectUtils.isEmpty(response.get("result")) ?
-                response.get("result").toString() : "")
-            .putData("uid", glCompletionRequest.getCodeId())
-            .putData("type", MessageType.CHAT)
-            .setToken(glCompletionRequest.getFcmToken())
-            .build();
-        sendFcmMessage(message);
+        // TODO: Send via websockets if necessary
       }
       else if (!ObjectUtils.isEmpty(response)) {
         response.put("code_cell_id", (glCompletionRequest.getCodeId()));
-        response.put("fcm_token", (glCompletionRequest.getFcmToken()));
         return response;
       } else {
         Map<String, String> error = new HashMap<>();
@@ -304,8 +286,7 @@ public class ChatServiceImpl implements ChatService {
         prompt,
         functions,
         null,
-        true,
-        null));
+        true));
     return response;
   }
 

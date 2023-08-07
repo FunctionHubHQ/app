@@ -27,7 +27,7 @@ public interface RuntimeService {
   ConcurrentMap<String, String> jsonSchema = new ConcurrentHashMap<>();
 
   ExecResultAsync getExecutionResult(String executionId);
-  GenericResponse exec(ExecRequest execRequest);
+  ExecResultAsync exec(ExecRequest execRequest);
   String getUserCode(String uid);
   GenericResponse handleExecResult(ExecResultAsync execResult);
   String generateCodeVersion();

@@ -6,6 +6,7 @@ import static org.testng.AssertJUnit.assertTrue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResponse;
 import net.functionhub.api.ExecRequest;
@@ -181,20 +182,18 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         Map<String, Object> payload = new HashMap<>();
         payload.put("location", city);
         ExecRequest execRequest =  new ExecRequest()
-            .fcmToken(UUID.randomUUID().toString())
             .uid(updateResponse.getUid())
             .execId(UUID.randomUUID().toString())
             .validate(true)
-            .payload(payload);
+            .payload(new Gson().toJson(payload));
         request("/run", "POST", execRequest);
 
         // 3. Fetch the result
         Thread.sleep(5000L);
         String execResultStr = request("/e-result?exec_id=" + execRequest.getExecId(),
             "GET", new ExecRequest()
-            .fcmToken(UUID.randomUUID().toString())
             .uid(updateResponse.getUid())
-            .payload(payload));
+            .payload(new Gson().toJson(payload)));
 
         ExecResultAsync execResult = objectMapper.readValue(execResultStr, ExecResultAsync.class);
         assertNotNull(execResult);
@@ -203,7 +202,6 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         // 4. Deploy it
         String deployResponseStr = request("/deploy",
             "POST", new ExecRequest()
-                .fcmToken(UUID.randomUUID().toString())
                 .uid(updateResponse.getUid()));
 
         GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
@@ -219,7 +217,6 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         GLCompletionTestRequest completionRequest = new GLCompletionTestRequest();
         completionRequest.setCodeId(updateResponse.getUid());
         completionRequest.setUserId(user.getUid());
-        completionRequest.setFcmToken(UUID.randomUUID().toString());
         completionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
         Map<String, Object> completionResponse = chatService.gptCompletionTestRequest(completionRequest);
         assertNotNull(completionResponse);

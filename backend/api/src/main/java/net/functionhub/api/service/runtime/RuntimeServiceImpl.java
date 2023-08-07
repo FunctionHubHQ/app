@@ -112,8 +112,12 @@ public class RuntimeServiceImpl implements RuntimeService {
 
 
   @Override
-  public GenericResponse exec(ExecRequest execRequest) {
+  public ExecResultAsync exec(ExecRequest execRequest) {
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
+      String execId = execRequest.getExecId();
+      if (ObjectUtils.isEmpty(execId)) {
+        execId = UUID.randomUUID().toString();
+      }
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(execRequest.getUid()));
       if (codeCell != null) {
         EntitlementEntity entitlements = entitlementRepo.findByUserId(codeCell.getUserId());
@@ -129,23 +133,24 @@ public class RuntimeServiceImpl implements RuntimeService {
         request.setPayload(parseExecRequestPayload(execRequest.getPayload()));
         request.setEnv(sourceProps.getProfile());
         request.setUid(uid);
-        request.setFcmToken(execRequest.getFcmToken());
         request.setTimeout(entitlements.getTimeout());
         request.setValidate(execRequest.getValidate());
-        request.setExecId(execRequest.getExecId());
+        request.setExecId(execId);
         request.setDeployed(execRequest.getDeployed());
         request.setVersion(version);
         Thread.startVirtualThread(() -> submitExecutionTask(request, getRuntimeUrl()));
       }
+      return getExecutionResult(execId);
     }
-    return new GenericResponse().status("ok");
+   return new ExecResultAsync().error("Unknown error");
   }
 
   private Map<String, Object> parseExecRequestPayload(String payload) {
     TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
     try {
-      return objectMapper.readValue(payload, typeRef);
-    } catch (JsonProcessingException e) {
+      return objectMapper.readValue(
+          JsonParser.parseString(payload).getAsJsonObject().toString(), typeRef);
+    } catch (Exception e) {
       return null;
     }
   }
@@ -203,34 +208,25 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
       execResultAsync.setUid(uid);
       execResultAsync.setExecId(execResult.getExecId());
-      execResultAsync.setFcmToken(execResult.getFcmToken());
-      Message.Builder builder = Message.builder();
-      builder.putData("uid", uid);
-      builder.putData("type", MessageType.EXEC_RESULT);
-      if (!ObjectUtils.isEmpty(execResult.getResult())) {
+
+      if (!execResult.getResult().equals("null") &&
+          !ObjectUtils.isEmpty(execResult.getResult())) {
         String o = secureString(new Gson().toJson(execResult.getResult()));
-        builder.putData("result", o);
         execResultAsync.setResult(o);
-        log.info("{} result: {}", uid, o);
+//        log.info("{} result: {}", uid, o);
       }
       if (!ObjectUtils.isEmpty(execResult.getError())) {
         String error = secureString(execResult.getError());
-        log.error("{} error: {}", uid, error);
-        builder.putData("error", error);
+//        log.error("{} error: {}", uid, error);
         execResultAsync.setError(error);
       }
       if (!ObjectUtils.isEmpty(execResult.getStdOut())) {
         String stdout = secureString(String.join("\n", execResult.getStdOut())
             .replace("\\n", "\n"));
-        log.info("{} stdout: {}", uid, stdout);
-        builder.putData("std_out", stdout);
+//        log.info("{} stdout: {}", uid, stdout);
         execResultAsync.setStdOutStr(stdout);
       }
       executionResults.put(execResult.getExecId(), execResultAsync);
-      if (!ObjectUtils.isEmpty(execResultAsync.getFcmToken())) {
-        Message message = builder.setToken(execResult.getFcmToken()).build();
-        sendFcmMessage(message);
-      }
     }
     return new GenericResponse().status("ok");
   }

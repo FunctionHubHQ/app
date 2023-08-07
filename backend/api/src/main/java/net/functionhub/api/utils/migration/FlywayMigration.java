@@ -48,7 +48,6 @@ public class FlywayMigration {
                         dataSourceProps.getUsername(),
                         dataSourceProps.getPassword());
         log.info("Performing schema migration");
-        flyway.load().clean();
         if (dropSchema) {
             if (!devProfiles.contains(sourceProps.getProfile())) {
                 throw new IllegalArgumentException("Cannot drop schema for non-dev profile");

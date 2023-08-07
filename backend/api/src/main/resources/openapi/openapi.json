@@ -71,7 +71,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GenericResponse"
+                  "$ref": "#/components/schemas/ExecResultAsync"
                 }
               }
             }
@@ -378,9 +378,6 @@
             "type": "string",
             "description": "Code cell uid"
           },
-          "fcm_token": {
-            "type": "string"
-          },
           "user_id": {
             "type": "string"
           },
@@ -453,9 +450,6 @@
           "uid": {
             "type": "string"
           },
-          "fcm_token": {
-            "type": "string"
-          },
           "exec_id": {
             "type": "string"
           },
@@ -512,9 +506,6 @@
             "type": "string"
           },
           "exec_id": {
-            "type": "string"
-          },
-          "fcm_token": {
             "type": "string"
           },
           "validate": {

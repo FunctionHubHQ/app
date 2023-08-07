@@ -24,7 +24,7 @@ public class RuntimeController implements RuntimeApi {
   private final RuntimeService runtimeService;
 
   @Override
-  public ResponseEntity<GenericResponse> exec(ExecRequest execRequest) {
+  public ResponseEntity<ExecResultAsync> exec(ExecRequest execRequest) {
     return ResponseEntity.ok(runtimeService.exec(execRequest));
   }
 
