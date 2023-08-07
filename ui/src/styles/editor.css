@@ -1,6 +1,9 @@
+.gf-editor-right-column {
+  margin-top: 5rem;
+}
 .gf-editor-base {
   max-width: 772px;
-  width: 100%;
+  /*width: 100%;*/
   box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 5px 0px, rgba(0, 0, 0, 0.1) 0px 0px 1px 0px;
   font-family: monospace;
 }

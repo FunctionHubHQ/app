@@ -466,7 +466,7 @@
               "type": "string"
             }
           },
-          "std_out-str": {
+          "std_out_str": {
             "type": "string"
           },
           "error": {

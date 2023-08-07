@@ -115,12 +115,6 @@ export interface ExecRequest {
     exec_id?: string;
     /**
      * 
-     * @type {string}
-     * @memberof ExecRequest
-     */
-    fcm_token?: string;
-    /**
-     * 
      * @type {boolean}
      * @memberof ExecRequest
      */
@@ -156,12 +150,6 @@ export interface ExecResultAsync {
      * @memberof ExecResultAsync
      */
     uid?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ExecResultAsync
-     */
-    fcm_token?: string;
     /**
      * 
      * @type {string}
@@ -211,12 +199,6 @@ export interface GLCompletionTestRequest {
      * @memberof GLCompletionTestRequest
      */
     code_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof GLCompletionTestRequest
-     */
-    fcm_token?: string;
     /**
      * 
      * @type {string}

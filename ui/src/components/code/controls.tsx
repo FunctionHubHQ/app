@@ -25,6 +25,10 @@ const Controls: FC<ControlProps> = (props) => {
   const [lock, setLock] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
 
+  const [showForkButton, setShowForkButton] = useState(false)
+  const [showCodeButton, setShowCodeButton] = useState(false)
+
+
   const onFork = () => {
     setFork(!fork)
   }
@@ -54,7 +58,7 @@ const Controls: FC<ControlProps> = (props) => {
               <button
                   onClick={() => props.onRun()}
                   type="button"
-                  className="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-1 text-center mr-2 mb-1 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800 inline-flex items-center">
+                  className="text-blue-700 hover:text-white border border-blue-400 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-xs px-2 py-1 text-center mr-2 mb-1 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800 inline-flex items-center">
                 {props.codeRunInProgress ? <svg aria-hidden="true" role="status"
                             className="inline w-4 h-4 mr-3 text-gray-200 animate-spin dark:text-gray-600"
                             viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -68,16 +72,18 @@ const Controls: FC<ControlProps> = (props) => {
                     <PlayOutline
                         color={'#00000'}
                         title="Run"
+                        height={"16px"}
                     />
                 }
                 Run
               </button>
             </div>
+            {showForkButton &&
             <div>
               <button
                   onClick={onFork}
                   type="button"
-                  className="text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-1 text-center mr-2 mb-2 dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800 inline-flex items-center">
+                  className="text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-xs px-5 py-1 text-center mr-2 mb-2 dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800 inline-flex items-center">
                 {fork ? <svg aria-hidden="true" role="status"
                              className="inline w-4 h-4 mr-3 text-gray-200 animate-spin dark:text-gray-600"
                              viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -91,16 +97,18 @@ const Controls: FC<ControlProps> = (props) => {
                     <GitNetworkOutline
                         color={'#00000'}
                         title="Fork"
+                        height={"16px"}
                     />
                 }
                 Fork
               </button>
             </div>
+            }
             <div>
               <button
                   onClick={onDeploy}
                   type="button"
-                  className="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-1 text-center mr-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900 inline-flex items-center">
+                  className="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-xs px-5 py-1 text-center mr-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900 inline-flex items-center">
                 {deploy ? <svg aria-hidden="true" role="status"
                                className="inline w-4 h-4 mr-3 text-gray-200 animate-spin dark:text-gray-600"
                                viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -114,6 +122,7 @@ const Controls: FC<ControlProps> = (props) => {
                     <RocketOutline
                         color={'#00000'}
                         title="Deploy"
+                        height={"16px"}
                     />
                 }
                 Deploy
@@ -123,7 +132,7 @@ const Controls: FC<ControlProps> = (props) => {
               <button
                   onClick={onChat}
                   type="button"
-                  className="text-gray-900 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-1 text-center mr-2 mb-2 dark:border-gray-600 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-800 inline-flex items-center">
+                  className="text-gray-900 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-xs px-5 py-1 text-center mr-2 mb-2 dark:border-gray-600 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-800 inline-flex items-center">
                 {chat ? <svg aria-hidden="true" role="status"
                              className="inline w-4 h-4 mr-3 text-gray-200 animate-spin dark:text-gray-600"
                              viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -137,16 +146,19 @@ const Controls: FC<ControlProps> = (props) => {
                     <ChatboxEllipsesOutline
                         color={'#00000'}
                         title="Chat"
+                        height={"16px"}
                     />
                 }
                 Chat
               </button>
             </div>
+
+            {showCodeButton &&
             <div>
               <button
                   onClick={onCode}
                   type="button"
-                  className="text-purple-700 hover:text-white border border-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-1 text-center mr-2 mb-2 dark:border-purple-400 dark:text-purple-400 dark:hover:text-white dark:hover:bg-purple-500 dark:focus:ring-purple-900 inline-flex items-center">
+                  className="text-purple-700 hover:text-white border border-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-xs px-5 py-1 text-center mr-2 mb-2 dark:border-purple-400 dark:text-purple-400 dark:hover:text-white dark:hover:bg-purple-500 dark:focus:ring-purple-900 inline-flex items-center">
                 {code ? <svg aria-hidden="true" role="status"
                              className="inline w-4 h-4 mr-3 text-gray-200 animate-spin dark:text-gray-600"
                              viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -160,11 +172,13 @@ const Controls: FC<ControlProps> = (props) => {
                     <CodeSlashOutline
                         color={'#9b2dd3'}
                         title="Code"
+                        height={"16px"}
                     />
                 }
                 Code
               </button>
             </div>
+            }
             <div className="py-1">
               <button
                   onClick={onLock}
@@ -184,9 +198,11 @@ const Controls: FC<ControlProps> = (props) => {
                       {isLocked ? <LockClosed
                           color={'#36ae2d'}
                           title="Private"
+                          height={"16px"}
                       /> : <LockOpen
                           color={'#f04747'}
                           title="Public"
+                          height={"16px"}
                       />
                       }
                     </>
@@ -195,10 +211,6 @@ const Controls: FC<ControlProps> = (props) => {
             </div>
           </div>
         </div>
-
-
-
-
       </>
 );
 }

@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { historyField } from '@codemirror/commands';
 import { javascript } from '@codemirror/lang-javascript';
+import {githubLight} from "@uiw/codemirror-theme-github";
 import Controls from "@/components/code/controls";
 const stateFields = { history: historyField };
 import Chat from "@/components/code/chat";
@@ -39,7 +40,6 @@ function CodeEditor() {
     } else {
       setTestPayload(value)
     }
-    DEBUG("onCodeChange: ", codeKey, value);
 
     localStorage.setItem(codeKey, value);
 
@@ -60,7 +60,6 @@ function CodeEditor() {
             fields_to_update: ["code"]
           })
           .then(result => {
-            DEBUG(result.data)
             const _code = {...code}
             _code["uid"] = result.data.uid
             setCode(_code);
@@ -83,7 +82,6 @@ function CodeEditor() {
           new RuntimeApi(headerConfig(tokenResult.token))
           .exec({
             uid: code?.uid,
-            fcm_token: "hello-world!",
             payload: testPayload
           })
           .then(result => {
@@ -114,40 +112,64 @@ function CodeEditor() {
     setTestPayload(localStorage.getItem(getCodeKey('test')) || '');
   }
 
+  const getResult = () => {
+    let result = execResult?.result
+    if (execResult?.result) {
+      try {
+        result = JSON.stringify(JSON.parse(JSON.parse(execResult.result)), null, 2)
+      } catch (e) {
+        ERROR(e)
+      }
+    }
+    return result;
+  }
+
   return (
-      <>
-        <div className="gf-editor-base gf-controls">
-        <Controls
-            onRun={onRunCode}
-            codeRunInProgress={codeRunInProgress}
-        />
-        </div>
-        {chatMode ? <Chat/> :
-            <>
-              <div className="gf-editor-base gf-editor">
-                <CodeMirror
-                    theme={customCmTheme}
-                    extensions={[javascript({ typescript: true })]}
-                    value={mainCode}
-                    initialState={
-                      serializedStateMain
-                          ? {
-                            json: JSON.parse(serializedStateMain || ''),
-                            fields: stateFields,
-                          }
-                          : undefined
-                    }
-                    onChange={(value, valueUpdate) => onCodeChange(value, valueUpdate, "main")}
-                />
-              </div>
-              <div className="gf-editor-base gf-editor">
-                <div className="gf-test-tag">
-                <span
-                    className="bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-purple-400 border border-purple-400">Test Request</span>
+      <div className="container m-auto grid grid-cols-1 grid-rows-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+        <div className="tile col-span-1">
+          <div>
+            <div className="gf-editor-base gf-controls">
+              <Controls
+                  onRun={onRunCode}
+                  codeRunInProgress={codeRunInProgress}
+              />
+            </div>
+            {chatMode ? <Chat/> :
+                <div className="gf-editor-base gf-editor">
+                  <CodeMirror
+                      theme={customCmTheme}
+                      extensions={[javascript({ typescript: true })]}
+                      value={mainCode}
+                      initialState={
+                        serializedStateMain
+                            ? {
+                              json: JSON.parse(serializedStateMain || ''),
+                              fields: stateFields,
+                            }
+                            : undefined
+                      }
+                      onChange={(value, valueUpdate) => onCodeChange(value, valueUpdate, "main")}
+                  />
                 </div>
-                <div className="gf-test-editor">
+            }
+          </div>
+        </div>
+
+        <div className="tile col-span-1">
+          <div>
+            <div className="gf-editor-base gf-controls">
+              <div className="flex justify-between pt-4 pb-4 ml-3 mr-3">
+                <div>
+                  <div>
+                  <span
+                      className="bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-purple-400 border border-purple-400">Request Payload</span>
+                  </div>
+                </div>
+              </div>
+              <div className="gf-test-editor">
                 <CodeMirror
                     theme={customCmTheme}
+                    height={"200px"}
                     extensions={[javascript({ typescript: true })]}
                     value={testPayload}
                     initialState={
@@ -160,40 +182,47 @@ function CodeEditor() {
                     }
                     onChange={(value, valueUpdate) => onCodeChange(value, valueUpdate, "test")}
                 />
-                </div>
               </div>
-              {execResult?.error &&
-              <div className="gf-editor-base gf-error">
-                <div>
-                  <span
-                      className="bg-red-100 text-red-800 text-md font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-red-400 border border-red-400">Error</span>
-                </div>
+            </div>
+            {execResult?.error &&
+                <div className="gf-editor-base gf-error">
+                  <div>
+                <span
+                    className="bg-red-100 text-red-800 text-md font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-red-400 border border-red-400">Error</span>
+                  </div>
                   <span>{execResult.error}</span>
-              </div>
-              }
-              {execResult?.std_out_str &&
-              <div className="gf-editor-base gf-stdout">
-                <div>
-                  <span
-                      className="bg-yellow-100 text-yellow-800 text-md font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-yellow-400 border border-yellow-300">Console</span>
                 </div>
-                <span>{execResult.std_out_str}</span>
-              </div>
-              }
-              {execResult?.result && execResult.result !== "null" &&
-              <div className="gf-editor-base gf-result">
-                <div>
-                  <span
-                      className="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-green-400 border border-green-400">Result</span>
+            }
+            {execResult?.std_out_str &&
+                <div className="gf-editor-base gf-stdout">
+                  <div>
+                <span
+                    className="bg-yellow-100 text-yellow-800 text-md font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-yellow-400 border border-yellow-300">Console</span>
+                  </div>
+                  <CodeMirror
+                      theme={githubLight}
+                      extensions={[javascript({ typescript: true })]}
+                      value={execResult.std_out_str}
+                  />
                 </div>
-                <span>
-                  {JSON.parse(execResult.result)}
-                </span>
-              </div>
-              }
-          </>
-        }
-        </>
+            }
+            {execResult?.result && execResult.result !== "null" &&
+                <div className="gf-editor-base gf-result">
+                  <div>
+                <span
+                    className="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-green-400 border border-green-400">Result</span>
+                  </div>
+                  <CodeMirror
+                      theme={githubLight}
+                      value={getResult()}
+                  />
+                  <span>
+              </span>
+                </div>
+            }
+          </div>
+        </div>
+      </div>
   );
 }
 export default CodeEditor;
