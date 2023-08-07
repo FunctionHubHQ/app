@@ -12,22 +12,18 @@ import { LockClosed } from 'react-ionicons'
 import {FC, useState} from "react";
 
 export interface ControlProps {
-  onRun: () => void
+  onRun: () => void,
+  codeRunInProgress: boolean
 }
 
 const Controls: FC<ControlProps> = (props) => {
-  const [run, setRun] = useState(false)
+
   const [fork, setFork] = useState(false)
   const [deploy, setDeploy] = useState(false)
   const [chat, setChat] = useState(false)
   const [code, setCode] = useState(false)
   const [lock, setLock] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
-
-  const onRun = () => {
-    setRun(!run)
-    props.onRun()
-  }
 
   const onFork = () => {
     setFork(!fork)
@@ -56,10 +52,10 @@ const Controls: FC<ControlProps> = (props) => {
           <div className="flex justify-between pt-3 pb-2 ml-3 mr-3">
             <div>
               <button
-                  onClick={onRun}
+                  onClick={() => props.onRun()}
                   type="button"
                   className="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-1 text-center mr-2 mb-1 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800 inline-flex items-center">
-                {run ? <svg aria-hidden="true" role="status"
+                {props.codeRunInProgress ? <svg aria-hidden="true" role="status"
                             className="inline w-4 h-4 mr-3 text-gray-200 animate-spin dark:text-gray-600"
                             viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path

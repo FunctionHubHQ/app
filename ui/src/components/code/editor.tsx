@@ -6,7 +6,7 @@ import Controls from "@/components/code/controls";
 const stateFields = { history: historyField };
 import Chat from "@/components/code/chat";
 import {auth} from "@/utils/firebase-setup";
-import {Code, RuntimeApi} from "@/codegen";
+import {Code, ExecResultAsync, RuntimeApi} from "@/codegen";
 import {headerConfig} from "@/utils/headerConfig";
 import {customCmTheme, DEBUG, ERROR} from "@/utils/utils";
 
@@ -19,6 +19,8 @@ function CodeEditor() {
   const [testPayload, setTestPayload] = useState<string>();
   const [chatMode, setChatMode] = useState(false)
   const [code, setCode] = useState<Code | null>({})
+  const [execResult, setExecResult] = useState<ExecResultAsync | null>(null)
+  const [codeRunInProgress, setCodeRunInProgress] = useState(false)
 
   const getCodeKey = (prefix: string) => {
     return  prefix +' _codeValue';
@@ -69,6 +71,11 @@ function CodeEditor() {
   }
 
   const onRunCode = () => {
+    if (codeRunInProgress) {
+      return;
+    }
+    setCodeRunInProgress(true)
+    setExecResult(null);
     auth.onAuthStateChanged(user => {
       if (user) {
         user.getIdTokenResult(false)
@@ -80,10 +87,17 @@ function CodeEditor() {
             payload: testPayload
           })
           .then(result => {
-            ERROR("Exec Request error: ", result.data.error)
-            DEBUG("Exec Request error: ", result.data.status)
-          }).catch(e => ERROR(e.message))
-        }).catch(e => ERROR(e.message))
+            setExecResult(result.data)
+            setCodeRunInProgress(false)
+            DEBUG("Exec result: ", result.data)
+          }).catch(e => {
+            ERROR(e.message)
+            setCodeRunInProgress(false)
+          })
+        }).catch(e => {
+          ERROR(e.message)
+          setCodeRunInProgress(false)
+        })
       }
     })
   }
@@ -103,7 +117,10 @@ function CodeEditor() {
   return (
       <>
         <div className="gf-editor-base gf-controls">
-        <Controls onRun={onRunCode}/>
+        <Controls
+            onRun={onRunCode}
+            codeRunInProgress={codeRunInProgress}
+        />
         </div>
         {chatMode ? <Chat/> :
             <>
@@ -145,68 +162,35 @@ function CodeEditor() {
                 />
                 </div>
               </div>
+              {execResult?.error &&
               <div className="gf-editor-base gf-error">
                 <div>
                   <span
                       className="bg-red-100 text-red-800 text-md font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-red-400 border border-red-400">Error</span>
                 </div>
-                  <span>
-                    Uncaught Error: There was an error while hydrating. Because the error happened outside of a Suspense boundary, the entire root will switch to client rendering.
-          at updateHostRoot (webpack-internal:///(app-client)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:15468:57)
-          at beginWork$1 (webpack-internal:///(app-client)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:17338:14)
-          at beginWork (webpack-internal:///(app-client)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:25689:14)
-          at performUnitOfWork (webpack-internal:///(app-client)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom.development.js:24540:12)
-                  </span>
+                  <span>{execResult.error}</span>
               </div>
+              }
+              {execResult?.std_out_str &&
               <div className="gf-editor-base gf-stdout">
                 <div>
                   <span
                       className="bg-yellow-100 text-yellow-800 text-md font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-yellow-400 border border-yellow-300">Console</span>
                 </div>
-                <span>
-                  - ready started server on 0.0.0.0:3000, url: http://localhost:3000
-      warning ../package.json: No license field
-      - event compiled client and server successfully in 377 ms (20 modules)
-      - wait compiling...
-      - event compiled client and server successfully in 118 ms (20 modules)
-      - wait compiling /code/page (client and server)...
-      - event compiled client and server successfully in 4.1s (3295 modules)
-      - warn
-                </span>
+                <span>{execResult.std_out_str}</span>
               </div>
+              }
+              {execResult?.result && execResult.result !== "null" &&
               <div className="gf-editor-base gf-result">
                 <div>
                   <span
                       className="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-green-400 border border-green-400">Result</span>
                 </div>
                 <span>
-                  {"{\n" +
-                      "  \"model\": \"gpt-3.5-turbo\",\n" +
-                      "  \"temperature\": 0.7,\n" +
-                      "  \"user\": \"u_N6jrfCkk\",\n" +
-                      "  \"messages\": [\n" +
-                      "    {\n" +
-                      "      \"role\": \"user\",\n" +
-                      "      \"content\": \"PROMPT: What is the current time and weather in Boston?\\n\\nANSWER:\"\n" +
-                      "    },\n" +
-                      "    {\n" +
-                      "      \"role\": \"function\",\n" +
-                      "      \"name\": \"get_city_time_and_weather\",\n" +
-                      "      \"content\": {\n" +
-                      "        \"location\": \"Boston, MA\",\n" +
-                      "        \"temperature\": \"35\",\n" +
-                      "        \"forecast\": [\n" +
-                      "          \"rainy\",\n" +
-                      "          \"windy\"\n" +
-                      "        ],\n" +
-                      "        \"current_time\": \"August 1st 2023, 9:58:02 pm\"\n" +
-                      "      }\n" +
-                      "    }\n" +
-                      "  ],\n" +
-                      "  \"max_tokens\": 1000\n" +
-                      "}"}
+                  {JSON.parse(execResult.result)}
                 </span>
               </div>
+              }
           </>
         }
         </>

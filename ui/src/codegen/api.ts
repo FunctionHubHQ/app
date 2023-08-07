@@ -850,7 +850,7 @@ export const RuntimeApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async exec(execRequest: ExecRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GenericResponse>> {
+        async exec(execRequest: ExecRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ExecResultAsync>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.exec(execRequest, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -946,7 +946,7 @@ export const RuntimeApiFactory = function (configuration?: Configuration, basePa
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        exec(execRequest: ExecRequest, options?: any): AxiosPromise<GenericResponse> {
+        exec(execRequest: ExecRequest, options?: any): AxiosPromise<ExecResultAsync> {
             return localVarFp.exec(execRequest, options).then((request) => request(axios, basePath));
         },
         /**
