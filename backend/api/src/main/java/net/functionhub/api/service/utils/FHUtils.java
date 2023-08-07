@@ -1,6 +1,11 @@
 package net.functionhub.api.service.utils;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Random;
+import org.springframework.util.ResourceUtils;
 
 /**
  * @author Biz Melesse created on 1/2/23
@@ -31,5 +36,19 @@ public class FHUtils {
       return value.substring(0, maxLength);
     }
     return value;
+  }
+
+  public static String loadFile(String path) {
+    File file = null;
+    try {
+      file = ResourceUtils.getFile("classpath:" + path);
+      try {
+        return new String(Files.readAllBytes(file.toPath()));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

@@ -23,12 +23,8 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, UUID> {
       "WHERE user_id = ?1",
       nativeQuery = true)
   Integer numActiveCells(String userId);
-//
-//  @Query(value = "SELECT count(*) " +
-//      "FROM code_cell " +
-//      "WHERE user_id = ?1",
-//      nativeQuery = true)
-//  Integer numActiveCells(String userId);
 
-//  findByVersion(version)
+  CodeCellEntity findBySlug(String slug);
+
+
 }

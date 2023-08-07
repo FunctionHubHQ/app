@@ -48,6 +48,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.functionhub.api.service.utils.WordList;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -71,6 +72,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final CommitHistoryRepo commitHistoryRepo;
   private final Slugify slugify;
   private final DenoProps denoProps;
+  private final WordList wordList;
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
 
   // Define a unique version key to avoid conflicts
@@ -300,7 +302,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         codeCell.setIsActive(isBelowActiveLimit(code.getUserId()));
         codeCell.setIsPublic(false);
         codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
-        codeCell.setSlug(slugify.toSlug(codeCell.getFunctionName()));
+        codeCell.setSlug(getUniqueSlug());
         codeCell.setVersion(generateCodeVersion());
         if (!ObjectUtils.isEmpty(code.getParentId())) {
           codeCell.setParentId(UUID.fromString(code.getParentId()));
@@ -356,6 +358,23 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
     }
     return new CodeUpdateResponse();
+  }
+
+  private String getUniqueSlug() {
+    int numTries = 5;
+    int wordLength = 3;
+    String slug = wordList.getRandomPhrase(wordLength);
+    while (numTries > 0 && codeCellRepo.findBySlug(slug) != null) {
+      slug = wordList.getRandomPhrase(3);
+      numTries--;
+    }
+    if (numTries < 0) {
+      // If we've exhausted the namespace of all possible slugs (~10^9), then just generate
+      // a UUID. Even though it's ugly, it will prevent conflicts. If this ever happens,
+      // we should increase the word length.
+      return UUID.randomUUID().toString();
+    }
+    return slug;
   }
 
   private String parseCodeComment(String rawCode, String property) {
