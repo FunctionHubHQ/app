@@ -1,11 +1,16 @@
 'use client'
 import * as React from "react";
+import { FolderOpenOutline } from 'react-ionicons'
+import { PersonCircleOutline } from 'react-ionicons'
+import { ExitOutline } from 'react-ionicons'
+import { KeyOutline } from 'react-ionicons'
 
 import { Menu, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 import {useAuthContext} from "@/context/AuthContext";
 import {auth} from "@/utils/firebase-setup";
 import {useRouter} from "next/navigation";
+import {DEBUG, ERROR} from "@/utils/utils";
 
 export default function ProfileDropdown() {
   const {user} = useAuthContext()
@@ -14,16 +19,26 @@ export default function ProfileDropdown() {
   const logout = () => {
     auth.signOut().then(_ => {
       router.push("/")
-    }).catch(e => console.log(e))
+    }).catch(e => ERROR(e))
+  }
+
+  const getUserName = () => {
+    const maxLength = 20;
+    let handle = user.displayName; // get handle from server
+    if (handle && handle.length > maxLength) {
+      handle = handle.substring(0, maxLength - 3) + "..."
+    }
+    return handle
   }
   return (
       <div>
         <Menu as="div" >
           <div>
-            <Menu.Button className="relative flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800 mb-1">
-              <img className="w-10 h-10 rounded-full" id="avatarButton" data-dropdown-toggle="userDropdown"  data-dropdown-placement="bottom-start"
+            <Menu.Button className="relative flex rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-200 mb-1">
+              <img className="w-7 h-7 rounded-full" id="avatarButton" data-dropdown-toggle="userDropdown"  data-dropdown-placement="bottom-start"
                    src={user.photoURL}
                    alt="User dropdown"/>
+              <div className="mt-1 ml-2 mr-2"><span>{getUserName()}</span></div>
             </Menu.Button>
           </div>
           <Transition
@@ -35,121 +50,85 @@ export default function ProfileDropdown() {
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
           >
-            <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+            <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
               <div className="px-1 py-1 ">
                 <Menu.Item>
                   {({ active }) => (
-                      <button
-                          className={`${
-                              active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                          } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                      >
-                        {active ? (
-                            <EditActiveIcon
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                            />
-                        ) : (
-                            <EditInactiveIcon
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                            />
-                        )}
-                        Edit
-                      </button>
-                  )}
-                </Menu.Item>
-                <Menu.Item>
-                  {({ active }) => (
-                      <button
-                          className={`${
-                              active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                          } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                      >
-                        {active ? (
-                            <DuplicateActiveIcon
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                            />
-                        ) : (
-                            <DuplicateInactiveIcon
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                            />
-                        )}
-                        Duplicate
-                      </button>
+                      <a href="/profile">
+                        <button
+                            className={`${
+                                active ? 'bg-gray-100 text-gray-900' : 'text-gray-900'
+                            } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                        >
+                          <PersonCircleOutline
+                              color={'#a1a1a1'}
+                              title="Profile"
+                              width="32px"
+                              style={{marginRight: '0.5rem'}}
+                          />
+                          Profile
+                        </button>
+                      </a>
                   )}
                 </Menu.Item>
               </div>
-              <div className="px-1 py-1">
+              <div className="px-1 py-1 ">
                 <Menu.Item>
                   {({ active }) => (
-                      <button
-                          className={`${
-                              active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                          } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                      >
-                        {active ? (
-                            <ArchiveActiveIcon
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                            />
-                        ) : (
-                            <ArchiveInactiveIcon
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                            />
-                        )}
-                        Archive
-                      </button>
+                      <a href="/projects">
+                        <button
+                            className={`${
+                                active ? 'bg-gray-100 text-gray-900' : 'text-gray-900'
+                            } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                        >
+                          <FolderOpenOutline
+                              color={'#a1a1a1'}
+                              title="Projects"
+                              width="32px"
+                              style={{marginRight: '0.5rem'}}
+                          />
+                          Projects
+                        </button>
+                      </a>
                   )}
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
+                      <a href="/api-keys">
                       <button
                           className={`${
-                              active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-900'
                           } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                       >
-                        {active ? (
-                            <MoveActiveIcon
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                            />
-                        ) : (
-                            <MoveInactiveIcon
-                                className="mr-2 h-5 w-5"
-                                aria-hidden="true"
-                            />
-                        )}
-                        Move
+                        <KeyOutline
+                            color={'#a1a1a1'}
+                            title="API Keys"
+                            width="32px"
+                            style={{marginRight: '0.5rem'}}
+                        />
+                        API Keys
                       </button>
+                      </a>
                   )}
                 </Menu.Item>
               </div>
-              <div className="px-1 py-1">
+              <div className="px-1 py-1 ">
                 <Menu.Item>
                   {({ active }) => (
-                      <button
-                          onClick = {logout}
-                          className={`${
-                              active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                          } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                      >
-                        {active ? (
-                            <LogoutActiveIcon
-                                className="mr-2 h-5 w-5 text-violet-400"
-                                aria-hidden="true"
-                            />
-                        ) : (
-                            <LogoutInactiveIcon
-                                className="mr-2 h-5 w-5 text-violet-400"
-                                aria-hidden="true"
-                            />
-                        )}
-                        Sign out
-                      </button>
+                        <button
+                            onClick = {logout}
+                            className={`${
+                                active ? 'bg-gray-100 text-gray-900' : 'text-gray-900'
+                            } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                        >
+                          <ExitOutline
+                              color={'#a1a1a1'}
+                              title="Sign out"
+                              width="32px"
+                              style={{marginRight: '0.5rem'}}
+                          />
+                          Sign out
+                        </button>
                   )}
                 </Menu.Item>
               </div>
@@ -157,227 +136,5 @@ export default function ProfileDropdown() {
           </Transition>
         </Menu>
       </div>
-  )
-}
-
-function EditInactiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-            d="M4 13V16H7L16 7L13 4L4 13Z"
-            fill="#EDE9FE"
-            stroke="#A78BFA"
-            strokeWidth="2"
-        />
-      </svg>
-  )
-}
-
-function EditActiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-            d="M4 13V16H7L16 7L13 4L4 13Z"
-            fill="#8B5CF6"
-            stroke="#C4B5FD"
-            strokeWidth="2"
-        />
-      </svg>
-  )
-}
-
-function DuplicateInactiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-            d="M4 4H12V12H4V4Z"
-            fill="#EDE9FE"
-            stroke="#A78BFA"
-            strokeWidth="2"
-        />
-        <path
-            d="M8 8H16V16H8V8Z"
-            fill="#EDE9FE"
-            stroke="#A78BFA"
-            strokeWidth="2"
-        />
-      </svg>
-  )
-}
-
-function DuplicateActiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-            d="M4 4H12V12H4V4Z"
-            fill="#8B5CF6"
-            stroke="#C4B5FD"
-            strokeWidth="2"
-        />
-        <path
-            d="M8 8H16V16H8V8Z"
-            fill="#8B5CF6"
-            stroke="#C4B5FD"
-            strokeWidth="2"
-        />
-      </svg>
-  )
-}
-
-function ArchiveInactiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect
-            x="5"
-            y="8"
-            width="10"
-            height="8"
-            fill="#EDE9FE"
-            stroke="#A78BFA"
-            strokeWidth="2"
-        />
-        <rect
-            x="4"
-            y="4"
-            width="12"
-            height="4"
-            fill="#EDE9FE"
-            stroke="#A78BFA"
-            strokeWidth="2"
-        />
-        <path d="M8 12H12" stroke="#A78BFA" strokeWidth="2" />
-      </svg>
-  )
-}
-
-function ArchiveActiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect
-            x="5"
-            y="8"
-            width="10"
-            height="8"
-            fill="#8B5CF6"
-            stroke="#C4B5FD"
-            strokeWidth="2"
-        />
-        <rect
-            x="4"
-            y="4"
-            width="12"
-            height="4"
-            fill="#8B5CF6"
-            stroke="#C4B5FD"
-            strokeWidth="2"
-        />
-        <path d="M8 12H12" stroke="#A78BFA" strokeWidth="2" />
-      </svg>
-  )
-}
-
-function MoveInactiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <path d="M10 4H16V10" stroke="#A78BFA" strokeWidth="2" />
-        <path d="M16 4L8 12" stroke="#A78BFA" strokeWidth="2" />
-        <path d="M8 6H4V16H14V12" stroke="#A78BFA" strokeWidth="2" />
-      </svg>
-  )
-}
-
-function MoveActiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <path d="M10 4H16V10" stroke="#C4B5FD" strokeWidth="2" />
-        <path d="M16 4L8 12" stroke="#C4B5FD" strokeWidth="2" />
-        <path d="M8 6H4V16H14V12" stroke="#C4B5FD" strokeWidth="2" />
-      </svg>
-  )
-}
-
-function LogoutInactiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect
-            x="5"
-            y="6"
-            width="10"
-            height="10"
-            fill="#EDE9FE"
-            stroke="#A78BFA"
-            strokeWidth="2"
-        />
-        <path d="M3 6H17" stroke="#A78BFA" strokeWidth="2" />
-        <path d="M8 6V4H12V6" stroke="#A78BFA" strokeWidth="2" />
-      </svg>
-  )
-}
-
-function LogoutActiveIcon(props) {
-  return (
-      <svg
-          {...props}
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect
-            x="5"
-            y="6"
-            width="10"
-            height="10"
-            fill="#8B5CF6"
-            stroke="#C4B5FD"
-            strokeWidth="2"
-        />
-        <path d="M3 6H17" stroke="#C4B5FD" strokeWidth="2" />
-        <path d="M8 6V4H12V6" stroke="#C4B5FD" strokeWidth="2" />
-      </svg>
   )
 }
