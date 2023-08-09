@@ -140,7 +140,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         throw new RuntimeException(result.getError());
       }
       // TODO: inject the std out into the result
-      return result.getResult();
+      return JsonParser.parseString(result.getResult()).getAsString();
     }
     throw new RuntimeException("Requested service not found");
   }

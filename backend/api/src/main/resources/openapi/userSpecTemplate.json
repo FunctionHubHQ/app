@@ -13,9 +13,9 @@
     "/": {
       "post": {
         "tags": [
-          "runtime"
+          "api"
         ],
-        "summary": "Execute custom function",
+        "summary": "Dynamic REST API",
         "operationId": "run",
         "requestBody": {
           "required": true,
