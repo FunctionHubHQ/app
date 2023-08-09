@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Random;
 import org.springframework.util.ResourceUtils;
 
@@ -50,5 +53,9 @@ public class FHUtils {
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static String getCurrentTime() {
+    return LocalDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
   }
 }

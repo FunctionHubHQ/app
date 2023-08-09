@@ -61,6 +61,11 @@ public class RuntimeController implements RuntimeApi, SpecApi {
   }
 
   @Override
+  public ResponseEntity<String> runFunction(String functionSlug, String body) {
+    return ResponseEntity.ok(runtimeService.runFunction(functionSlug, body));
+  }
+
+  @Override
   public ResponseEntity<CodeUpdateResponse> updateCode(Code code) {
     return ResponseEntity.ok(runtimeService.updateCode(code));
   }

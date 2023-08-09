@@ -1,6 +1,5 @@
 package net.functionhub.api.service.runtime;
 
-import java.util.Map;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResponse;
 import net.functionhub.api.ExecRequest;
@@ -29,6 +28,15 @@ public interface RuntimeService {
 
   ExecResultAsync getExecutionResult(String executionId);
   ExecResultAsync exec(ExecRequest execRequest);
+
+  /**
+   * Execute any user function. This handles REST calls to user-generated functions.
+   * @param functionSlug
+   * @param body
+   * @return
+   */
+  String runFunction(String functionSlug, String body);
+
   String getUserCode(String uid);
   GenericResponse handleExecResult(ExecResultAsync execResult);
   String generateCodeVersion();

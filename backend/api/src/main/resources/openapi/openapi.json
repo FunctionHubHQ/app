@@ -16,6 +16,49 @@
     }
   ],
   "paths": {
+    "/{function_slug}": {
+      "post": {
+        "tags": [
+          "runtime"
+        ],
+        "summary": "Execute any user function",
+        "description": "Execute any user function with dynamically generated request and response payloads",
+        "operationId": "runFunction",
+        "parameters": [
+          {
+            "name": "function_slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Execution request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/spec/{function_slug}/{version}/{api_key}": {
       "get": {
         "tags": [

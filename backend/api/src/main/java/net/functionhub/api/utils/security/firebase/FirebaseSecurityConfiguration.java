@@ -2,6 +2,7 @@ package net.functionhub.api.utils.security.firebase;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.functionhub.api.props.CorsProps;
+import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.security.firewall.FirewallConfiguration;
 import net.functionhub.api.utils.security.UnsecurePaths;
 import lombok.RequiredArgsConstructor;
@@ -105,10 +106,9 @@ public class FirebaseSecurityConfiguration {
         return (httpServletRequest, httpServletResponse, e) -> {
             Map<String, Object> errorObject = new HashMap<>();
             int errorCode = 401;
-            errorObject.put("message","Unauthorized access of protected resource");
-            errorObject.put("error", HttpStatus.UNAUTHORIZED);
+            errorObject.put("error","Unauthorized access of protected resource");
             errorObject.put("code", errorCode);
-            errorObject.put("timestamp", OffsetDateTime.now());
+            errorObject.put("timestamp", FHUtils.getCurrentTime());
             httpServletResponse.setContentType("application/json;charset=UTF-8");
             httpServletResponse.setStatus(errorCode);
             httpServletResponse.getWriter().write(objectMapper.writeValueAsString(errorObject));

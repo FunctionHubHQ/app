@@ -21,6 +21,7 @@ import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.dto.ExecRequestInternal;
 import net.functionhub.api.dto.GenerateSpecRequest;
+import net.functionhub.api.dto.RequestHeaders;
 import net.functionhub.api.props.DenoProps;
 import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.utils.FHUtils;
@@ -68,10 +69,11 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final CodeCellRepo codeCellRepo;
   private final EntitlementRepo entitlementRepo;
   private final CommitHistoryRepo commitHistoryRepo;
-  private final Slugify slugify;
+//  private final Slugify slugify;
   private final DenoProps denoProps;
   private final WordList wordList;
   private final UserSpecTemplate userSpecTemplate;
+  private final RequestHeaders requestHeaders;
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
@@ -116,11 +118,39 @@ public class RuntimeServiceImpl implements RuntimeService {
   @Override
   public ExecResultAsync exec(ExecRequest execRequest) {
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
+      return execHelper(execRequest, codeCellRepo.findByUid(UUID.fromString(execRequest.getUid())));
+    }
+    return new ExecResultAsync().error("Unknown error");
+  }
+
+  @Override
+  public String runFunction(String functionSlug, String body) {
+    CodeCellEntity codeCell = codeCellRepo.findBySlugAndApiKey(
+        functionSlug, requestHeaders.getHeaders().get("api-key"));
+    if (codeCell != null) {
+      ExecRequest request = new ExecRequest()
+          .execId(UUID.randomUUID().toString())
+          .deployed(false)
+          .validate(true)
+          .payload(body)
+          .version(codeCell.getVersion())
+          .uid(codeCell.getUid().toString());
+      ExecResultAsync result = execHelper(request, codeCell);
+      if (!ObjectUtils.isEmpty(result.getError())) {
+        throw new RuntimeException(result.getError());
+      }
+      // TODO: inject the std out into the result
+      return result.getResult();
+    }
+    throw new RuntimeException("Requested service not found");
+  }
+
+  private ExecResultAsync execHelper(ExecRequest execRequest, CodeCellEntity codeCell) {
+    if (!ObjectUtils.isEmpty(execRequest.getUid())) {
       String execId = execRequest.getExecId();
       if (ObjectUtils.isEmpty(execId)) {
         execId = UUID.randomUUID().toString();
       }
-      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(execRequest.getUid()));
       if (codeCell != null) {
         EntitlementEntity entitlements = entitlementRepo.findByUserId(codeCell.getUserId());
         String version = codeCell.getVersion();
@@ -144,7 +174,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
       return getExecutionResult(execId);
     }
-   return new ExecResultAsync().error("Unknown error");
+    return new ExecResultAsync().error("Unknown error");
   }
 
   private Map<String, Object> parseExecRequestPayload(String payload) {
@@ -463,7 +493,7 @@ public class RuntimeServiceImpl implements RuntimeService {
           Map<String, Object> requestDto  = getRequestDto( constructDto(spec), codeCell.getVersion());
           String requestDtoStr = new Gson().toJson(requestDto);
           codeCell.setJsonSchema(requestDtoStr);
-          codeCell.setFullOpenApiSchema(generateFullSpec(spec));
+          codeCell.setFullOpenApiSchema(generateFullSpec(spec, specResult.getUid()));
           jsonSchema.put(codeCell.getUid().toString(), requestDtoStr);
 
           // Insert the schema into an existing commit
@@ -487,16 +517,23 @@ public class RuntimeServiceImpl implements RuntimeService {
     return new GenericResponse().error("Something went wrong");
   }
 
-  private String generateFullSpec(String spec) {
+  private String generateFullSpec(String spec, String uid) {
     Map<String, Object> fullSpecMap = null;
     try {
       spec = spec.replace("#/definitions", "#/components/definitions");
       fullSpecMap = objectMapper.readValue(spec,
           typeRef);
-      Map<String, Object> template = userSpecTemplate.getSpecCopy();
-      fullSpecMap.remove("$comment");
-      template.put("components", fullSpecMap);
-      return new Gson().toJson(template);
+      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
+      if (codeCell != null) {
+        Map<String, Object> template = userSpecTemplate.getSpecCopy();
+        Map<String, String> servers = new HashMap<>();
+        servers.put("url", sourceProps.getBaseUrl() + "/" + codeCell.getSlug());
+        template.put("servers", List.of(servers));
+        fullSpecMap.remove("$comment");
+        template.put("components", fullSpecMap);
+        return new Gson().toJson(template);
+      }
+
     } catch (JsonProcessingException e) {
       log.error("{}.handleSpecResult: {}",
           getClass().getSimpleName(),
