@@ -7,11 +7,18 @@ import Controls from "@/components/code/controls";
 const stateFields = { history: historyField };
 import Chat from "@/components/code/chat";
 import {auth} from "@/utils/firebase-setup";
-import {Code, ExecResultAsync, RuntimeApi} from "@/codegen";
+import {
+  Code,
+  ExecResultAsync,
+  RuntimeApi,
+  UserApi,
+  UserProfile,
+  UserProfileResponse
+} from "@/codegen";
 import {headerConfig} from "@/utils/headerConfig";
 import {customCmTheme, DEBUG, ERROR} from "@/utils/utils";
-
-
+import 'rapidoc';
+import {BASE_PATH} from "@/codegen/base";
 
 function CodeEditor() {
   const [serializedStateMain, setSerializedStateMain] = useState<string>();
@@ -22,6 +29,11 @@ function CodeEditor() {
   const [code, setCode] = useState<Code | null>({})
   const [execResult, setExecResult] = useState<ExecResultAsync | null>(null)
   const [codeRunInProgress, setCodeRunInProgress] = useState(false)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [specUrl, setSpecUrl] = useState<string | null>(null)
+  const [apiAuthToken, setApiAuthToken] = useState<string | undefined>(undefined)
+
+  const showRequestPayloadHeader = false;
 
   const getCodeKey = (prefix: string) => {
     return  prefix +' _codeValue';
@@ -61,7 +73,9 @@ function CodeEditor() {
           })
           .then(result => {
             const _code = {...code}
+            DEBUG("Update Response: ", result.data)
             _code["uid"] = result.data.uid
+            onSetSpecUrl(result.data.slug, result.data.version);
             setCode(_code);
           }).catch(e => ERROR(e.message))
         }).catch(e => ERROR(e.message))
@@ -105,11 +119,48 @@ function CodeEditor() {
     initState()
   }, [])
 
+  // useEffect(() => {
+  //   if (userProfile?.api_key) {
+  //     DEBUG("user profile: ", userProfile)
+  //     const _specUrl = BASE_PATH + "/spec/funny-func-hello-world/" + userProfile?.api_key
+  //     DEBUG("Spec URL: ", _specUrl)
+  //     setSpecUrl(_specUrl)
+  //   }
+  // }, [userProfile?.api_key])
+
+  const onSetSpecUrl = (functionSlug: string | undefined, version: string | undefined) => {
+    if (userProfile?.api_key && functionSlug && version) {
+      const _specUrl = BASE_PATH + `/spec/${functionSlug}/${version}/` + userProfile?.api_key
+      DEBUG("Spec URL: ", _specUrl)
+      setSpecUrl(_specUrl)
+      setApiAuthToken("Bearer " + userProfile?.api_key)
+    }
+
+  }
+
   const initState = () => {
     setSerializedStateMain(localStorage.getItem(getStateKey('main')) || '')
     setMainCode(localStorage.getItem(getCodeKey('main')) || '');
     setSerializedStateTest(localStorage.getItem(getStateKey('test')) || '')
     setTestPayload(localStorage.getItem(getCodeKey('test')) || '');
+    fetchUserProfile()
+  }
+
+  const fetchUserProfile = () => {
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        user.getIdTokenResult(false)
+        .then(tokenResult => {
+          new UserApi(headerConfig(tokenResult.token))
+          .getUserprofile()
+          .then(result => {
+            const response : UserProfileResponse = result.data
+            DEBUG("User Profile: ", response.profile)
+            setUserProfile(response.profile);
+          }).catch(e => ERROR(e.message))
+        }).catch(e => ERROR(e.message))
+      }
+    })
   }
 
   const getResult = () => {
@@ -124,6 +175,7 @@ function CodeEditor() {
     return result;
   }
 
+  // @ts-ignore
   return (
       <div className="container m-auto grid grid-cols-1 grid-rows-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
         <div className="tile col-span-1">
@@ -157,32 +209,61 @@ function CodeEditor() {
 
         <div className="tile col-span-1">
           <div>
-            <div className="gf-editor-base gf-controls">
-              <div className="flex justify-between pt-4 pb-4 ml-3 mr-3">
-                <div>
-                  <div>
+            <div className=" gf-controls">
+              {
+                showRequestPayloadHeader && <div className="flex justify-between pt-4 pb-4 ml-3 mr-3">
+                    <div>
+                      <div>
                   <span
                       className="bg-purple-100 text-purple-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-purple-400 border border-purple-400">Request Payload</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+              }
+
+              {specUrl &&
               <div className="gf-test-editor">
-                <CodeMirror
-                    theme={customCmTheme}
-                    height={"200px"}
-                    extensions={[javascript({ typescript: true })]}
-                    value={testPayload}
-                    initialState={
-                      serializedStateTest
-                          ? {
-                            json: JSON.parse(serializedStateTest || ''),
-                            fields: stateFields,
-                          }
-                          : undefined
-                    }
-                    onChange={(value, valueUpdate) => onCodeChange(value, valueUpdate, "test")}
-                />
+                <rapi-doc
+                  spec-url = {specUrl}
+                  nav-item-spacing = "compact"
+                  header-color = "#ececec"
+                  render-style = "view"
+                  update-route = "false"
+                  layout = "column"
+                  show-info = "false"
+                  show-header = "false"
+                  allow-search = "false"
+                  api-key-name = "Authorization"
+                  api-key-location = "header"
+                  api-key-value = {apiAuthToken}
+                  allow-server-selection = "false"
+                  allow-authentication = "false"
+                  allow-spec-url-load = "false"
+                  allow-spec-file-load = "false"
+                  allow-advanced-search = "false"
+                  schema-description-expanded = "true"
+                  persist-auth = "true"
+                  style = {{ height: "auto", width: "100%" }}
+              >
+              </rapi-doc>
+                {/*<CodeMirror*/}
+                {/*    theme={customCmTheme}*/}
+                {/*    height={"200px"}*/}
+                {/*    extensions={[javascript({ typescript: true })]}*/}
+                {/*    value={testPayload}*/}
+                {/*    initialState={*/}
+                {/*      serializedStateTest*/}
+                {/*          ? {*/}
+                {/*            json: JSON.parse(serializedStateTest || ''),*/}
+                {/*            fields: stateFields,*/}
+                {/*          }*/}
+                {/*          : undefined*/}
+                {/*    }*/}
+                {/*    onChange={(value, valueUpdate) => onCodeChange(value, valueUpdate, "test")}*/}
+                {/*/>*/}
               </div>
+              }
+
             </div>
             {execResult?.error &&
                 <div className="gf-editor-base gf-error">

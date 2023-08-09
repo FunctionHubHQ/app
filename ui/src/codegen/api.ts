@@ -94,6 +94,18 @@ export interface CodeUpdateResponse {
      * @memberof CodeUpdateResponse
      */
     uid?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CodeUpdateResponse
+     */
+    slug?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CodeUpdateResponse
+     */
+    version?: string;
 }
 /**
  * 
@@ -305,6 +317,12 @@ export interface UserProfile {
      * @memberof UserProfile
      */
     picture?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserProfile
+     */
+    api_key?: string;
     /**
      * 
      * @type {{ [key: string]: boolean; }}
@@ -1093,6 +1111,121 @@ export class RuntimeApi extends BaseAPI {
      */
     public updateCode(code: Code, options?: any) {
         return RuntimeApiFp(this.configuration).updateCode(code, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+/**
+ * SpecApi - axios parameter creator
+ * @export
+ */
+export const SpecApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 
+         * @param {string} functionSlug 
+         * @param {string} version 
+         * @param {string} apiKey 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getUserSpec: async (functionSlug: string, version: string, apiKey: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'functionSlug' is not null or undefined
+            assertParamExists('getUserSpec', 'functionSlug', functionSlug)
+            // verify required parameter 'version' is not null or undefined
+            assertParamExists('getUserSpec', 'version', version)
+            // verify required parameter 'apiKey' is not null or undefined
+            assertParamExists('getUserSpec', 'apiKey', apiKey)
+            const localVarPath = `/spec/{function_slug}/{version}/{api_key}`
+                .replace(`{${"function_slug"}}`, encodeURIComponent(String(functionSlug)))
+                .replace(`{${"version"}}`, encodeURIComponent(String(version)))
+                .replace(`{${"api_key"}}`, encodeURIComponent(String(apiKey)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * SpecApi - functional programming interface
+ * @export
+ */
+export const SpecApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = SpecApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 
+         * @param {string} functionSlug 
+         * @param {string} version 
+         * @param {string} apiKey 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getUserSpec(functionSlug: string, version: string, apiKey: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getUserSpec(functionSlug, version, apiKey, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * SpecApi - factory interface
+ * @export
+ */
+export const SpecApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = SpecApiFp(configuration)
+    return {
+        /**
+         * 
+         * @param {string} functionSlug 
+         * @param {string} version 
+         * @param {string} apiKey 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getUserSpec(functionSlug: string, version: string, apiKey: string, options?: any): AxiosPromise<string> {
+            return localVarFp.getUserSpec(functionSlug, version, apiKey, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * SpecApi - object-oriented interface
+ * @export
+ * @class SpecApi
+ * @extends {BaseAPI}
+ */
+export class SpecApi extends BaseAPI {
+    /**
+     * 
+     * @param {string} functionSlug 
+     * @param {string} version 
+     * @param {string} apiKey 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof SpecApi
+     */
+    public getUserSpec(functionSlug: string, version: string, apiKey: string, options?: any) {
+        return SpecApiFp(this.configuration).getUserSpec(functionSlug, version, apiKey, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
