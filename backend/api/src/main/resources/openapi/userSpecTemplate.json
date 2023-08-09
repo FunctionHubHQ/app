@@ -1,0 +1,50 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FunctionHub",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080"
+    }
+  ],
+  "paths": {
+    "/run": {
+      "post": {
+        "tags": [
+          "runtime"
+        ],
+        "summary": "Execute custom function",
+        "operationId": "run",
+        "requestBody": {
+          "required": true,
+          "description": "Request payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/definitions/RequestEntity"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/definitions/ResponseEntity"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "definitions": {
+    }
+  }
+}

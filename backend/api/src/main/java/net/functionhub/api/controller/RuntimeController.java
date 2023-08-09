@@ -1,11 +1,13 @@
 package net.functionhub.api.controller;
 
+import java.util.Map;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResponse;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.RuntimeApi;
+import net.functionhub.api.SpecApi;
 import net.functionhub.api.SpecResult;
 import net.functionhub.api.service.runtime.RuntimeService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-public class RuntimeController implements RuntimeApi {
+public class RuntimeController implements RuntimeApi, SpecApi {
   private final RuntimeService runtimeService;
 
   @Override
@@ -61,5 +63,10 @@ public class RuntimeController implements RuntimeApi {
   @Override
   public ResponseEntity<CodeUpdateResponse> updateCode(Code code) {
     return ResponseEntity.ok(runtimeService.updateCode(code));
+  }
+
+  @Override
+  public ResponseEntity<String> getUserSpec(String functionId, String version, String apiKey) {
+    return ResponseEntity.ok(runtimeService.getUserSpec(functionId, version));
   }
 }

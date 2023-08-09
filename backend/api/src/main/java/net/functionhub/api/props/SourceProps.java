@@ -17,4 +17,5 @@ import org.springframework.context.annotation.Primary;
 public class SourceProps {
     private String profile;
     private String name;
+    private String baseUrl;
 }

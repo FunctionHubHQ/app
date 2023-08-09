@@ -16,6 +16,52 @@
     }
   ],
   "paths": {
+    "/spec/{function_slug}/{version}/{api_key}": {
+      "get": {
+        "tags": [
+          "spec"
+        ],
+        "operationId": "getUserSpec",
+        "parameters": [
+          {
+            "name": "function_slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "api_key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/npm/{uid}": {
       "get": {
         "tags": [
@@ -441,6 +487,12 @@
         "properties": {
           "uid": {
             "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
           }
         }
       },
@@ -563,6 +615,9 @@
             "type": "string"
           },
           "picture": {
+            "type": "string"
+          },
+          "api_key": {
             "type": "string"
           },
           "roles": {

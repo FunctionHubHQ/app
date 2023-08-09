@@ -4,9 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingException;
-import com.google.firebase.messaging.Message;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -48,6 +45,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.functionhub.api.service.utils.UserSpecTemplate;
 import net.functionhub.api.service.utils.WordList;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -73,7 +71,9 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final Slugify slugify;
   private final DenoProps denoProps;
   private final WordList wordList;
+  private final UserSpecTemplate userSpecTemplate;
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+  private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
   // Define a unique version key to avoid conflicts
   public final static String versionKey = "version_" + FHUtils.generateUid(6);
@@ -321,7 +321,6 @@ public class RuntimeServiceImpl implements RuntimeService {
               rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
               codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
               codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
-              codeCell.setSlug(slugify.toSlug(codeCell.getFunctionName()));
             }
             else if (field.equals("is_active")) {
               if (isBelowActiveLimit(userId) || !code.getIsActive()) {
@@ -354,7 +353,10 @@ public class RuntimeServiceImpl implements RuntimeService {
                 .decode(finalCell.getCode()
                     .getBytes())), finalCell.getUid()
                 .toString()));
-        return new CodeUpdateResponse().uid(updatedCell.getUid().toString());
+        return new CodeUpdateResponse()
+            .uid(updatedCell.getUid().toString())
+            .slug(updatedCell.getSlug())
+            .version(updatedCell.getVersion());
       }
     }
     return new CodeUpdateResponse();
@@ -362,7 +364,7 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   private String getUniqueSlug() {
     int numTries = 5;
-    int wordLength = 3;
+    int wordLength = 6;
     String slug = wordList.getRandomPhrase(wordLength);
     while (numTries > 0 && codeCellRepo.findBySlug(slug) != null) {
       slug = wordList.getRandomPhrase(3);
@@ -458,9 +460,10 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(specResult.getUid()));
       if (codeCell != null) {
         if (format.equals("json")) {
-          Map<String, Object> requestDto  = getRequestDto(constructDto(spec), codeCell.getVersion());
+          Map<String, Object> requestDto  = getRequestDto( constructDto(spec), codeCell.getVersion());
           String requestDtoStr = new Gson().toJson(requestDto);
           codeCell.setJsonSchema(requestDtoStr);
+          codeCell.setFullOpenApiSchema(generateFullSpec(spec));
           jsonSchema.put(codeCell.getUid().toString(), requestDtoStr);
 
           // Insert the schema into an existing commit
@@ -484,8 +487,25 @@ public class RuntimeServiceImpl implements RuntimeService {
     return new GenericResponse().error("Something went wrong");
   }
 
+  private String generateFullSpec(String spec) {
+    Map<String, Object> fullSpecMap = null;
+    try {
+      spec = spec.replace("#/definitions", "#/components/definitions");
+      fullSpecMap = objectMapper.readValue(spec,
+          typeRef);
+      Map<String, Object> template = userSpecTemplate.getSpecCopy();
+      fullSpecMap.remove("$comment");
+      template.put("components", fullSpecMap);
+      return new Gson().toJson(template);
+    } catch (JsonProcessingException e) {
+      log.error("{}.handleSpecResult: {}",
+          getClass().getSimpleName(),
+          e.getMessage());
+    }
+    return new Gson().toJson(userSpecTemplate.getSpecCopy());
+  }
+
   private Map<String, Object> getRequestDto(Map<String, Object> requestDto, String version) {
-    TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
     TypeReference<List<String>> listTypeRef = new TypeReference<>() {};
     try {
       Map<String, Object> modifiedDto = objectMapper.readValue(
@@ -614,18 +634,17 @@ public class RuntimeServiceImpl implements RuntimeService {
     return new GenericResponse().status("ok");
   }
 
-  private Boolean isBelowActiveLimit(String userId) {
-    return codeCellRepo.numActiveCells(userId) < Integer.MAX_VALUE;
+  @Override
+  public String getUserSpec(String functionId, String version) {
+    CodeCellEntity entity = codeCellRepo.findBySlugAndVersion(functionId, version);
+    if (entity != null) {
+      return entity.getFullOpenApiSchema();
+    }
+    return "{}";
   }
 
-  private void sendFcmMessage(Message message) {
-    try {
-      FirebaseMessaging.getInstance().send(message);
-    } catch (FirebaseMessagingException e) {
-      log.error("{}.sendFcmMessage: {}",
-          getClass().getSimpleName(),
-          e.getMessage());
-    }
+  private Boolean isBelowActiveLimit(String userId) {
+    return codeCellRepo.numActiveCells(userId) < Integer.MAX_VALUE;
   }
 
   private void submitExecutionTask(Object body, String url) {

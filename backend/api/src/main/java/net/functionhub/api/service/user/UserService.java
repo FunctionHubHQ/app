@@ -9,7 +9,7 @@ import net.functionhub.api.UserProfileResponse;
  */
 public interface UserService {
 
-  String apiKeyPrefix = "gl-";
+  String apiKeyPrefix = "fh-";
 
   /**
    * Get session user profile. If the user does not exist, create a new record.

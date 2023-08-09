@@ -1,5 +1,6 @@
 package net.functionhub.api.service.runtime;
 
+import java.util.Map;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResponse;
 import net.functionhub.api.ExecRequest;
@@ -37,4 +38,6 @@ public interface RuntimeService {
   String getJsonSchema(String uid);
   GenericResponse handleSpecResult(SpecResult specResult);
   GenericResponse deploy(ExecRequest execRequest);
+
+  String getUserSpec(String functionId, String version);
 }

@@ -96,6 +96,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         user.setUid(userEntity.getUid());
         user.setRoles(new HashMap<>());
         user.setPicture(userEntity.getAvatarUrl());
+        user.setApiKey(userEntity.getApiKey());
       } else {
         try {
           DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);
@@ -112,6 +113,11 @@ public class SecurityFilter extends OncePerRequestFilter {
           user = firebaseTokenToUser(decodedToken);
           credentials.setAuthToken(bearerToken);
           credentials.setDecodedFirebaseToken(decodedToken);
+          UserEntity userEntity = userRepo.findByUid(user.getUid());
+          if (userEntity != null) {
+            // userEntity could be null if this is the registration flow
+            user.setApiKey(userEntity.getApiKey());
+          }
         }
       }
       assert user != null;
@@ -162,6 +168,9 @@ public class SecurityFilter extends OncePerRequestFilter {
           } else {
               bearerToken = authorization;
           }
+      } else if (httpServletRequest.getRequestURI().startsWith("/spec")) {
+        String[] tokens = httpServletRequest.getRequestURI().split("/");
+        bearerToken = tokens[tokens.length - 1];
       }
       return bearerToken;
   }

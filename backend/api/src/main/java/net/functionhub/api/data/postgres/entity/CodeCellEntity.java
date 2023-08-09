@@ -57,6 +57,10 @@ public class CodeCellEntity {
     @Column(name = "json_schema")
     private String jsonSchema;
 
+    @Basic
+    @JsonProperty("full_openapi_schema")
+    @Column(name = "full_openapi_schema")
+    private String fullOpenApiSchema;
 
     @Basic
     @JsonProperty("version")

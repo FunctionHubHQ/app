@@ -26,5 +26,9 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, UUID> {
 
   CodeCellEntity findBySlug(String slug);
 
-
+  @Query(value = "SELECT * " +
+      "FROM code_cell " +
+      "WHERE slug = ?1 AND version = ?2",
+      nativeQuery = true)
+  CodeCellEntity findBySlugAndVersion(String slug, String version);
 }
