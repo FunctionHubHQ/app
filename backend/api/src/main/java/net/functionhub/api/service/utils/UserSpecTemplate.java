@@ -39,6 +39,9 @@ public class UserSpecTemplate {
       TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
       try {
         this.spec = objectMapper.readValue(rawSpec, typeRef);
+        Map<String, String> servers = new HashMap<>();
+        servers.put("url", sourceProps.getBaseUrl());
+        this.spec.put("servers", List.of(servers));
       } catch (JsonProcessingException e) {
         throw new RuntimeException(e);
       }

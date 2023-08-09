@@ -526,9 +526,14 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
       if (codeCell != null) {
         Map<String, Object> template = userSpecTemplate.getSpecCopy();
-        Map<String, String> servers = new HashMap<>();
-        servers.put("url", sourceProps.getBaseUrl() + "/" + codeCell.getSlug());
-        template.put("servers", List.of(servers));
+        Map<String, Object> paths = new HashMap<>();
+
+        // Define a custom path for this user's function
+        Map<String, Object> pathTemplate = objectMapper.readValue(
+            new Gson().toJson(template.get("paths")), typeRef);
+
+        paths.put("/" + codeCell.getSlug(), pathTemplate.get("/"));
+        template.put("paths", paths);
         fullSpecMap.remove("$comment");
         template.put("components", fullSpecMap);
         return new Gson().toJson(template);
