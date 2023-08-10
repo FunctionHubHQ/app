@@ -19,6 +19,7 @@ import {headerConfig} from "@/utils/headerConfig";
 import {customCmTheme, DEBUG, ERROR} from "@/utils/utils";
 import 'rapidoc';
 import {BASE_PATH} from "@/codegen/base";
+import Tabs from "@/components/interactive-api/tabs";
 
 function CodeEditor() {
   const [serializedStateMain, setSerializedStateMain] = useState<string>();
@@ -222,32 +223,40 @@ function CodeEditor() {
               }
 
               {specUrl &&
-              <div className="gf-test-editor">
-                <rapi-doc
-                  spec-url = {specUrl}
-                  nav-item-spacing = "compact"
-                  header-color = "#ececec"
-                  render-style = "view"
-                  update-route = "false"
-                  layout = "column"
-                  show-info = "false"
-                  show-header = "false"
-                  allow-search = "false"
-                  api-key-name = "Authorization"
-                  api-key-location = "header"
-                  api-key-value = {apiAuthToken}
-                  allow-server-selection = "false"
-                  allow-authentication = "false"
-                  allow-spec-url-load = "false"
-                  allow-spec-file-load = "false"
-                  allow-advanced-search = "false"
-                  schema-description-expanded = "true"
-                  persist-auth = "true"
-                  css-file = "api-sandbox.css"
-                  css-classes = "fh-api"
-                  style = {{ height: "auto", width: "100%" }}
-              >
-              </rapi-doc>
+
+
+
+                  <div className="gf-test-editor">
+
+                    <Tabs/>
+              {/*  <rapi-doc*/}
+              {/*    spec-url = {specUrl}*/}
+              {/*    nav-item-spacing = "compact"*/}
+              {/*    header-color = "#ececec"*/}
+              {/*    render-style = "view"*/}
+              {/*    update-route = "false"*/}
+              {/*    layout = "column"*/}
+              {/*    show-info = "false"*/}
+              {/*    show-header = "false"*/}
+              {/*    allow-search = "false"*/}
+              {/*    api-key-name = "Authorization"*/}
+              {/*    api-key-location = "header"*/}
+              {/*    api-key-value = {apiAuthToken}*/}
+              {/*    allow-server-selection = "false"*/}
+              {/*    allow-authentication = "false"*/}
+              {/*    allow-spec-url-load = "false"*/}
+              {/*    allow-spec-file-load = "false"*/}
+              {/*    allow-advanced-search = "false"*/}
+              {/*    schema-description-expanded = "true"*/}
+              {/*    persist-auth = "true"*/}
+              {/*    css-file = "api-sandbox.css"*/}
+              {/*    css-classes = "fh-api"*/}
+              {/*    style = {{ height: "auto", width: "100%" }}*/}
+              {/*>*/}
+              {/*</rapi-doc>*/}
+
+
+
                 {/*<CodeMirror*/}
                 {/*    theme={customCmTheme}*/}
                 {/*    height={"200px"}*/}
