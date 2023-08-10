@@ -243,6 +243,8 @@ function CodeEditor() {
                   allow-advanced-search = "false"
                   schema-description-expanded = "true"
                   persist-auth = "true"
+                  css-file = "api-sandbox.css"
+                  css-classes = "fh-api"
                   style = {{ height: "auto", width: "100%" }}
               >
               </rapi-doc>
