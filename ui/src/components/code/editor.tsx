@@ -19,7 +19,8 @@ import {headerConfig} from "@/utils/headerConfig";
 import {customCmTheme, DEBUG, ERROR} from "@/utils/utils";
 import 'rapidoc';
 import {BASE_PATH} from "@/codegen/base";
-import Tabs from "@/components/interactive-api/tabs";
+import SandboxTabs from "@/components/interactive-api/sandboxTabs";
+import Sandbox from "@/components/interactive-api/sandbox";
 
 function CodeEditor() {
   const [serializedStateMain, setSerializedStateMain] = useState<string>();
@@ -223,12 +224,9 @@ function CodeEditor() {
               }
 
               {specUrl &&
-
-
-
                   <div className="gf-test-editor">
+                    <SandboxTabs specUrl={specUrl} apiAuthToken={apiAuthToken}/>
 
-                    <Tabs/>
               {/*  <rapi-doc*/}
               {/*    spec-url = {specUrl}*/}
               {/*    nav-item-spacing = "compact"*/}
