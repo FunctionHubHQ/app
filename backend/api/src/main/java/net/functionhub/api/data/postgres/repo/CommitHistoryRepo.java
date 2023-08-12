@@ -40,7 +40,19 @@ public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, UU
       "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
       + "WHERE ch.version = ?1 AND ch.deployed = true",
       nativeQuery = true)
-  Deployment findDeployedCommit(String version);
+  Deployment findDeployedCommitByVersion(String version);
+
+  @Query(value = "SELECT "
+      + "cc.uid as id, "
+      + "cc.function_name as name, "
+      + "cc.version as version, "
+      + "cc.description as description, "
+      + "ch.json_schema as payload, "
+      + "ch.full_openapi_schema as schema " +
+      "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
+      + "WHERE ch.version = ?1 AND ch.deployed = true AND cc.slug = ?2",
+      nativeQuery = true)
+  Deployment findDeployedCommitByVersionAndSlug(String version, String slug);
 
   @Query(value = "SELECT * " +
       "FROM commit_history " +

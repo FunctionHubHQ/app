@@ -12,13 +12,11 @@ import net.functionhub.api.CodeUpdateResponse;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.FHCompletionRequest;
-import net.functionhub.api.GLCompletionTestRequest;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
-import net.functionhub.api.service.chat.ChatService;
 import net.functionhub.api.service.runtime.RuntimeService;
 import net.functionhub.api.service.token.TokenService;
 import net.functionhub.api.service.user.UserService;
@@ -35,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -55,6 +54,9 @@ import org.testng.annotations.Test;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContextTests {
+    @LocalServerPort
+    private int port = 8080;
+
     @Autowired
     private TokenService tokenService;
 
@@ -78,9 +80,6 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @Autowired
     private UserRepo userRepo;
-
-    @Autowired
-    private ChatService chatService;
 
     @Autowired
     private RuntimeService runtimeService;
@@ -137,7 +136,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @BeforeClass
     public void setup() {
-        flywayMigration.migrate(true);
+//        flywayMigration.migrate(true);
         String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
         testHelper.prepareSecurity(userId);
         userService.getOrCreateUserprofile();
@@ -245,8 +244,8 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     private String request(String path, String httpMethod, Object payload) {
         String host = "localhost";
-        String port = "8080";
-        String fullUrl = String.format("http://%s:%s%s", host, port, path);
+        int _port = port + 1;
+        String fullUrl = String.format("http://%s:%s%s", host, _port, path);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + user.getApiKey());
         headers.setContentType(MediaType.APPLICATION_JSON);

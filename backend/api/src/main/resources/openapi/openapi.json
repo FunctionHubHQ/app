@@ -16,6 +16,38 @@
     }
   ],
   "paths": {
+    "/status/": {
+      "post": {
+        "tags": [
+          "spec"
+        ],
+        "operationId": "getSpecStatus",
+        "description": "Get user spec generation status",
+        "requestBody": {
+          "required": true,
+          "description": "Status request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User code",
+            "content": {
+              "application/typescript": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/{function_slug}": {
       "post": {
         "tags": [
@@ -102,7 +134,7 @@
         }
       }
     },
-    "/spec/{function_slug}/{version}/{api_key}": {
+    "/spec/{function_slug}/{version}/{api_key}/{env}": {
       "get": {
         "tags": [
           "spec"
@@ -127,6 +159,14 @@
           },
           {
             "name": "api_key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "env",
             "required": true,
             "in": "path",
             "schema": {
@@ -365,7 +405,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CodeUpdateResponse"
+                  "$ref": "#/components/schemas/CodeUpdateResult"
                 }
               }
             }
@@ -566,7 +606,32 @@
           }
         }
       },
-      "CodeUpdateResponse": {
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "is_ready": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "StatusRequest": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "deployed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CodeUpdateResult": {
         "type": "object",
         "properties": {
           "uid": {

@@ -9,4 +9,5 @@ public interface Deployment {
   String getName();
   String getDescription();
   String getVersion();
+  String getSchema();
 }

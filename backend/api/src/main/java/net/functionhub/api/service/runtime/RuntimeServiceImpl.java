@@ -8,15 +8,18 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.functionhub.api.Code;
-import net.functionhub.api.CodeUpdateResponse;
+import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.SpecResult;
+import net.functionhub.api.StatusRequest;
+import net.functionhub.api.StatusResponse;
 import net.functionhub.api.UserProfile;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.CommitHistoryEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
+import net.functionhub.api.data.postgres.projection.Deployment;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
@@ -326,7 +329,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public CodeUpdateResponse updateCode(Code code) {
+  public CodeUpdateResult updateCode(Code code) {
     String userId = code.getUserId();
     String rawCode = null;
     CodeCellEntity updatedCell = null;
@@ -378,6 +381,10 @@ public class RuntimeServiceImpl implements RuntimeService {
         }
       }
       if (updatedCell != null) {
+        // Reset schema fields
+        updatedCell.setFullOpenApiSchema(null);
+        updatedCell.setJsonSchema(null);
+
         final CodeCellEntity finalCell = updatedCell;
         Thread.startVirtualThread(() -> {
           CommitHistoryEntity commitHistory = new CommitHistoryEntity();
@@ -394,13 +401,13 @@ public class RuntimeServiceImpl implements RuntimeService {
                 .decode(finalCell.getCode()
                     .getBytes())), finalCell.getUid()
                 .toString()));
-        return new CodeUpdateResponse()
+        return new CodeUpdateResult()
             .uid(updatedCell.getUid().toString())
             .slug(updatedCell.getSlug())
             .version(updatedCell.getVersion());
       }
     }
-    return new CodeUpdateResponse();
+    return new CodeUpdateResult();
   }
 
   private String getUniqueSlug() {
@@ -504,7 +511,8 @@ public class RuntimeServiceImpl implements RuntimeService {
           Map<String, Object> requestDto  = getRequestDto( constructDto(spec), codeCell.getVersion());
           String requestDtoStr = new Gson().toJson(requestDto);
           codeCell.setJsonSchema(requestDtoStr);
-          codeCell.setFullOpenApiSchema(generateFullSpec(spec, specResult.getUid()));
+          String fullOpenApiSchema = generateFullSpec(spec, specResult.getUid());
+          codeCell.setFullOpenApiSchema(fullOpenApiSchema);
           jsonSchema.put(codeCell.getUid().toString(), requestDtoStr);
 
           // Insert the schema into an existing commit
@@ -513,6 +521,10 @@ public class RuntimeServiceImpl implements RuntimeService {
           );
           if (!ObjectUtils.isEmpty(commitHistory)) {
             commitHistory.get(0).setJsonSchema(requestDtoStr);
+
+            if (codeCell.getDeployed() != null && codeCell.getDeployed()) {
+              commitHistory.get(0).setFullOpenApiSchema(fullOpenApiSchema);
+            }
             commitHistoryRepo.save(commitHistory.get(0));
           }
         } else if (format.equals("ts")) {
@@ -691,12 +703,73 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public String getUserSpec(String functionId, String version) {
-    CodeCellEntity entity = codeCellRepo.findBySlugAndVersion(functionId, version);
-    if (entity != null) {
-      return entity.getFullOpenApiSchema();
+  public String getUserSpec(String functionId, String version, String env) {
+    if (!ObjectUtils.isEmpty(functionId) &&
+        !ObjectUtils.isEmpty(version) &&
+        !ObjectUtils.isEmpty(env)) {
+      // todo: apply ownership check to deployed specs
+      if (env.equals("fhd")) {
+        // Dev
+        CodeCellEntity codeCell = codeCellRepo.findBySlugAndVersion(functionId, version);
+        if (codeCell == null || !codeOwner(codeCell)) {
+          throw new RuntimeException("Invalid request");
+        }
+        if (ObjectUtils.isEmpty(codeCell.getFullOpenApiSchema())) {
+          throw new RuntimeException("Requested function not available");
+        }
+        return codeCell.getFullOpenApiSchema();
+      } else if (env.equals("fhp")) {
+        // Prod
+        Deployment deployment = commitHistoryRepo.findDeployedCommitByVersionAndSlug(version, functionId);
+        if (deployment == null) {
+          throw new RuntimeException("A deployed function does not exist for " + functionId);
+        }
+        return deployment.getSchema();
+      } else if (env.equals("gd")) {
+        // GPT dev
+        // TODO: Load the function-specific gpt dev spec
+
+
+      } else if (env.equals("gp")) {
+        // GPT prod
+        // TODO: Load the general gpt prod spec
+      }
     }
-    return "{}";
+    throw new RuntimeException("Invalid request");
+  }
+
+  @Override
+  public StatusResponse getSpecStatus(StatusRequest statusRequest) {
+    if (!ObjectUtils.isEmpty(statusRequest.getSlug()) &&
+        !ObjectUtils.isEmpty(statusRequest.getVersion())) {
+      CodeCellEntity codeCell = codeCellRepo.findBySlugAndVersion(statusRequest.getSlug(),
+          statusRequest.getVersion());
+      if (codeCell == null || !codeOwner(codeCell)) {
+        throw new RuntimeException("Function not found");
+      }
+      if (statusRequest.getDeployed() != null && statusRequest.getDeployed()) {
+        // Get it from the commit history
+        Deployment deployment = commitHistoryRepo.findDeployedCommitByVersionAndSlug(
+            statusRequest.getVersion(), statusRequest.getSlug());
+        if (deployment == null) {
+          throw new RuntimeException("Deployment not found for " +
+              statusRequest.getSlug()  + " with version " +
+              statusRequest.getVersion());
+        }
+        return new StatusResponse().isReady(
+            !ObjectUtils.isEmpty(deployment.getSchema()) &&
+                !ObjectUtils.isEmpty(deployment.getPayload()));
+      } else {
+        return new StatusResponse().isReady(
+            !ObjectUtils.isEmpty(codeCell.getFullOpenApiSchema()) &&
+                !ObjectUtils.isEmpty(codeCell.getJsonSchema()));
+      }
+    }
+    throw new RuntimeException("Invalid request");
+  }
+
+  private boolean codeOwner(CodeCellEntity codeCell) {
+    return codeCell == null || codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
   }
 
   private Boolean isBelowActiveLimit(String userId) {

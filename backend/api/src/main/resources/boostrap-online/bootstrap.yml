@@ -1,0 +1,33 @@
+logging:
+  level:
+    ROOT: INFO
+server:
+  port: 8888
+  servlet:
+    context-path: /config-api
+spring:
+  application:
+    name: config-server
+  profiles:
+    active: git
+  cloud:
+    config:
+      server:
+        bootstrap: true
+        git:
+          uri: https://github.com/FunctionHubHQ/remote-configs.git
+          default-label: main
+          clone-on-start: true
+          username: ${MR_GH_USERNAME}
+          password: ${MR_GH_TOKEN}
+        prefix: /config-api
+management:
+  endpoint:
+    health:
+      enabled: true
+      show-details: never
+  endpoints:
+    enabled-by-default: true
+    web:
+      exposure:
+        include: health,refresh

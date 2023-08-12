@@ -135,7 +135,7 @@ public class ChatServiceImpl implements ChatService {
           String version = functionCall.getVersion();
           String codeId, functionName;
           if (deployed) {
-            Deployment deployment = commitHistoryRepo.findDeployedCommit(version);
+            Deployment deployment = commitHistoryRepo.findDeployedCommitByVersion(version);
             codeId = deployment.getId();
             functionName = deployment.getName();
           } else {
