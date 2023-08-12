@@ -7,6 +7,7 @@ import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.DecodedJwt;
 import net.functionhub.api.service.user.UserService;
+import net.functionhub.api.service.user.UserService.AuthMode;
 import net.functionhub.api.utils.firebase.FirebaseService;
 import net.functionhub.api.utils.security.Credentials;
 import net.functionhub.api.UserProfile;
@@ -97,10 +98,12 @@ public class SecurityFilter extends OncePerRequestFilter {
         user.setRoles(new HashMap<>());
         user.setPicture(userEntity.getAvatarUrl());
         user.setApiKey(userEntity.getApiKey());
+        user.setAuthMode(AuthMode.AK.name());
       } else {
         try {
           DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);
           user = jwtTokenToUser(decodedToken);
+          user.setAuthMode(AuthMode.JWT.name());
           credentials.setDecodedJwtToken(decodedToken);
           credentials.setAuthToken(bearerToken);
         } catch (Exception e) {
@@ -111,6 +114,7 @@ public class SecurityFilter extends OncePerRequestFilter {
             throw new RuntimeException(ex);
           }
           user = firebaseTokenToUser(decodedToken);
+          user.setAuthMode(AuthMode.FB.name());
           credentials.setAuthToken(bearerToken);
           credentials.setDecodedFirebaseToken(decodedToken);
           UserEntity userEntity = userRepo.findByUid(user.getUid());

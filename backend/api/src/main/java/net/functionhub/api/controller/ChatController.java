@@ -1,9 +1,9 @@
 package net.functionhub.api.controller;
 
-import net.functionhub.api.ChatApi;
-import net.functionhub.api.GLCompletionTestRequest;
-import net.functionhub.api.service.chat.ChatService;
 import java.util.Map;
+import net.functionhub.api.ChatApi;
+import net.functionhub.api.FHCompletionRequest;
+import net.functionhub.api.service.chat.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,14 +20,14 @@ public class ChatController implements ChatApi {
   private final ChatService chatService;
 
   @Override
-  public ResponseEntity<Map<String, Object>> gptCompletionDeployedRequest(
-      Map<String, Object> requestBody) {
-    return ResponseEntity.ok(chatService.gptCompletionDeployedRequest(requestBody));
+  public ResponseEntity<Map<String, Object>> devGptCompletion(String functionSlug,
+      FHCompletionRequest fhCompletionRequest) {
+    return ResponseEntity.ok(chatService.devGptCompletion(functionSlug, fhCompletionRequest));
   }
 
   @Override
-  public ResponseEntity<Map<String, Object>> gptCompletionTestRequest(
-      GLCompletionTestRequest glCompletionTestRequest) {
-    return ResponseEntity.ok(chatService.gptCompletionTestRequest(glCompletionTestRequest));
+  public ResponseEntity<Map<String, Object>> prodCompletionRequest(
+      FHCompletionRequest fhCompletionRequest) {
+    return ResponseEntity.ok(chatService.prodGptCompletion(fhCompletionRequest));
   }
 }

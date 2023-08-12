@@ -20,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, UUID> {
   List<CommitHistoryEntity> findByCodeCellId(UUID codeCellId);
 
-//  CommitHistoryEntity findByVersion(String version);
-
   @Query(value = "SELECT "
       + "cc.uid as id, "
       + "cc.function_name as name, "

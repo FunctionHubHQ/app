@@ -23,7 +23,50 @@
         ],
         "summary": "Execute any user function",
         "description": "Execute any user function with dynamically generated request and response payloads",
-        "operationId": "runFunction",
+        "operationId": "runProdFunction",
+        "parameters": [
+          {
+            "name": "function_slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Execution request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/{function_slug}": {
+      "post": {
+        "tags": [
+          "runtime"
+        ],
+        "summary": "Execute any user function",
+        "description": "Execute any user function with dynamically generated request and response payloads",
+        "operationId": "runDevFunction",
         "parameters": [
           {
             "name": "function_slug",
@@ -337,14 +380,14 @@
         ],
         "summary": "Call GPT completion endpoint",
         "description": "Call GPT completion endpoint",
-        "operationId": "gptCompletionDeployedRequest",
+        "operationId": "prodCompletionRequest",
         "requestBody": {
           "required": true,
           "description": "GPT Completion request",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GLCompletionDeployedRequest"
+                "$ref": "#/components/schemas/FHCompletionRequest"
               }
             }
           }
@@ -355,7 +398,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GLCompletionDeployedResponse"
+                  "$ref": "#/components/schemas/FHCompletionResponse"
                 }
               }
             }
@@ -363,21 +406,31 @@
         }
       }
     },
-    "/gpt-completion/test": {
+    "/gpt-completion/{function_slug}": {
       "post": {
         "tags": [
           "chat"
         ],
         "summary": "Call GPT completion endpoint",
         "description": "Call GPT completion endpoint",
-        "operationId": "gptCompletionTestRequest",
+        "operationId": "devGptCompletion",
+        "parameters": [
+          {
+            "name": "function_slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "description": "GPT Completion request",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GLCompletionTestRequest"
+                "$ref": "#/components/schemas/FHCompletionRequest"
               }
             }
           }
@@ -388,7 +441,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GLCompletionResponse"
+                  "$ref": "#/components/schemas/FHCompletionResponse"
                 }
               }
             }
@@ -460,30 +513,18 @@
       }
     },
     "schemas": {
-      "GLCompletionTestRequest":  {
+      "FHCompletionRequest": {
         "type": "object",
+        "required": [
+          "prompt"
+        ],
         "properties": {
-          "code_id": {
-            "type": "string",
-            "description": "Code cell uid"
-          },
-          "user_id": {
-            "type": "string"
-          },
           "prompt": {
             "type": "string"
           }
         }
       },
-      "GLCompletionResponse":  {
-        "type": "object",
-        "additionalProperties": true
-      },
-      "GLCompletionDeployedRequest": {
-        "type": "object",
-        "additionalProperties": true
-      },
-      "GLCompletionDeployedResponse": {
+      "FHCompletionResponse": {
         "type": "object",
         "additionalProperties": true
       },
@@ -621,10 +662,6 @@
       },
       "UserProfileResponse":  {
         "type": "object",
-        "required": [
-          "error",
-          "profile"
-        ],
         "properties": {
           "error": {
             "type": "string"
@@ -671,6 +708,9 @@
           },
           "is_authorized": {
             "type": "boolean"
+          },
+          "auth_mode": {
+            "type": "string"
           }
         }
       }

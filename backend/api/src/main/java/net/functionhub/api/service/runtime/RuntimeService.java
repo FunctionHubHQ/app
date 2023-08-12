@@ -27,15 +27,30 @@ public interface RuntimeService {
   ConcurrentMap<String, String> jsonSchema = new ConcurrentHashMap<>();
 
   ExecResultAsync getExecutionResult(String executionId);
+
+  /**
+   * Execute user function. Mainly used internally for testing purposes.
+   * @param execRequest
+   * @return
+   */
   ExecResultAsync exec(ExecRequest execRequest);
 
   /**
-   * Execute any user function. This handles REST calls to user-generated functions.
+   * Execute deployed user function. Apply any prod entitlements and
+   * basic function security. Require API key auth mode.
    * @param functionSlug
    * @param body
    * @return
    */
-  String runFunction(String functionSlug, String body);
+  String runProdFunction(String functionSlug, String body);
+
+  /**
+   * Execute user function in dev mode. Require Firebase auth mode.
+   * @param functionSlug
+   * @param body
+   * @return
+   */
+  String runDevFunction(String functionSlug, String body);
 
   String getUserCode(String uid);
   GenericResponse handleExecResult(ExecResultAsync execResult);

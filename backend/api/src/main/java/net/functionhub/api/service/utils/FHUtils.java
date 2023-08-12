@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
+import net.functionhub.api.UserProfile;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.ResourceUtils;
 
 /**
@@ -57,5 +59,9 @@ public class FHUtils {
 
   public static String getCurrentTime() {
     return LocalDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+  }
+
+  public static UserProfile getSessionUser() {
+    return (UserProfile) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
   }
 }

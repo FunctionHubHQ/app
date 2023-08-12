@@ -13,6 +13,7 @@ import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.SpecResult;
+import net.functionhub.api.UserProfile;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.CommitHistoryEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
@@ -24,6 +25,7 @@ import net.functionhub.api.dto.GenerateSpecRequest;
 import net.functionhub.api.dto.RequestHeaders;
 import net.functionhub.api.props.DenoProps;
 import net.functionhub.api.props.SourceProps;
+import net.functionhub.api.service.user.UserService.AuthMode;
 import net.functionhub.api.service.utils.FHUtils;
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +71,6 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final CodeCellRepo codeCellRepo;
   private final EntitlementRepo entitlementRepo;
   private final CommitHistoryRepo commitHistoryRepo;
-//  private final Slugify slugify;
   private final DenoProps denoProps;
   private final WordList wordList;
   private final UserSpecTemplate userSpecTemplate;
@@ -80,15 +81,6 @@ public class RuntimeServiceImpl implements RuntimeService {
   // Define a unique version key to avoid conflicts
   public final static String versionKey = "version_" + FHUtils.generateUid(6);
   private final String deployedFlag = "+deployed";
-
-  public static final class MessageType {
-    public static final String EXEC_RESULT = "EXEC_RESULT";
-    public static final String CHAT = "CHAT";
-    public static final String HEART_BEAT = "HEART_BEAT";
-    public static final String PRODUCT_INIT = "PRODUCT_INIT";
-    public static final String FCM_TOKEN = "FCM_TOKEN";
-    public static final String PRODUCT_INFO_REQUEST = "PRODUCT_INFO_REQUEST";
-  }
 
   @Override
   public ExecResultAsync getExecutionResult(final String execId) {
@@ -124,14 +116,35 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public String runFunction(String functionSlug, String body) {
+  public String runProdFunction(String functionSlug, String body) {
+    UserProfile user = FHUtils.getSessionUser();
+    if (!user.getAuthMode().equals(AuthMode.AK.name())) {
+      throw new RuntimeException("Unsupported authentication mechanism");
+    }
+    return runFunctionHelper(functionSlug, body, true, false);
+  }
+
+  @Override
+  public String runDevFunction(String functionSlug, String body) {
+    UserProfile user = FHUtils.getSessionUser();
+    if (!user.getAuthMode().equals(AuthMode.FB.name())) {
+      throw new RuntimeException("Unsupported authentication mechanism");
+    }
+    return runFunctionHelper(functionSlug, body, false, true);
+  }
+
+  private String runFunctionHelper(String functionSlug, String body, boolean deployed, boolean validate) {
+    // For development run, the latest version of the code is the one that should run
+    // as that is the one the user is testing. For prod, it's the latest deployed version that runs.
+    // Although there may be previous deployments in the commit history, only the deployment version
+    // in CodeCellEntity is used.
     CodeCellEntity codeCell = codeCellRepo.findBySlugAndApiKey(
         functionSlug, requestHeaders.getHeaders().get("api-key"));
     if (codeCell != null) {
       ExecRequest request = new ExecRequest()
           .execId(UUID.randomUUID().toString())
-          .deployed(false)
-          .validate(true)
+          .deployed(deployed)
+          .validate(validate)
           .payload(body)
           .version(codeCell.getVersion())
           .uid(codeCell.getUid().toString());
@@ -139,10 +152,11 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (!ObjectUtils.isEmpty(result.getError())) {
         throw new RuntimeException(result.getError());
       }
-      // TODO: inject the std out into the result
+      // TODO: inject the std out into the result for dev and ignore it for prod
       return JsonParser.parseString(result.getResult()).getAsString();
     }
     throw new RuntimeException("Requested service not found");
+
   }
 
   private ExecResultAsync execHelper(ExecRequest execRequest, CodeCellEntity codeCell) {
@@ -245,17 +259,14 @@ public class RuntimeServiceImpl implements RuntimeService {
           !ObjectUtils.isEmpty(execResult.getResult())) {
         String o = secureString(new Gson().toJson(execResult.getResult()));
         execResultAsync.setResult(o);
-//        log.info("{} result: {}", uid, o);
       }
       if (!ObjectUtils.isEmpty(execResult.getError())) {
         String error = secureString(execResult.getError());
-//        log.error("{} error: {}", uid, error);
         execResultAsync.setError(error);
       }
       if (!ObjectUtils.isEmpty(execResult.getStdOut())) {
         String stdout = secureString(String.join("\n", execResult.getStdOut())
             .replace("\\n", "\n"));
-//        log.info("{} stdout: {}", uid, stdout);
         execResultAsync.setStdOutStr(stdout);
       }
       executionResults.put(execResult.getExecId(), execResultAsync);
@@ -531,6 +542,9 @@ public class RuntimeServiceImpl implements RuntimeService {
         // Define a custom path for this user's function
         Map<String, Object> pathTemplate = objectMapper.readValue(
             new Gson().toJson(template.get("paths")), typeRef);
+
+        // TODO: Prepend the paths with d- for dev and p- for prod. Save the dev and prod specs
+        //  into separate columns
 
         paths.put("/" + codeCell.getSlug(), pathTemplate.get("/"));
         template.put("paths", paths);

@@ -11,6 +11,12 @@ public interface UserService {
 
   String apiKeyPrefix = "fh-";
 
+  enum AuthMode {
+    JWT, // FunctionHub-generated JWT
+    AK, // FunctionHub-generated API ky
+    FB // Firebase
+  }
+
   /**
    * Get session user profile. If the user does not exist, create a new record.
    * @return

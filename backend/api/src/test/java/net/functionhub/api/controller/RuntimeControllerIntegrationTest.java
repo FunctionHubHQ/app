@@ -11,6 +11,7 @@ import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResponse;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
+import net.functionhub.api.FHCompletionRequest;
 import net.functionhub.api.GLCompletionTestRequest;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
@@ -214,27 +215,32 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         assertNotNull(schema);
 
         // 5. Make test GPT function call
-        GLCompletionTestRequest completionRequest = new GLCompletionTestRequest();
-        completionRequest.setCodeId(updateResponse.getUid());
-        completionRequest.setUserId(user.getUid());
-        completionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
-        Map<String, Object> completionResponse = chatService.gptCompletionTestRequest(completionRequest);
-        assertNotNull(completionResponse);
-        assertTrue(completionResponse.get("content").toString().contains("Boston"));
-        assertTrue(completionResponse.get("content").toString().contains("rainy"));
+        FHCompletionRequest devCompletionRequest = new FHCompletionRequest();
+        devCompletionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
+
+        String completionResponseDevResponseStr = request("/gpt-completion/" + updateResponse.getSlug(),
+            "POST", devCompletionRequest);
+
+        Map<String, Object> completionResponseDevResponse = objectMapper
+            .readValue(completionResponseDevResponseStr, typeRef);
+        assertNotNull(completionResponseDevResponse);
+        assertTrue(completionResponseDevResponse.get("content").toString().contains("Boston"));
+        assertTrue(completionResponseDevResponse.get("content").toString().contains("rainy"));
 
 
         // 6. Make deployed GPT function call
-        Map<String, Object> requestPayload = new HashMap<>();
-        requestPayload.put("prompt", "What is the current time and weather in Chicago?");
-        String deployedCompletionResponseStr = request("/gpt-completion",
-            "POST", requestPayload);
-        assertNotNull(deployedCompletionResponseStr);
+        FHCompletionRequest prodCompletionRequest = new FHCompletionRequest();
+        prodCompletionRequest.setPrompt("What is the current time and weather in Chicago?");
+
+        String completionResponseProdResponseStr = request("/gpt-completion/",
+            "POST", prodCompletionRequest);
+
+        assertNotNull(completionResponseProdResponseStr);
         Map<String, Object> deployedCompletionResponse = objectMapper.readValue(
-            deployedCompletionResponseStr, typeRef);
+            completionResponseProdResponseStr, typeRef);
         assertNotNull(deployedCompletionResponse);
-        assertTrue(completionResponse.get("content").toString().contains("Chicago"));
-        assertTrue(completionResponse.get("content").toString().contains("rainy"));
+        assertTrue(deployedCompletionResponse.get("content").toString().contains("Chicago"));
+        assertTrue(deployedCompletionResponse.get("content").toString().contains("rainy"));
     }
 
     private String request(String path, String httpMethod, Object payload) {

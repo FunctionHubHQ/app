@@ -3,13 +3,11 @@ package net.functionhub.api.service.chat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingException;
-import com.google.firebase.messaging.Message;
 import com.google.gson.Gson;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
-import net.functionhub.api.GLCompletionTestRequest;
+import net.functionhub.api.FHCompletionRequest;
+import net.functionhub.api.UserProfile;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.projection.Deployment;
@@ -20,7 +18,6 @@ import net.functionhub.api.dto.GPTFunction;
 import net.functionhub.api.dto.GPTFunctionCall;
 import net.functionhub.api.props.OpenAiProps;
 import net.functionhub.api.dto.RequestHeaders;
-import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.openai.completion.CompletionRequest;
 import net.functionhub.api.service.openai.completion.CompletionRequestFunctionalCall;
 import net.functionhub.api.service.openai.completion.CompletionResult;
@@ -35,6 +32,8 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.functionhub.api.service.user.UserService.AuthMode;
+import net.functionhub.api.service.utils.FHUtils;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -54,7 +53,6 @@ public class ChatServiceImpl implements ChatService {
   private final ObjectMapper objectMapper;
   private final OpenAiProps openAiProps;
   private final CodeCellRepo codeCellRepo;
-  private final SourceProps sourceProps;
   private final RuntimeService runtimeService;
   private final RequestHeaders requestHeaders;
   private final UserRepo userRepo;
@@ -62,7 +60,8 @@ public class ChatServiceImpl implements ChatService {
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
   @Override
-  public CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId) {
+  public CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId,
+      String functionCallMode) {
     String content = String.format("PROMPT: %s\n\nANSWER:", prompt);
     log.info("Generated query: {}", content);
     List<CompletionRequestMessage> messages = new ArrayList<>();
@@ -72,7 +71,7 @@ public class ChatServiceImpl implements ChatService {
         .builder()
         .user(userId)
         .functions(functions)
-        .functionCall("auto")
+        .functionCall(functionCallMode)
         .model(openAiProps.getCompletionModel())
         .maxTokens(openAiProps.getMaxTokens())
         .temperature(openAiProps.getTemp())
@@ -108,10 +107,10 @@ public class ChatServiceImpl implements ChatService {
   }
 
   private Map<String, Object> gptRequestWithFunctionCall(String userId, String prompt, List<GPTFunction> functions,
-      CodeCellEntity codeCell, boolean deployed) {
+      CodeCellEntity codeCell, boolean deployed, String functionCallMode) {
     Map<String, Object> response = new HashMap<>();
     CompletionRequest request = buildCompletionRequest(prompt,
-        functions, userId);
+        functions, userId, functionCallMode);
     String json = null;
     try {
       json = objectMapper.writeValueAsString(request);
@@ -204,12 +203,13 @@ public class ChatServiceImpl implements ChatService {
   }
 
   @Override
-  public Map<String, Object> gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest) {
+  public Map<String, Object> gptCompletionDevRequest(String functionSlug,
+      FHCompletionRequest fhCompletionRequest) {
     Map<String, Object> response = new HashMap<>();
-    if (!ObjectUtils.isEmpty(glCompletionRequest.getCodeId()) &&
-        !ObjectUtils.isEmpty(glCompletionRequest.getUserId()) &&
-        !ObjectUtils.isEmpty(glCompletionRequest.getPrompt())) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(glCompletionRequest.getCodeId()));
+    if (!ObjectUtils.isEmpty(functionSlug) &&
+        !ObjectUtils.isEmpty(fhCompletionRequest) &&
+        !ObjectUtils.isEmpty(fhCompletionRequest.getPrompt())) {
+      CodeCellEntity codeCell = codeCellRepo.findBySlug(functionSlug);
       if (codeCell == null) {
         Map<String, String> error = new HashMap<>();
         error.put("message", "Code not found");
@@ -218,28 +218,74 @@ public class ChatServiceImpl implements ChatService {
       }
        GPTFunction function = buildGptFunctionTestRequest(codeCell);
        response.putAll(gptRequestWithFunctionCall(
-        codeCell.getUserId(),
-        glCompletionRequest.getPrompt(),
-        List.of(function), codeCell,
-        false));
-
-      if (sourceProps.getProfile().equals("prod") || sourceProps.getProfile().equals("dev")) {
-        // TODO: Send via websockets if necessary
-      }
-      else if (!ObjectUtils.isEmpty(response)) {
-        response.put("code_cell_id", (glCompletionRequest.getCodeId()));
-        return response;
-      } else {
-        Map<String, String> error = new HashMap<>();
-        error.put("message", "Unknown error");
-        response.put("error", error);
-        return response;
-      }
+           codeCell.getUserId(),
+           fhCompletionRequest.getPrompt(),
+           List.of(function), codeCell,
+           false,
+           "yes"));
+       if (ObjectUtils.isEmpty(response)) {
+         Map<String, String> error = new HashMap<>();
+         error.put("message", "Unknown error");
+         response.put("error", error);
+         return response;
+       }
+       return response;
     }
     Map<String, String> error = new HashMap<>();
     error.put("message", "Operation not supported");
     response.put("error", error);
     return response;
+  }
+
+  @Override
+  public Map<String, Object> gptCompletionDeployedRequest(FHCompletionRequest completionRequest) {
+    String prompt = completionRequest.getPrompt();
+    Map<String, Object> response = new HashMap<>();
+    if (ObjectUtils.isEmpty(prompt)) {
+      Map<String, Object> error = new HashMap<>();
+      error.put("message", "You must provide a prompt");
+      response.put("error", error);
+      return response;
+    }
+    // TODO: do not load all user functions for this user_id. Apply limits here
+    // TODO: Need to implement projects to group functions
+    UserEntity user = userRepo.findByApiKey(requestHeaders.getHeaders().get("api-key"));
+    //TODO: need to fetch only distinct functions because there could be several versions of the
+    // same function previously deployed
+    List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(user.getUid());
+    List<GPTFunction> functions = deployments
+        .stream()
+        .map(this::buildGptFunctionDeployedRequest)
+        .toList();
+
+    response.putAll(gptRequestWithFunctionCall(
+        user.getUid(),
+        prompt,
+        functions,
+        null,
+        true,
+        "auto"));
+    return response;
+  }
+
+  @Override
+  public Map<String, Object> devGptCompletion(String functionSlug,
+      FHCompletionRequest fhCompletionRequest) {
+    UserProfile user = FHUtils.getSessionUser();
+    if (!user.getAuthMode().equals(AuthMode.FB.name())) {
+      throw new RuntimeException("Unsupported authentication mechanism");
+    }
+
+    return gptCompletionDevRequest(functionSlug, fhCompletionRequest);
+  }
+
+  @Override
+  public Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest) {
+    UserProfile user = FHUtils.getSessionUser();
+    if (!user.getAuthMode().equals(AuthMode.AK.name())) {
+      throw new RuntimeException("Unsupported authentication mechanism");
+    }
+    return gptCompletionDeployedRequest(fhCompletionRequest);
   }
 
   private GPTFunction buildGptFunctionTestRequest(CodeCellEntity codeCell) {
@@ -260,43 +306,6 @@ public class ChatServiceImpl implements ChatService {
     function.setDescription(deployment.getDescription());
     function.setParameters(deployment.getPayload(), objectMapper);
     return function;
-  }
-
-  @Override
-  public Map<String, Object> gptCompletionDeployedRequest(Map<String, Object> requestBody) {
-    String prompt = requestBody.get("prompt").toString();
-    Map<String, Object> response = new HashMap<>();
-    if (ObjectUtils.isEmpty(prompt)) {
-      Map<String, String> error = new HashMap<>();
-      error.put("message", "You must provide a prompt");
-      response.put("error", error);
-      return response;
-    }
-    // TODO: do not load all user functions for this user_id. Apply limits here
-    // TODO: Need to implement projects to group functions
-    UserEntity user = userRepo.findByApiKey(requestHeaders.getHeaders().get("api-key"));
-    List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(user.getUid());
-    List<GPTFunction> functions = deployments
-        .stream()
-        .map(this::buildGptFunctionDeployedRequest)
-        .toList();
-
-    response.putAll(gptRequestWithFunctionCall(
-        user.getUid(),
-        prompt,
-        functions,
-        null,
-        true));
-    return response;
-  }
-
-
-  private void sendFcmMessage(Message message) {
-    try {
-      FirebaseMessaging.getInstance().send(message);
-    } catch (FirebaseMessagingException e) {
-      log.error(e.getLocalizedMessage());
-    }
   }
 
   private String gptHttpRequest(String prompt) throws IOException {

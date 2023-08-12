@@ -1,7 +1,7 @@
 package net.functionhub.api.service.chat;
 
 
-import net.functionhub.api.GLCompletionTestRequest;
+import net.functionhub.api.FHCompletionRequest;
 import net.functionhub.api.dto.GPTFunction;
 import net.functionhub.api.service.openai.completion.CompletionRequest;
 import net.functionhub.api.service.openai.completion.CompletionRequestFunctionalCall;
@@ -13,7 +13,8 @@ import java.util.Map;
  */
 public interface ChatService {
 
-  CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId);
+  CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId,
+      String functionCallMode);
   CompletionRequestFunctionalCall buildGptRequestFunctionalCall(String prompt,
       String functionResponse, String functionName, String userId);
 
@@ -23,11 +24,27 @@ public interface ChatService {
    * different usage limitations that are more appropriate for testing. Dev use case is for
    * local frontend development.
    *
-   * @param glCompletionRequest
+   * @param functionSlug
+   * @param fhCompletionRequest
    * @return
    */
-  Map<String, Object> gptCompletionTestRequest(GLCompletionTestRequest glCompletionRequest);
+  Map<String, Object> gptCompletionDevRequest(String functionSlug,
+      FHCompletionRequest fhCompletionRequest);
 
-  Map<String, Object> gptCompletionDeployedRequest(Map<String, Object> requestBody);
+  Map<String, Object> gptCompletionDeployedRequest(FHCompletionRequest fhCompletionRequest);
+
+
+  /**
+   * Make a GPT completion request and include the latest user function in the request.
+   * In development, function_call is set to true.
+   *
+   * @param functionSlug
+   * @param fhCompletionRequest
+   * @return
+   */
+  Map<String, Object> devGptCompletion(String functionSlug,
+      FHCompletionRequest fhCompletionRequest);
+
+  Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest);
 
 }

@@ -1,6 +1,5 @@
 package net.functionhub.api.controller;
 
-import java.util.Map;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResponse;
 import net.functionhub.api.ExecRequest;
@@ -61,8 +60,13 @@ public class RuntimeController implements RuntimeApi, SpecApi {
   }
 
   @Override
-  public ResponseEntity<String> runFunction(String functionSlug, String body) {
-    return ResponseEntity.ok(runtimeService.runFunction(functionSlug, body));
+  public ResponseEntity<String> runDevFunction(String functionSlug, String body) {
+    return null;
+  }
+
+  @Override
+  public ResponseEntity<String> runProdFunction(String functionSlug, String body) {
+    return ResponseEntity.ok(runtimeService.runProdFunction(functionSlug, body));
   }
 
   @Override
