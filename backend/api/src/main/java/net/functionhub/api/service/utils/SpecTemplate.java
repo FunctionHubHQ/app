@@ -3,13 +3,9 @@ package net.functionhub.api.service.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.StringJoiner;
-import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -23,28 +19,48 @@ import org.springframework.util.ObjectUtils;
 @Component
 @Getter
 @RequiredArgsConstructor
-public class UserSpecTemplate {
-  private Map<String, Object> spec;
+public class SpecTemplate {
+  private Map<String, Object> userSpec;
+  private Map<String, Object> gptProdSpec;
+  private Map<String, Object> gptDevSpec;
   private final ObjectMapper objectMapper;
   private final SourceProps sourceProps;
 
-  public Map<String, Object> getSpecCopy() {
-    return new HashMap<>(spec);
+  public Map<String, Object> getUserSpec() {
+    return new HashMap<>(userSpec);
   }
 
+  public Map<String, Object> getGptProdSpec() {
+    return new HashMap<>(gptProdSpec);
+  }
+
+  public Map<String, Object> getGptDevSpec() {
+    return new HashMap<>(gptDevSpec);
+  }
+
+  // TODO: Create a new file for GPT prod spec
   @PostConstruct
   public void init() {
-    String rawSpec = FHUtils.loadFile("openapi/userSpecTemplate.json");
+    this.userSpec = loadSpec("userSpecTemplate");
+    this.gptProdSpec = loadSpec("gptProdSpecTemplate");
+    this.gptDevSpec = loadSpec("gptDevSpecTemplate");
+
+  }
+
+  private Map<String, Object> loadSpec(String name) {
+    String rawSpec = FHUtils.loadFile(String.format("spec/%s.json", name));
+    Map<String, Object> spec = new HashMap<>();
     if (!ObjectUtils.isEmpty(rawSpec)) {
       TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
       try {
-        this.spec = objectMapper.readValue(rawSpec, typeRef);
+        spec = objectMapper.readValue(rawSpec, typeRef);
         Map<String, String> servers = new HashMap<>();
         servers.put("url", sourceProps.getBaseUrl());
-        this.spec.put("servers", List.of(servers));
+        spec.put("servers", List.of(servers));
       } catch (JsonProcessingException e) {
         throw new RuntimeException(e);
       }
     }
+    return spec;
   }
 }

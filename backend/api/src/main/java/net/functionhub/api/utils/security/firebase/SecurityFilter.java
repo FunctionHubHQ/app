@@ -124,8 +124,7 @@ public class SecurityFilter extends OncePerRequestFilter {
           }
         }
       }
-      assert user != null;
-      UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, credentials,
+    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, credentials,
               getAuthorities(user.getRoles()));
       authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
       SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -174,7 +173,7 @@ public class SecurityFilter extends OncePerRequestFilter {
           }
       } else if (httpServletRequest.getRequestURI().startsWith("/spec")) {
         String[] tokens = httpServletRequest.getRequestURI().split("/");
-        bearerToken = tokens[tokens.length - 1];
+        bearerToken = tokens[tokens.length - 2];
       }
       return bearerToken;
   }

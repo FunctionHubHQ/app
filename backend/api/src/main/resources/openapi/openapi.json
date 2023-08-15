@@ -91,7 +91,7 @@
         }
       }
     },
-    "/dev/{function_slug}": {
+    "/d/{function_slug}": {
       "post": {
         "tags": [
           "runtime"
@@ -134,7 +134,7 @@
         }
       }
     },
-    "/spec/{function_slug}/{version}/{api_key}/{env}": {
+    "/spec/{function_slug}/{version}/{auth_token}/{env}": {
       "get": {
         "tags": [
           "spec"
@@ -158,7 +158,7 @@
             }
           },
           {
-            "name": "api_key",
+            "name": "auth_token",
             "required": true,
             "in": "path",
             "schema": {

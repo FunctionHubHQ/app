@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import net.functionhub.api.Code;
-import net.functionhub.api.CodeUpdateResponse;
+import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.FHCompletionRequest;
@@ -169,20 +169,20 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String codeEncoded = Base64.getEncoder().encodeToString(code.getBytes());
 
         // 1. Create code cell
-        String updateResponseStr = request("/update-code", "POST", new Code()
+        String updateResultStr = request("/update-code", "POST", new Code()
             .code(codeEncoded)
             .userId(user.getUid()));
 
-        CodeUpdateResponse updateResponse = objectMapper
-            .readValue(updateResponseStr, CodeUpdateResponse.class);
-        assertNotNull(updateResponse.getUid());
+        CodeUpdateResult updateResult = objectMapper
+            .readValue(updateResultStr, CodeUpdateResult.class);
+        assertNotNull(updateResult.getUid());
 
         // 2. Run it
         String city = "Chicago, IL";
         Map<String, Object> payload = new HashMap<>();
         payload.put("location", city);
         ExecRequest execRequest =  new ExecRequest()
-            .uid(updateResponse.getUid())
+            .uid(updateResult.getUid())
             .execId(UUID.randomUUID().toString())
             .validate(true)
             .payload(new Gson().toJson(payload));
@@ -192,7 +192,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         Thread.sleep(5000L);
         String execResultStr = request("/e-result?exec_id=" + execRequest.getExecId(),
             "GET", new ExecRequest()
-            .uid(updateResponse.getUid())
+            .uid(updateResult.getUid())
             .payload(new Gson().toJson(payload)));
 
         ExecResultAsync execResult = objectMapper.readValue(execResultStr, ExecResultAsync.class);
@@ -202,22 +202,22 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         // 4. Deploy it
         String deployResponseStr = request("/deploy",
             "POST", new ExecRequest()
-                .uid(updateResponse.getUid()));
+                .uid(updateResult.getUid()));
 
         GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
         assertNotNull(deployResponse.getStatus());
 
         Thread.sleep(5000L);
-        CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResponse.getUid()));
+        CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResult.getUid()));
         assertTrue(codeCell.getDeployed());
-        String schema = runtimeService.getJsonSchema(updateResponse.getUid());
+        String schema = runtimeService.getJsonSchema(updateResult.getUid());
         assertNotNull(schema);
 
         // 5. Make test GPT function call
         FHCompletionRequest devCompletionRequest = new FHCompletionRequest();
         devCompletionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
 
-        String completionResponseDevResponseStr = request("/gpt-completion/" + updateResponse.getSlug(),
+        String completionResponseDevResponseStr = request("/gpt-completion/" + updateResult.getSlug(),
             "POST", devCompletionRequest);
 
         Map<String, Object> completionResponseDevResponse = objectMapper

@@ -82,7 +82,7 @@ public class RuntimeController implements RuntimeApi, SpecApi {
   }
 
   @Override
-  public ResponseEntity<String> getUserSpec(String functionId, String version, String apiKey, String env) {
+  public ResponseEntity<String> getUserSpec(String functionId, String version, String authToken, String env) {
     return ResponseEntity.ok(runtimeService.getUserSpec(functionId, version, env));
   }
 }

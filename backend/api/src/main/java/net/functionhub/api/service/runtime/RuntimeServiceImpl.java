@@ -51,7 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.functionhub.api.service.utils.UserSpecTemplate;
+import net.functionhub.api.service.utils.SpecTemplate;
 import net.functionhub.api.service.utils.WordList;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -76,7 +76,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final CommitHistoryRepo commitHistoryRepo;
   private final DenoProps denoProps;
   private final WordList wordList;
-  private final UserSpecTemplate userSpecTemplate;
+  private final SpecTemplate specTemplate;
   private final RequestHeaders requestHeaders;
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
@@ -142,7 +142,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     // Although there may be previous deployments in the commit history, only the deployment version
     // in CodeCellEntity is used.
     CodeCellEntity codeCell = codeCellRepo.findBySlugAndApiKey(
-        functionSlug, requestHeaders.getHeaders().get("api-key"));
+        functionSlug, FHUtils.getSessionUser().getApiKey());
     if (codeCell != null) {
       ExecRequest request = new ExecRequest()
           .execId(UUID.randomUUID().toString())
@@ -548,16 +548,12 @@ public class RuntimeServiceImpl implements RuntimeService {
           typeRef);
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
       if (codeCell != null) {
-        Map<String, Object> template = userSpecTemplate.getSpecCopy();
+        Map<String, Object> template = specTemplate.getUserSpec();
         Map<String, Object> paths = new HashMap<>();
 
         // Define a custom path for this user's function
         Map<String, Object> pathTemplate = objectMapper.readValue(
             new Gson().toJson(template.get("paths")), typeRef);
-
-        // TODO: Prepend the paths with d- for dev and p- for prod. Save the dev and prod specs
-        //  into separate columns
-
         paths.put("/" + codeCell.getSlug(), pathTemplate.get("/"));
         template.put("paths", paths);
         fullSpecMap.remove("$comment");
@@ -570,7 +566,7 @@ public class RuntimeServiceImpl implements RuntimeService {
           getClass().getSimpleName(),
           e.getMessage());
     }
-    return new Gson().toJson(userSpecTemplate.getSpecCopy());
+    return new Gson().toJson(specTemplate.getUserSpec());
   }
 
   private Map<String, Object> getRequestDto(Map<String, Object> requestDto, String version) {
@@ -717,7 +713,20 @@ public class RuntimeServiceImpl implements RuntimeService {
         if (ObjectUtils.isEmpty(codeCell.getFullOpenApiSchema())) {
           throw new RuntimeException("Requested function not available");
         }
-        return codeCell.getFullOpenApiSchema();
+
+        try {
+          Map<String, Object> spec = objectMapper.readValue(codeCell.getFullOpenApiSchema(), typeRef);
+          Map<String, Object> prodPaths = objectMapper.readValue( new Gson().toJson(spec.get("paths")),
+              typeRef);
+          String key = "/" + codeCell.getSlug();
+          Map<String, Object> devPaths = new HashMap<>();
+          devPaths.put("/d" + key, prodPaths.get(key));
+          spec.put("paths", devPaths);
+          return new Gson().toJson(spec);
+        } catch (JsonProcessingException e) {
+          throw new RuntimeException("Error processing api specification");
+        }
+
       } else if (env.equals("fhp")) {
         // Prod
         Deployment deployment = commitHistoryRepo.findDeployedCommitByVersionAndSlug(version, functionId);
@@ -728,11 +737,11 @@ public class RuntimeServiceImpl implements RuntimeService {
       } else if (env.equals("gd")) {
         // GPT dev
         // TODO: Load the function-specific gpt dev spec
-
+        Map<String, Object> gptDevSpec = specTemplate.getGptDevSpec();
+        return new Gson().toJson(gptDevSpec);
 
       } else if (env.equals("gp")) {
-        // GPT prod
-        // TODO: Load the general gpt prod spec
+       return new Gson().toJson(specTemplate.getGptProdSpec());
       }
     }
     throw new RuntimeException("Invalid request");
