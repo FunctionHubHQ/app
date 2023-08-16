@@ -7,6 +7,7 @@ import Controls from "@/components/code/controls";
 const stateFields = { history: historyField };
 import Chat from "@/components/code/chat";
 import {auth} from "@/utils/firebase-setup";
+import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import {
   Code,
   ExecResultAsync,
@@ -179,7 +180,7 @@ function CodeEditor() {
 
   // @ts-ignore
   return (
-      <div className="container m-auto grid grid-cols-1 grid-rows-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+      <div className="fixed w-full ml-1 mr-1 mt-16 m-auto grid grid-cols-1 grid-rows-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
         <div className="tile col-span-1">
           <div>
             <div className="gf-editor-base gf-controls">
@@ -191,7 +192,9 @@ function CodeEditor() {
             {chatMode ? <Chat/> :
                 <div className="gf-editor-base gf-editor">
                   <CodeMirror
-                      theme={customCmTheme}
+                      className="cm-outer-container"
+                      placeholder={"Write your code here..."}
+                      theme={vscodeDark}
                       extensions={[javascript({ typescript: true })]}
                       value={mainCode}
                       initialState={
@@ -208,7 +211,36 @@ function CodeEditor() {
             }
           </div>
         </div>
-
+        <div className="tile col-span-1">
+          <div>
+            <div className="gf-editor-base gf-controls">
+              <Controls
+                  onRun={onRunCode}
+                  codeRunInProgress={codeRunInProgress}
+              />
+            </div>
+            {chatMode ? <Chat/> :
+                <div className="gf-editor-base gf-editor">
+                  <CodeMirror
+                      className="cm-outer-container"
+                      placeholder={"Write your code here..."}
+                      theme={vscodeDark}
+                      extensions={[javascript({ typescript: true })]}
+                      value={mainCode}
+                      initialState={
+                        serializedStateMain
+                            ? {
+                              json: JSON.parse(serializedStateMain || ''),
+                              fields: stateFields,
+                            }
+                            : undefined
+                      }
+                      onChange={(value, valueUpdate) => onCodeChange(value, valueUpdate, "main")}
+                  />
+                </div>
+            }
+          </div>
+        </div>
         <div className="tile col-span-1">
           <div>
             <div className=" gf-controls">
