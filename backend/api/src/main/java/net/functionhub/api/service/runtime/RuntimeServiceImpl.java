@@ -306,12 +306,12 @@ public class RuntimeServiceImpl implements RuntimeService {
       } else if (ObjectUtils.isEmpty(codeCell.getJsonSchema())) {
         error = "Missing request/response interface definitions";
       } else {
-        if (!ObjectUtils.isEmpty(execResult.getResult())) {
+        if (!ObjectUtils.isEmpty(execResult.getError()) && !execResult.getError().equals("null")) {
+          error = execResult.getError();
+        } else if (!ObjectUtils.isEmpty(execResult.getResult()) && !execResult.getResult().equals("null")) {
           codeCell.setIsDeployable(true);
           codeCell.setReasonNotDeployable(null);
           codeCellRepo.save(codeCell);
-        } else if (!ObjectUtils.isEmpty(execResult.getError())) {
-          error = "Functions with unresolved errors cannot be deployed";
         } else {
           error = "Your function must have a return value";
         }
@@ -522,10 +522,7 @@ public class RuntimeServiceImpl implements RuntimeService {
           );
           if (!ObjectUtils.isEmpty(commitHistory)) {
             commitHistory.get(0).setJsonSchema(requestDtoStr);
-
-            if (codeCell.getDeployed() != null && codeCell.getDeployed()) {
-              commitHistory.get(0).setFullOpenApiSchema(fullOpenApiSchema);
-            }
+            commitHistory.get(0).setFullOpenApiSchema(fullOpenApiSchema);
             commitHistoryRepo.save(commitHistory.get(0));
           }
         } else if (format.equals("ts")) {
