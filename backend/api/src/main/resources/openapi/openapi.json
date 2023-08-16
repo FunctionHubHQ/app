@@ -16,7 +16,7 @@
     }
   ],
   "paths": {
-    "/status/": {
+    "/status": {
       "post": {
         "tags": [
           "spec"
@@ -36,9 +36,9 @@
         },
         "responses": {
           "200": {
-            "description": "User code",
+            "description": "Status response",
             "content": {
-              "application/typescript": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StatusResponse"
                 }
@@ -413,7 +413,7 @@
         }
       }
     },
-    "/gpt-completion": {
+    "/completion": {
       "post": {
         "tags": [
           "chat"
@@ -446,7 +446,7 @@
         }
       }
     },
-    "/gpt-completion/{function_slug}": {
+    "/completion/{function_slug}": {
       "post": {
         "tags": [
           "chat"

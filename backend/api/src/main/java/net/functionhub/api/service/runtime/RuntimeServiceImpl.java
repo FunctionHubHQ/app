@@ -197,6 +197,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private Map<String, Object> parseExecRequestPayload(String payload) {
     TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
     try {
+      // TODO: include console logs for dev response
       return objectMapper.readValue(
           JsonParser.parseString(payload).getAsJsonObject().toString(), typeRef);
     } catch (Exception e) {
@@ -738,8 +739,19 @@ public class RuntimeServiceImpl implements RuntimeService {
         // GPT dev
         // TODO: Load the function-specific gpt dev spec
         Map<String, Object> gptDevSpec = specTemplate.getGptDevSpec();
-        return new Gson().toJson(gptDevSpec);
+        Map<String, Object> paths = new HashMap<>();
 
+        try {
+          Map<String, Object> pathTemplate = objectMapper.readValue(
+              new Gson().toJson(gptDevSpec.get("paths")), typeRef);
+          paths.put("/completion/" + functionId, pathTemplate.get("/completion"));
+          gptDevSpec.put("paths", paths);
+          return new Gson().toJson(gptDevSpec);
+        } catch (JsonProcessingException e) {
+          log.error("{}.submitExecutionTask: {}",
+              getClass().getSimpleName(),
+              e.getMessage());
+        }
       } else if (env.equals("gp")) {
        return new Gson().toJson(specTemplate.getGptProdSpec());
       }

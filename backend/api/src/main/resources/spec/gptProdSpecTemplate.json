@@ -10,10 +10,10 @@
     }
   ],
   "paths": {
-    "/gpt-completion": {
+    "/completion": {
       "post": {
         "tags": [
-          "chat"
+          "Completion"
         ],
         "summary": "Call GPT completion endpoint",
         "description": "Call GPT completion endpoint",
@@ -24,7 +24,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FHCompletionRequest"
+                "$ref": "#/components/definitions/FHCompletionRequest"
               }
             }
           }
@@ -35,7 +35,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FHCompletionResponse"
+                  "$ref": "#/components/definitions/FHCompletionResponse"
                 }
               }
             }
@@ -46,6 +46,21 @@
   },
   "components": {
     "definitions": {
+      "FHCompletionRequest": {
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "properties": {
+          "prompt": {
+            "type": "string"
+          }
+        }
+      },
+      "FHCompletionResponse": {
+        "type": "object",
+        "additionalProperties": true
+      }
     }
   }
 }

@@ -150,9 +150,7 @@ public class ChatServiceImpl implements ChatService {
               .deployed(deployed)
               .version(version) // The version must be specified so that a specific version of deployment can run
               .validate(false);
-          runtimeService.exec(execRequest);
-          ExecResultAsync execResultAsync = runtimeService.getExecutionResult(
-              execRequest.getExecId());
+          ExecResultAsync execResultAsync = runtimeService.exec(execRequest);
 
           // Call GPT with the function response
           CompletionRequestFunctionalCall requestFunctionalCall = buildGptRequestFunctionalCall(
@@ -222,7 +220,7 @@ public class ChatServiceImpl implements ChatService {
            fhCompletionRequest.getPrompt(),
            List.of(function), codeCell,
            false,
-           "yes"));
+           "auto"));
        if (ObjectUtils.isEmpty(response)) {
          Map<String, String> error = new HashMap<>();
          error.put("message", "Unknown error");
