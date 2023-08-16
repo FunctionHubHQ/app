@@ -1,0 +1,23 @@
+.gf-editor-base {
+  background-color: #1e1e1e;
+  font-family: monospace;
+  border-radius: 0.75rem;
+}
+.gf-editor {
+  height: 100%;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+.gf-error {
+  padding: 1rem;
+  color: #f13232;
+}
+.gf-editor::-webkit-scrollbar {
+  display: none;
+}
+
+.cm-scroller {
+  overflow-x: unset !important;
+}
