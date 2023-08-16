@@ -583,11 +583,11 @@ public class RuntimeServiceImpl implements RuntimeService {
         Map<String, Object> properties = objectMapper.readValue(
             new Gson().toJson(modifiedDto.get("properties")),
             typeRef);
-        Map<String, Object> field = new HashMap<>();
-        field.put("type", "string");
-        field.put("default", version);
-        properties.put(versionKey, field);
-        required.add(versionKey);
+//        Map<String, Object> field = new HashMap<>();
+//        field.put("type", "string");
+//        field.put("default", version);
+//        properties.put(versionKey, field);
+//        required.add(versionKey);
         modifiedDto.put("required", required);
         modifiedDto.put("properties", properties);
         return modifiedDto;
