@@ -693,7 +693,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         }
       }
     }
-    return new GenericResponse().status("ok");
+    return new GenericResponse().error("No previous commits found");
   }
 
   @Override
