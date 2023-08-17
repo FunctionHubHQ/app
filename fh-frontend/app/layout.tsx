@@ -25,8 +25,6 @@ export default function RootLayout({
       <body className="overflow-y-scroll bg-[#1e1e1e] px-8" >
       <AuthContextProvider>
         <HeaderNav/>
-        {/*<GlobalNav />*/}
-
         {loginLayout && <div className="min-h-screen">
           <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
             <div>
@@ -36,9 +34,9 @@ export default function RootLayout({
         </div>
         }
 
-        {projectsLayout && <div className="lg:pl-40">
-          <div className="mx-auto max-w-screen-2xl space-y-2 lg:px-2 lg:py-8">
-            <div className="bg-vc-border-gradient rounded-lg p-px shadow-lg shadow-black/20">
+        {projectsLayout && <div className="min-h-screen">
+          <div className="mx-auto max-w-full lg:px-1 py-16">
+            <div className="">
               <div className="rounded-lg bg-[#1e1e1e]">{children}</div>
             </div>
 
@@ -47,18 +45,17 @@ export default function RootLayout({
         }
 
         {applyGlobalLayout &&
-        <div className="lg:pl-0">
+        <div className="min-h-screen pt-20">
           <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
 
-            <div className="bg-vc-border-gradient rounded-lg p-px shadow-lg shadow-black/20">
-              <div className="rounded-lg bg-black">
-                <AddressBar />
-              </div>
+            <div >
+              {/*<div className="rounded-lg bg-black">*/}
+              {/*  <AddressBar />*/}
+              {/*</div>*/}
             </div>
             <div className="bg-vc-border-gradient rounded-lg p-px shadow-lg shadow-black/20">
               <div className="rounded-lg bg-black p-3.5 lg:p-6">{children}</div>
             </div>
-            {/*<Byline className="fixed sm:hidden" />*/}
           </div>
         </div>
         }

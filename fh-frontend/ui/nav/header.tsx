@@ -33,10 +33,6 @@ const HeaderNav = () => {
               <div
                   className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex flex-shrink-0 items-center">
-                  {/*<img className="h-8 w-auto"*/}
-                  {/*     src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"*/}
-                  {/*     alt="Your Company"/>*/}
-
                   <a href="/" className="flex items-center mb-2 sm:mb-0">
                     <img src="/function_hub_white.png" className="h-8 mr-1"
                          alt="FunctionHub Logo"/>
@@ -48,15 +44,11 @@ const HeaderNav = () => {
                 <div className="hidden sm:ml-6 sm:block">
                   <div className="flex space-x-4">
                     <a href="/docs"
-                       className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Docs & Examples</a>
+                       className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Docs</a>
                     <a href="/examples"
-                       className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Repo</a>
-                    <a href="/legal/privacy"
-                       className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Privacy</a>
-                    <a href="/legal/terms"
-                       className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Terms</a>
-                    <a href="/about"
-                       className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">About</a>
+                       className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Examples</a>
+                    <a href="/explore"
+                       className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Explore</a>
                   </div>
                 </div>
               </div>
