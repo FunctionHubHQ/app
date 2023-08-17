@@ -8,6 +8,7 @@ import { MenuAlt2Icon, XIcon } from '@heroicons/react/solid';
 import clsx from 'clsx';
 import { useState } from 'react';
 import Byline from './byline';
+import {FunctionHubLogo} from "#/ui/function-hub-logo";
 
 export function GlobalNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,18 +18,37 @@ export function GlobalNav() {
     <div className="fixed top-0 z-10 flex w-full flex-col border-b border-gray-800 bg-black lg:bottom-0 lg:z-auto lg:w-36 lg:border-b-0 lg:border-r lg:border-gray-800">
       <div className="flex h-14 items-center px-4 py-4 lg:h-auto">
         <Link
-          href="/"
-          className="group flex w-full items-center gap-x-2.5"
-          onClick={close}
+            href="/"
+            className="group flex w-full items-center gap-x-2.5"
+            onClick={close}
         >
-          <div className="h-7 w-7 rounded-full border border-white/30 group-hover:border-white/50">
-            <NextLogo />
+          <div className="h-7 w-7">
+            <FunctionHubLogo />
           </div>
 
           <h3 className="font-semibold tracking-wide text-gray-400 group-hover:text-gray-50">
-            App Router
+            FunctionHub
           </h3>
         </Link>
+
+
+
+        {/*<Link*/}
+        {/*    href="/"*/}
+        {/*    className="grid grid-cols-1 grid-rows-1 md:grid-cols-1 lg:grid-cols-1 gap-1 justify-center items-center"*/}
+        {/*    onClick={close}*/}
+        {/*>*/}
+        {/*  <div className="h-12 w-12 tile col-span-1 m-auto">*/}
+        {/*    <FunctionHubLogo/>*/}
+        {/*  </div>*/}
+        {/*  <div className="tile col-span-1 text-center py-2">*/}
+        {/*    <h3 className="text-sm font-semibold tracking-wide">*/}
+        {/*      FunctionHub*/}
+        {/*    </h3>*/}
+        {/*  </div>*/}
+        {/*</Link>*/}
+
+
       </div>
       <button
         type="button"
