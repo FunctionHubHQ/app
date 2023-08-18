@@ -2,9 +2,9 @@ package net.functionhub.api.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.functionhub.api.Code;
+import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.Functions;
-import net.functionhub.api.GenericResponse;
+import net.functionhub.api.Project;
 import net.functionhub.api.ProjectApi;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
@@ -23,28 +23,28 @@ public class ProjectController implements ProjectApi {
   private final ProjectService projectService;
 
   @Override
-  public ResponseEntity<Code> createFunction() {
-    return ResponseEntity.ok(projectService.createFunction());
+  public ResponseEntity<CodeUpdateResult> createFunction(String projectId) {
+    return ResponseEntity.ok(projectService.createFunction(projectId));
   }
 
   @Override
-  public ResponseEntity<GenericResponse> createProject(ProjectCreateRequest projectCreateRequest) {
+  public ResponseEntity<Projects> createProject(ProjectCreateRequest projectCreateRequest) {
     return ResponseEntity.ok(projectService.createProject(projectCreateRequest));
   }
 
   @Override
-  public ResponseEntity<GenericResponse> deleteFunction(String body) {
+  public ResponseEntity<Functions> deleteFunction(String body) {
     return ResponseEntity.ok(projectService.deleteFunction(body));
   }
 
   @Override
-  public ResponseEntity<GenericResponse> deleteProject(String body) {
+  public ResponseEntity<Projects> deleteProject(String body) {
     return ResponseEntity.ok(projectService.deleteProject(body));
   }
 
   @Override
-  public ResponseEntity<Functions> getAllFunctions() {
-    return ResponseEntity.ok(projectService.getAllFunctions());
+  public ResponseEntity<Functions> getAllFunctions(String projectId) {
+    return ResponseEntity.ok(projectService.getAllFunctions(projectId));
   }
 
   @Override
@@ -53,7 +53,7 @@ public class ProjectController implements ProjectApi {
   }
 
   @Override
-  public ResponseEntity<GenericResponse> updateProject(ProjectUpdateRequest projectUpdateRequest) {
+  public ResponseEntity<Project> updateProject(ProjectUpdateRequest projectUpdateRequest) {
     return ResponseEntity.ok(projectService.updateProject(projectUpdateRequest));
   }
 }

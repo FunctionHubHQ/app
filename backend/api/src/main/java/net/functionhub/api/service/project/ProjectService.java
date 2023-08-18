@@ -1,8 +1,8 @@
 package net.functionhub.api.service.project;
 
-import net.functionhub.api.Code;
+import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.Functions;
-import net.functionhub.api.GenericResponse;
+import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
@@ -12,12 +12,12 @@ import net.functionhub.api.Projects;
  */
 public interface ProjectService {
 
-  Code createFunction();
-  GenericResponse createProject(ProjectCreateRequest projectCreateRequest);
-  GenericResponse deleteFunction(String functionSlug);
-  GenericResponse deleteProject(String projectId);
-  Functions getAllFunctions();
+  CodeUpdateResult createFunction(String projectId);
+  Projects createProject(ProjectCreateRequest projectCreateRequest);
+  Functions deleteFunction(String functionSlug);
+  Projects deleteProject(String projectId);
+  Functions getAllFunctions(String projectId);
   Projects getAllProjects();
-  GenericResponse updateProject(ProjectUpdateRequest projectUpdateRequest);
+  Project updateProject(ProjectUpdateRequest projectUpdateRequest);
 
 }

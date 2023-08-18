@@ -65,23 +65,23 @@ CREATE TABLE IF NOT EXISTS public.usage (
 );
 ALTER TABLE public.usage OWNER TO root;
 
--- CREATE TABLE IF NOT EXISTS public.project (
---     uid uuid NOT NULL primary key,
---     user_id varchar(255) NOT NULL,
---     project_name varchar(255) NOT NULL,
---     description varchar(255) NOT NULL,
---     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
---     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
--- );
--- ALTER TABLE public.project OWNER TO root;
---
--- CREATE TABLE IF NOT EXISTS public.project_item (
---     uid uuid NOT NULL primary key,
---     project_id varchar(255) NOT NULL,
---     code_id varchar(255) NOT NULL,
---     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
--- );
--- ALTER TABLE public.project_item OWNER TO root;
+CREATE TABLE IF NOT EXISTS public.project (
+    uid uuid NOT NULL primary key,
+    user_id varchar(255) NOT NULL,
+    project_name varchar(255) NOT NULL,
+    description varchar(255) NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.project OWNER TO root;
+
+CREATE TABLE IF NOT EXISTS public.project_item (
+    uid uuid NOT NULL primary key,
+    project_id uuid NOT NULL,
+    code_id uuid NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.project_item OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.commit_history (
     uid uuid NOT NULL primary key,

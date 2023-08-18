@@ -568,7 +568,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GenericResponse"
+                  "$ref": "#/components/schemas/Projects"
                 }
               }
             }
@@ -595,11 +595,11 @@
         },
         "responses": {
           "200": {
-            "description": "Generic response",
+            "description": "Project response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GenericResponse"
+                  "$ref": "#/components/schemas/Project"
                 }
               }
             }
@@ -631,7 +631,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GenericResponse"
+                  "$ref": "#/components/schemas/Projects"
                 }
               }
             }
@@ -667,13 +667,25 @@
         "summary": "Create a function",
         "description": "Creates a new function",
         "operationId": "createFunction",
+        "requestBody": {
+          "required": true,
+          "description": "Function create request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "description": "Project ID"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Code response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Code"
+                  "$ref": "#/components/schemas/CodeUpdateResult"
                 }
               }
             }
@@ -705,7 +717,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GenericResponse"
+                  "$ref": "#/components/schemas/Functions"
                 }
               }
             }
@@ -719,6 +731,17 @@
         "summary": "Get all functions in a project",
         "description": "Get all functions in a project",
         "operationId": "getAllFunctions",
+        "parameters": [
+          {
+            "name": "uid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Project ID"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "All functions",
@@ -1012,7 +1035,7 @@
             "type": "string"
           },
           "is_public": {
-            "type": "string"
+            "type": "boolean"
           },
           "created_at": {
             "type": "integer",

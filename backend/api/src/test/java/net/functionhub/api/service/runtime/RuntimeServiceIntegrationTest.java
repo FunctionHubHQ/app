@@ -2,7 +2,7 @@ package net.functionhub.api.service.runtime;
 
 
 import net.functionhub.api.Code;
-import net.functionhub.api.CodeUpdateResponse;
+import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.CommitHistoryEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
@@ -111,7 +111,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
             .code(encodedCode)
             .userId(user.getUid());
 //            .functionName("theVeryBestFunction");
-        CodeUpdateResponse response = runtimeService.updateCode(code);
+        CodeUpdateResult response = runtimeService.updateCode(code);
         assertNotNull(response);
         assertNotNull(response.getUid());
 

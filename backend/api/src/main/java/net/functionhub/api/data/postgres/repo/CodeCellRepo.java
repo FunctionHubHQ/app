@@ -40,4 +40,10 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, UUID> {
       nativeQuery = true)
   CodeCellEntity findBySlugAndApiKey(String slug, String apiKey);
 
+  @Query(value = "SELECT cc.* "
+      + "FROM code_cell cc JOIN project_item pi ON cc.uid = pi.code_id "
+      + "WHERE pi.project_id = ?1",
+      nativeQuery = true)
+  List<CodeCellEntity> findByProjectId(UUID projectId);
+
 }
