@@ -446,6 +446,87 @@
         }
       }
     },
+    "/keys": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Generate an api key or insert a vendor key",
+        "operationId": "upsertApiKey",
+        "requestBody": {
+          "required": true,
+          "description": "Api key request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Api key response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Delete an api key",
+        "operationId": "deleteKey",
+        "requestBody": {
+          "required": true,
+          "description": "Api key request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Api key response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get all API keys",
+        "operationId": "getApiKeys",
+        "responses": {
+          "200": {
+            "description": "Api key response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/completion/{function_slug}": {
       "post": {
         "tags": [
@@ -782,6 +863,40 @@
       "FHCompletionResponse": {
         "type": "object",
         "additionalProperties": true
+      },
+      "ApiKeyRequest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiKeyResponse": {
+        "type": "object",
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKey"
+            }
+          }
+        }
+      },
+      "ApiKey": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "is_vendor_key": {
+            "type": "boolean"
+          }
+        }
       },
       "Code":  {
         "type": "object",

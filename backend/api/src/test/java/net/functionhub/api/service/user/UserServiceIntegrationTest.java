@@ -1,6 +1,10 @@
 package net.functionhub.api.service.user;
 
 
+import java.util.UUID;
+import java.util.stream.Collectors;
+import net.functionhub.api.ApiKeyRequest;
+import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
@@ -20,6 +24,10 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertNotNull;
+import static org.testng.AssertJUnit.assertTrue;
 
 /**
  * @author Bizuwork Melesse
@@ -47,7 +55,6 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
     @BeforeClass
     public void setup() {
         testHelper.prepareSecurity(null);
-        flywayMigration.migrate(true);
     }
 
     @AfterClass
@@ -56,6 +63,7 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
 
     @BeforeMethod
     public void beforeEachTest(Method method) {
+        flywayMigration.migrate(true);
         log.info("  Testcase: " + method.getName() + " has started");
     }
 
@@ -84,6 +92,45 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
         EntitlementEntity entitlements = entitlementRepo.findByUserId(user.getUid());
         assertThat(entitlements, is(notNullValue()));
         assertThat(entitlements.getTimeout(), greaterThan(1000L));
+    }
 
+    @Test
+    public void generateApiKeyTest() {
+        ApiKeyResponse response = userService.upsertApiKey(new ApiKeyRequest());
+        assertNotNull(response);
+        assertNotNull(response.getKeys());
+        assertEquals(1, response.getKeys().size());
+        assertFalse(response.getKeys().get(0).getKey().contains("*"));
+    }
+
+    @Test
+    public void upsertVendorKeyTest() {
+        ApiKeyResponse response = userService.upsertApiKey(new ApiKeyRequest()
+            .key(UUID.randomUUID().toString()));
+        assertNotNull(response);
+        assertNotNull(response.getKeys());
+        assertEquals(1, response.getKeys().size());
+        assertTrue(response.getKeys().get(0).getKey().contains("*"));
+    }
+
+    @Test
+    public void deleteKeyTest() {
+        // generate 10 keys
+        ApiKeyResponse response = null;
+        for (int i = 0; i < 10; i++) {
+            response = userService.upsertApiKey(new ApiKeyRequest());
+        }
+        assertNotNull(response);
+        assertEquals(10, response.getKeys().size());
+
+        final ApiKeyResponse initialResponse = response;
+        ApiKeyResponse postDeleteResponse = userService.deleteKey(
+            new ApiKeyRequest().key(response.getKeys().get(0).getKey()));
+        assertNotNull(postDeleteResponse);
+        assertEquals(9, postDeleteResponse.getKeys().size());
+        assertEquals(0, postDeleteResponse.getKeys()
+            .stream()
+            .filter(it -> it.getKey().equals(initialResponse.getKeys().get(0).getKey()))
+            .toList().size());
     }
 }

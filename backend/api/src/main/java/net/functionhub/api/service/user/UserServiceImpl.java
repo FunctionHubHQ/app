@@ -1,6 +1,11 @@
 package net.functionhub.api.service.user;
 
-import com.beust.ah.A;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.stream.Collectors;
+import net.functionhub.api.ApiKey;
+import net.functionhub.api.ApiKeyRequest;
+import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
@@ -53,10 +58,10 @@ public class UserServiceImpl implements UserService {
         userRepo.save(newUser);
 
         ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
-        apiKeyEntity.setApiKey(apiKeyPrefix + FHUtils.generateUid(46));
+        apiKeyEntity.setApiKey(generateApiKey());
         apiKeyEntity.setUserId(newUser.getUid());
         apiKeyRepo.save(apiKeyEntity);
-        
+
         EntitlementEntity entitlements = new EntitlementEntity();
         entitlements.setUid(UUID.randomUUID());
         entitlements.setUserId(userProfile.getUid());
@@ -68,5 +73,58 @@ public class UserServiceImpl implements UserService {
         entitlementRepo.save(entitlements);
       }
     }
+  }
+
+  @Override
+  public ApiKeyResponse getApiKeys() {
+    List<ApiKeyEntity> apiKeyEntities = apiKeyRepo.findByUserIdOrderByCreatedAtDesc(FHUtils.getSessionUser().getUid());
+    if (!ObjectUtils.isEmpty(apiKeyEntities)) {
+      return new ApiKeyResponse().keys(
+          apiKeyEntities
+              .stream()
+              .map(it -> {
+                ApiKey apiKey = new ApiKey();
+                apiKey.setKey(it.getIsVendorKey() ? redactString(it.getApiKey()) : it.getApiKey());
+                apiKey.setIsVendorKey(it.getIsVendorKey());
+                apiKey.setCreatedAt(it.getCreatedAt().toEpochSecond(ZoneOffset.UTC));
+                return apiKey;
+
+      }).collect(Collectors.toList()));
+    }
+    return new ApiKeyResponse();
+  }
+
+  private String redactString(String value) {
+    return  "*".repeat(value.length());
+  }
+
+  @Override
+  public ApiKeyResponse upsertApiKey(ApiKeyRequest apiKeyRequest) {
+    ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
+    if (ObjectUtils.isEmpty(apiKeyRequest.getKey())) {
+      apiKeyEntity.setIsVendorKey(false);
+      apiKeyEntity.setApiKey(generateApiKey());
+    } else {
+      apiKeyEntity.setIsVendorKey(true);
+      apiKeyEntity.setApiKey(apiKeyRequest.getKey());
+    }
+    apiKeyEntity.setUserId(FHUtils.getSessionUser().getUid());
+    apiKeyRepo.save(apiKeyEntity);
+    return getApiKeys();
+  }
+
+  @Override
+  public ApiKeyResponse deleteKey(ApiKeyRequest apiKeyRequest) {
+    if (!ObjectUtils.isEmpty(apiKeyRequest.getKey())) {
+      ApiKeyEntity entity = apiKeyRepo.findByApiKey(apiKeyRequest.getKey());
+      if (entity != null) {
+        apiKeyRepo.delete(entity);
+      }
+    }
+    return getApiKeys();
+  }
+
+  private String generateApiKey() {
+    return apiKeyPrefix + FHUtils.generateUid(46);
   }
 }

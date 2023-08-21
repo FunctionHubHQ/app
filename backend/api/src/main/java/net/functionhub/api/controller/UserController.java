@@ -1,5 +1,7 @@
 package net.functionhub.api.controller;
 
+import net.functionhub.api.ApiKeyRequest;
+import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.UserApi;
 import net.functionhub.api.UserProfileResponse;
@@ -17,8 +19,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController implements UserApi {
   private final UserService userService;
+
+  @Override
+  public ResponseEntity<ApiKeyResponse> deleteKey(ApiKeyRequest apiKeyRequest) {
+    return ResponseEntity.ok(userService.deleteKey(apiKeyRequest));
+  }
+
+  @Override
+  public ResponseEntity<ApiKeyResponse> getApiKeys() {
+    return ResponseEntity.ok(userService.getApiKeys());
+  }
+
   @Override
   public ResponseEntity<UserProfileResponse> getUserprofile() {
     return ResponseEntity.ok(userService.getOrCreateUserprofile());
+  }
+
+  @Override
+  public ResponseEntity<ApiKeyResponse> upsertApiKey(ApiKeyRequest apiKeyRequest) {
+    return ResponseEntity.ok(userService.upsertApiKey(apiKeyRequest));
   }
 }

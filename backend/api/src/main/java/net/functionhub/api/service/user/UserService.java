@@ -1,5 +1,7 @@
 package net.functionhub.api.service.user;
 
+import net.functionhub.api.ApiKeyRequest;
+import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.UserProfile;
 import net.functionhub.api.UserProfileResponse;
 
@@ -27,4 +29,10 @@ public interface UserService {
    * Create a db user with default entitlements
    */
   void createDbUser(UserProfile userProfile);
+
+  ApiKeyResponse getApiKeys();
+
+  ApiKeyResponse upsertApiKey(ApiKeyRequest apiKeyRequest);
+
+  ApiKeyResponse deleteKey(ApiKeyRequest apiKeyRequest);
 }
