@@ -1,0 +1,157 @@
+
+server:
+  port: 8080
+  error:
+    include-message: always
+  servlet:
+    context-path: /
+spring:
+  cloud:
+    config:
+      server:
+        enabled: false
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://127.0.0.1:8432/function_hub?reWriteBatchedInserts=true
+    username: root
+    password: root
+    main:
+      banner-mode: off
+  servlet:
+    multipart:
+      max-file-size: 1024MB
+  flyway:
+    locations: classpath:/db/migration
+    baselineOnMigrate: true
+    enabled: false
+    schemas: public
+    cleanDisabled: false
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        jdbc:
+          batch_size: 100
+          order_inserts: true
+          order_updates: true
+          generate_statistics: true
+        dialect: org.hibernate.dialect.PostgreSQL10Dialect
+    hibernate:
+      ddl-auto: none
+logging:
+  level:
+    org:
+      flywaydb:
+        core:
+          internal:
+            command:
+              DbMigrate: ERROR
+            sqlscript:
+              DefaultSqlScriptExecutor: ERROR
+      hibernate:
+        SQL: INFO
+        type: INFO
+      springframework:
+        security: INFO
+        beans: INFO
+        web:
+          servlert:
+            mvc:
+              method:
+                annotation:
+                  RequestMappingHandlerMapping: INFO
+    root: INFO
+resilience4j:
+  retry:
+    instances:
+      embeddings:
+        maxRetryAttempts: 5
+        waitDuration: 2s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+description: GPT Lambda API Service Dev Configurations
+source:
+  profile: test
+  base-url: 'http://localhost:8080'
+firebase:
+  sdkEnabled: true
+  type: service_account
+  project_id: 'functionhub-317d3'
+  private_key_id: 'b0503aeed62078cb4d8485313b19fdb69dec4d8d'
+  private_key: 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRQ21Gakl2T3A1bU5EUGYKdGd4ZG4zVitsY21QM09ZS1hpSXAxZmIxbmx0d2JuTW84WERkeitqZ2U0R2tJd0NpZWdScWoxbm9DMkk2Q0p2RApYbGlCcGNqeDA2TDZsR2piNzNna0tHR1hpclVXSGJHRXp4V1BDaEV3MjArWm04QzFpZTJZdHZmNUtMVmJ0YXdRCmwrVk93NisyUGYwQjJlRWduMTk5ZDBUQVYrVGxYUkt6dHg5NWZKOHM4eDdDc05ybEpVbG1BdlZRMVR1Q29vTVcKYzZlbTYyMW5RT0dRYWRkWFB6TjRtUVpjTWE2ZTFIMjlSYjF0K3cyYzJGUkN0Ny90WmZqRzNUOG9zb2pXamgyTgpsLzJUWERUb21aT2tiNk82Z2hlaElxbFVPV3lZR0hITng0dmgzTU5UZm91endxWDZoOE14L2oxWnBaMDU4Y3hyCndZTUVXTXFmQWdNQkFBRUNnZ0VBQ0xyLzlsV1pmL3ZjZ2pUNm4yMURhdDBLMUdJalFZWkRPM25BMnBaeGJnNlEKUlNXejdpVUFzOVFxTTJ1WG0vTFlDcFh3ZnU4aVFiUzBJMmZ4TlJkMjRhZGpXTksyVkdGWkttVnBBK05KczVqcAovUFk1eHVRYmxUcmlDMHdSckRsTTRRczFLOGJGQ2NZWi9tRk5yMzgvM0UrVDNpWUszSUVrTHQ4M0lQazkwZ1NsCnYvVUt0eU1wV00zV1R3NVd2Qnp3azR3d0k4TlU1UzhFNnM5aXo5MWJhdkFSTW5jRUY2QWFXWEovWEp1R2dRRzkKWCtZTE9JOVVpWVR4NlhZN04zMTZzaVhaU3hFUnNTbDJOejBIUk14MkZ6dGpwL0FQSlNyOWZvODlmUUM3cGwwYwpYWGtWdTczeHRpSFpyeUpwRjdMeTAzUGIyT25FSVgzNDZMOE05M3B6VVFLQmdRRGJOLzdUVmhEWDhzbnc0WWV5Cm96UzljZnJsdVE1RzY2OCtyVXZzNk4wT3BOdlFZSzZHUC8yWjRIU1IrL05kUE8yNkdQcTBvRkI3bk1SczNYT0YKQW1wc3dhU0hBNFExekJYOVdyZkVMTWRuYklyNnRCeHoxaW9wMnFJaEtGRHRCS0FJaWxldDBkTmdSUU9Edm90Nwo4VVZOMTRQQVJOcTBBdHhSbmIyQ2oyeSs5d0tCZ1FEQjlBdFRvV0w1UGFQSWh4OWRJaFdtbURON1JjY09IVHhoCm9LU0dhTHdwWWVkUzFtVUFNWGt2cVN2QVVFWm8welQ4SlFyU051eG0vRk9PVjF3YmxGdnArZ2pVbk10SlNmNU4KZWVZT25GUHdEOU03U0hwOXdLb1JMa0pubXZ4d2U5dDh3NFBYZGp6WnVaTitMK253U2VnaHpHdUhwbmhaUWFEYgpSK05Ua2l0Zm1RS0JnQ2libXN5ektMT1grZWh4SHAzc3RaeFNQTlBKRCtmN1NKOG5vdVRqemU4a2dzTjY1VmxoCkNTMHo4dVFIOC9EVmxJUGdsTEJZOGcrejNuNzhGcVlRNkgzMDhQRkJxWC85cWlVZ1pPSW1HVm9ETlV0emljRzcKYmx3S2IvWU1iZEU2QmhzTzVXY0JjMUpsOWx5MU0wbG1UQnc3UytDVjRKMXYyamdVTEVLL0pybkpBb0dCQUlITwpxYjRCSjFLVWxJZGpGL1NuR1VKMFh4QkQ5U05YSWRCZFNYL0RuUnM5TVNyWjNxTXdlV0VTb2Z1R1BubHQwZXBuCmlFU0ZDZGNyVFdqWXd3YWFWcUhUL0JFQUYzWW5sWkdZNGdZcFRtdyt5eXJFS1diOGlWWVNWZE10Z1lKdkFza1AKdWE5OHJPRXpPS21kdTc1Y1dJWTJZRWxiZXZTUjNleWt3bHB1VzZVUkFvR0JBTkRwMjRJUStwVi92ZWZxWGhwVApUTTlIVjBLeVJvQTNWdGNQaFVHVWlVWnhoNWRVMmx1SE5HSUhpcUkzcHByWFNjQ3dhRk0xMHFUOUhKZGI2RG5MCkpUeHRDNmp1YWNySDEycHE4MHdpaUQ5alQ2dzV6cDJzMFZTekFNdjNGR2xwamxKblZmZGNYK3Q1RmhpaXBhS1MKYkNlcm9iOE5xVmx2a0FaSlgzd1hHQzMvCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0='
+  client_email: 'firebase-adminsdk-gcy9n@functionhub-317d3.iam.gserviceaccount.com'
+  client_id: '103584909593837353940'
+  auth_uri: 'https://accounts.google.com/o/oauth2/auth'
+  token_uri: 'https://oauth2.googleapis.com/token'
+  auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs'
+  client_x509_cert_url: 'https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-gcy9n%40functionhub-317d3.iam.gserviceaccount.com'
+  custom_token_verification_url: 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken'
+  password_verification_url: 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword'
+cors:
+  allowed-origin-patterns:
+    - '127.0.0.1'
+    - 'http://localhost:*'
+    - "https://functionhub.net"
+rabbitmq:
+  ssl:
+    enabled: false
+  host: 'localhost'
+  port: 5671
+  username: 'shoppiem'
+  password: 'pV5S7ulu26J'
+  topic-exchange: 'shoppiem-exchange'
+  consumer-concurrency: 1
+  job-queues:
+    scraping:
+      queue: 'scrape-job-queue'
+      routing-key: 'shoppiem.scrape-job.#'
+      routing-key-prefix: 'shoppiem.scrape-job.'
+      thread-count: 10
+    chat:
+      queue: 'chat-job-queue'
+      routing-key: 'shoppiem.chat-job.#'
+      routing-key-prefix: 'shoppiem.chat-job.'
+      thread-count: 3
+    smart-proxy:
+      queue: 'smart-proxy-job-queue'
+      routing-key: 'shoppiem.smart-proxy-job.#'
+      routing-key-prefix: 'shoppiem.smart-proxy-job.'
+      thread-count: 10
+openai:
+  completion-endpoint: 'https://api.openai.com/v1/chat/completions'
+  embedding-model: 'text-embedding-ada-002'
+  completion-model: 'gpt-3.5-turbo'
+  system-message: "Only use the functions you have been provided with."
+  num-retries: 3
+  api-key: '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'
+  max-tokens: 1000
+  temp: 0.7
+  request-timeout-seconds: 120
+deno:
+  runtime:
+    url: 'http://localhost:8000'
+    path: '/execute'
+  internal:
+    url: 'http://localhost:9000'
+    path: '/spec'
+entitlement:
+  free:
+    wall-time: 3000
+    tokens: 50000
+    http-egress: 5
+    daily_invocations: 100
+    functions: -1
+  paid:
+    wall-time: 5000
+    tokens: 50000
+    http-egress: 5
+    daily_invocations: 100
+    functions: -1
+jwt:
+  secret: 'b7dbbfbb7723221173444ae44b734f5b5cbakKGbO2y1qjzZu3dz3aJXT3BlbkFJKOwOsrYGP5gJg4zR39K3a465b9cfa2a70c9819394acc1291'
+  ttl-days: 1000
+management:
+  server:
+    port: 8080
