@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {usePathname, useRouter} from "next/navigation";
-import AddFunctionButton from "#/ui/project/add-function-button";
+import AddButton from "#/ui/project/add-button";
 import {Boundary} from "#/ui/boundary";
 import {useEffect, useState} from "react";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
@@ -110,7 +110,7 @@ export default function Page() {
                 <h2 className="text-lg font-bold">Not Found</h2>
 
                 <p className="text-sm">You have no functions. Click below to create one.</p>
-                <AddFunctionButton onClick={onAddFunction}/>
+                <AddButton onClick={onAddFunction} label={"Add Function"}/>
               </div>
             </Boundary> :
             <div className="space-y-10 text-white">
@@ -170,7 +170,7 @@ export default function Page() {
                   );
                 })}
               </div>
-              <AddFunctionButton onClick={onAddFunction}/>
+              <AddButton onClick={onAddFunction} label={"Add Function"}/>
             </div>
 
             // <div className="space-y-10 text-white">

@@ -78,9 +78,12 @@ public class UserServiceImpl implements UserService {
   @Override
   public ApiKeyResponse getApiKeys() {
     List<ApiKeyEntity> apiKeyEntities = apiKeyRepo.findByUserIdOrderByCreatedAtDesc(FHUtils.getSessionUser().getUid());
-    if (!ObjectUtils.isEmpty(apiKeyEntities)) {
-      return new ApiKeyResponse().keys(
-          apiKeyEntities
+    if (ObjectUtils.isEmpty(apiKeyEntities)) {
+      // A user needs at least 1 api key to access FunctionHub
+      // CAUTION: This call may enter a recursive loop if upsert fails for some reason
+      return upsertApiKey(new ApiKeyRequest());
+    } else {
+      return new ApiKeyResponse().keys(apiKeyEntities
               .stream()
               .map(it -> {
                 ApiKey apiKey = new ApiKey();
@@ -88,10 +91,8 @@ public class UserServiceImpl implements UserService {
                 apiKey.setIsVendorKey(it.getIsVendorKey());
                 apiKey.setCreatedAt(it.getCreatedAt().toEpochSecond(ZoneOffset.UTC));
                 return apiKey;
-
-      }).collect(Collectors.toList()));
+      }).toList());
     }
-    return new ApiKeyResponse();
   }
 
   private String redactString(String value) {
@@ -115,11 +116,20 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public ApiKeyResponse deleteKey(ApiKeyRequest apiKeyRequest) {
-    if (!ObjectUtils.isEmpty(apiKeyRequest.getKey())) {
-      ApiKeyEntity entity = apiKeyRepo.findByApiKey(apiKeyRequest.getKey());
-      if (entity != null) {
-        apiKeyRepo.delete(entity);
-      }
+    if (apiKeyRequest.getIsVendorKey() != null && apiKeyRequest.getIsVendorKey()) {
+      apiKeyRepo.deleteAll(
+          apiKeyRepo.findByIsVendorKeyAndUserId(true, FHUtils.getSessionUser().getUid()));
+    } else if (!ObjectUtils.isEmpty(apiKeyRequest.getKey())) {
+        ApiKeyEntity entity = apiKeyRepo.findByApiKey(apiKeyRequest.getKey());
+        if (entity != null) {
+          apiKeyRepo.delete(entity);
+          List<ApiKeyEntity> apiKeyEntities = apiKeyRepo.findByUserIdOrderByCreatedAtDesc(
+              FHUtils.getSessionUser().getUid());
+          if (apiKeyEntities.stream().filter(it -> !it.getIsVendorKey()).toList().size() == 0) {
+            // A user must always have at least one FunctionHub key
+            return upsertApiKey(new ApiKeyRequest());
+          }
+        }
     }
     return getApiKeys();
   }

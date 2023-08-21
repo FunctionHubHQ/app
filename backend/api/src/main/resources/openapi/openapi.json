@@ -869,6 +869,9 @@
         "properties": {
           "key": {
             "type": "string"
+          },
+          "is_vendor_key": {
+            "type": "boolean"
           }
         }
       },

@@ -24,6 +24,63 @@ import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } fr
 /**
  * 
  * @export
+ * @interface ApiKey
+ */
+export interface ApiKey {
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiKey
+     */
+    key?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof ApiKey
+     */
+    created_at?: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ApiKey
+     */
+    is_vendor_key?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface ApiKeyRequest
+ */
+export interface ApiKeyRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiKeyRequest
+     */
+    key?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ApiKeyRequest
+     */
+    is_vendor_key?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface ApiKeyResponse
+ */
+export interface ApiKeyResponse {
+    /**
+     * 
+     * @type {Array<ApiKey>}
+     * @memberof ApiKeyResponse
+     */
+    keys?: Array<ApiKey>;
+}
+/**
+ * 
+ * @export
  * @interface Code
  */
 export interface Code {
@@ -529,6 +586,12 @@ export interface UserProfile {
      * @memberof UserProfile
      */
     api_key?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserProfile
+     */
+    anonymous?: boolean;
     /**
      * 
      * @type {{ [key: string]: boolean; }}
@@ -2190,6 +2253,72 @@ export class SpecApi extends BaseAPI {
 export const UserApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
+         * 
+         * @summary Delete an api key
+         * @param {ApiKeyRequest} apiKeyRequest Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteKey: async (apiKeyRequest: ApiKeyRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'apiKeyRequest' is not null or undefined
+            assertParamExists('deleteKey', 'apiKeyRequest', apiKeyRequest)
+            const localVarPath = `/keys`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(apiKeyRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Get all API keys
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getApiKeys: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/keys`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Get user profile or create one if it doesn\'t exist
          * @summary Get user profile
          * @param {*} [options] Override http request option.
@@ -2219,6 +2348,42 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @summary Generate an api key or insert a vendor key
+         * @param {ApiKeyRequest} apiKeyRequest Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        upsertApiKey: async (apiKeyRequest: ApiKeyRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'apiKeyRequest' is not null or undefined
+            assertParamExists('upsertApiKey', 'apiKeyRequest', apiKeyRequest)
+            const localVarPath = `/keys`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(apiKeyRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -2230,6 +2395,27 @@ export const UserApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = UserApiAxiosParamCreator(configuration)
     return {
         /**
+         * 
+         * @summary Delete an api key
+         * @param {ApiKeyRequest} apiKeyRequest Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deleteKey(apiKeyRequest: ApiKeyRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ApiKeyResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deleteKey(apiKeyRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Get all API keys
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getApiKeys(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ApiKeyResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getApiKeys(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * Get user profile or create one if it doesn\'t exist
          * @summary Get user profile
          * @param {*} [options] Override http request option.
@@ -2237,6 +2423,17 @@ export const UserApiFp = function(configuration?: Configuration) {
          */
         async getUserprofile(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserProfileResponse>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getUserprofile(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Generate an api key or insert a vendor key
+         * @param {ApiKeyRequest} apiKeyRequest Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ApiKeyResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.upsertApiKey(apiKeyRequest, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -2250,6 +2447,25 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
     const localVarFp = UserApiFp(configuration)
     return {
         /**
+         * 
+         * @summary Delete an api key
+         * @param {ApiKeyRequest} apiKeyRequest Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteKey(apiKeyRequest: ApiKeyRequest, options?: any): AxiosPromise<ApiKeyResponse> {
+            return localVarFp.deleteKey(apiKeyRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Get all API keys
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getApiKeys(options?: any): AxiosPromise<ApiKeyResponse> {
+            return localVarFp.getApiKeys(options).then((request) => request(axios, basePath));
+        },
+        /**
          * Get user profile or create one if it doesn\'t exist
          * @summary Get user profile
          * @param {*} [options] Override http request option.
@@ -2257,6 +2473,16 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
          */
         getUserprofile(options?: any): AxiosPromise<UserProfileResponse> {
             return localVarFp.getUserprofile(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Generate an api key or insert a vendor key
+         * @param {ApiKeyRequest} apiKeyRequest Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any): AxiosPromise<ApiKeyResponse> {
+            return localVarFp.upsertApiKey(apiKeyRequest, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -2269,6 +2495,29 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
  */
 export class UserApi extends BaseAPI {
     /**
+     * 
+     * @summary Delete an api key
+     * @param {ApiKeyRequest} apiKeyRequest Api key request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public deleteKey(apiKeyRequest: ApiKeyRequest, options?: any) {
+        return UserApiFp(this.configuration).deleteKey(apiKeyRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Get all API keys
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public getApiKeys(options?: any) {
+        return UserApiFp(this.configuration).getApiKeys(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Get user profile or create one if it doesn\'t exist
      * @summary Get user profile
      * @param {*} [options] Override http request option.
@@ -2277,6 +2526,18 @@ export class UserApi extends BaseAPI {
      */
     public getUserprofile(options?: any) {
         return UserApiFp(this.configuration).getUserprofile(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Generate an api key or insert a vendor key
+     * @param {ApiKeyRequest} apiKeyRequest Api key request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any) {
+        return UserApiFp(this.configuration).upsertApiKey(apiKeyRequest, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

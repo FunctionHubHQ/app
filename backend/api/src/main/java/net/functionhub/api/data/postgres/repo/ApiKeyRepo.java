@@ -19,4 +19,6 @@ public interface ApiKeyRepo extends JpaRepository<ApiKeyEntity, Long> {
   List<ApiKeyEntity> findByUserIdOrderByCreatedAtDesc(String userId);
 
   ApiKeyEntity findByApiKey(String apiKey);
+
+  List<ApiKeyEntity> findByIsVendorKeyAndUserId(boolean isVendorKey, String userId);
 }

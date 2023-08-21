@@ -133,4 +133,22 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
             .filter(it -> it.getKey().equals(initialResponse.getKeys().get(0).getKey()))
             .toList().size());
     }
+
+    @Test
+    public void requireAtLeastOneApiKeyTest() {
+        // generate 1 key
+        ApiKeyResponse response = userService.upsertApiKey(new ApiKeyRequest());
+        assertNotNull(response);
+        assertEquals(1, response.getKeys().size());
+
+        final ApiKeyResponse initialResponse = response;
+        ApiKeyResponse postDeleteResponse = userService.deleteKey(
+            new ApiKeyRequest().key(response.getKeys().get(0).getKey()));
+        assertNotNull(postDeleteResponse);
+        assertEquals(1, postDeleteResponse.getKeys().size());
+        assertEquals(0, postDeleteResponse.getKeys()
+            .stream()
+            .filter(it -> it.getKey().equals(initialResponse.getKeys().get(0).getKey()))
+            .toList().size());
+    }
 }
