@@ -86,23 +86,23 @@ export default function Page() {
               {projects?.projects?.map((project) => {
                 return (
                     <Boundary labels={[project?.name as string]} color="default" key={project?.project_id}>
-                    <div className="space-y-5">
-                      <div className="grid grid-flow-col justify-stretch ">
-                        <Link href={'/project/' + project.project_id}>
-                        <div>
-                          {/*<div className="text-xs font-semibold uppercase tracking-wider text-gray-400">*/}
-                          {/*  {project?.name}*/}
-                          {/*</div>*/}
-                          <div className="text-xs font tracking-wider text-gray-400 max-w-[600px]">
-                            {project?.description}
+                      <div className="space-y-5">
+                        <div className="grid grid-flow-col justify-stretch ">
+                          <Link href={'/projects/' + project.project_id}>
+                            <div>
+                              {/*<div className="text-xs font-semibold uppercase tracking-wider text-gray-400">*/}
+                              {/*  {project?.name}*/}
+                              {/*</div>*/}
+                              <div className="text-xs font tracking-wider text-gray-400 max-w-[600px]">
+                                {project?.description}
+                              </div>
+                            </div>
+                          </Link>
+                          <div className="flex justify-end">
+                            <ProjectMenu/>
                           </div>
                         </div>
-                        </Link>
-                        <div className="flex justify-end">
-                          <ProjectMenu/>
-                        </div>
                       </div>
-                    </div>
                     </Boundary>
                 );
               })}

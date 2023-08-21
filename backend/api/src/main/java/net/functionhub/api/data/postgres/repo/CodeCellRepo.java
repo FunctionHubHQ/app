@@ -42,7 +42,8 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, UUID> {
 
   @Query(value = "SELECT cc.* "
       + "FROM code_cell cc JOIN project_item pi ON cc.uid = pi.code_id "
-      + "WHERE pi.project_id = ?1",
+      + "WHERE pi.project_id = ?1 "
+      + "ORDER BY cc.created_at DESC",
       nativeQuery = true)
   List<CodeCellEntity> findByProjectId(UUID projectId);
 

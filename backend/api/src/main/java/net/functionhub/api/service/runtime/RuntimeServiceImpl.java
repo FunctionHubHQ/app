@@ -443,13 +443,21 @@ public class RuntimeServiceImpl implements RuntimeService {
         if (line.startsWith(property)) {
           propertyStart = true;
         }
-        if (propertyStart && line.startsWith("@") && !line.startsWith(property)) {
+        // We have reached the end of the property name or description if we encounter
+        // a new line character or an empty string
+        if (propertyStart && (line.endsWith("\n") || ObjectUtils.isEmpty(line))) {
           propertyEnd = true;
         }
         if (propertyStart && !propertyEnd) {
           joiner.add(line.replace(property, "")
               .replace("\n", "")
               .strip());
+          if (property.equals("@name")) {
+            propertyEnd = true;
+          }
+        }
+        if (propertyStart && propertyEnd) {
+          break;
         }
       }
     }

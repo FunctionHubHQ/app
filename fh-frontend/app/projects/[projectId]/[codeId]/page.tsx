@@ -27,12 +27,11 @@ export default function Page() {
   const [userCode, setUserCode] = useState<Code | undefined>(undefined)
   const { user } = useAuthContext()
   const pathname = usePathname();
-  alert("Child has loaded...: " + pathname)
+  // alert("Child has loaded...: " + pathname)
 
   useEffect(() => {
-    const tokens: string[] = pathname.split("/")
-    // setCodeId(tokens[tokens.length - 1])
-    setCodeId('5cca7607-db0d-4f2f-903f-061b30aae8ff')
+    const tokens: string[] = pathname.replace("edit:", "").split("/")
+    setCodeId(tokens[tokens.length - 1])
   }, [])
 
   useEffect(() => {

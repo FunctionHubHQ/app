@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const loginLayout = pathname.includes("/login")
-  const editorLayout = pathname.includes("/editor")
+  const editorLayout = pathname.includes("edit:")
   const applyGlobalLayout = !(loginLayout || editorLayout)
 
   return (

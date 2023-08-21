@@ -5,9 +5,10 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
+
   return (
     <div className="space-y-9">
-      {children}
+      <div>{children}</div>
     </div>
   );
 }

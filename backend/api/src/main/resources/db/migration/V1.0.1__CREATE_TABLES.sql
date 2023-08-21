@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.code_cell (
     uid uuid NOT NULL primary key,
     parent_id uuid,
     user_id varchar(255) NOT NULL,
-    function_name varchar(64),
+    function_name varchar(255),
     description varchar(255),
     code varchar,
     interfaces varchar,
