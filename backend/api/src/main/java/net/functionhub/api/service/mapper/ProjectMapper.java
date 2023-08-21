@@ -4,7 +4,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import net.functionhub.api.Function;
+import net.functionhub.api.FHFunction;
 import net.functionhub.api.Project;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.ProjectEntity;
@@ -43,20 +43,21 @@ public interface ProjectMapper {
             collect(Collectors.toList());
     }
 
-    default Function mapFromCodeCellEntity(CodeCellEntity entity) {
+    default FHFunction mapFromCodeCellEntity(CodeCellEntity entity) {
         if (entity == null) {
             return null;
         }
-        return new Function()
+        return new FHFunction()
             .createdAt(entity.getCreatedAt().toEpochSecond(ZoneOffset.UTC))
             .updatedAt(entity.getUpdatedAt().toEpochSecond(ZoneOffset.UTC))
             .isPublic(entity.getIsPublic())
             .name(entity.getFunctionName())
             .slug(entity.getSlug())
+            .codeId(entity.getUid().toString())
             .description(entity.getDescription());
     }
 
-    default List<Function> mapFromCodeCellEntities(List<CodeCellEntity> entities) {
+    default List<FHFunction> mapFromCodeCellEntities(List<CodeCellEntity> entities) {
         if (ObjectUtils.isEmpty(entities)) {
             return new ArrayList<>();
         }

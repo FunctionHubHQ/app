@@ -464,6 +464,8 @@ public class RuntimeServiceImpl implements RuntimeService {
         return new Code()
             .code(codeCell.getCode())
             .uid(uid)
+            .functionSlug(codeCell.getSlug())
+            .version(codeCell.getVersion())
             .userId(codeCell.getUserId())
             .isActive(codeCell.getIsActive())
             .isPublic(codeCell.getIsPublic())

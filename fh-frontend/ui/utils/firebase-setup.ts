@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics, isSupported } from "firebase/analytics";
+import {offlineMode} from "#/ui/utils/headerConfig";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBMnVb8Ax2_F91lR9dnkOlJx7IByYlpcAw",
@@ -14,6 +15,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+export const auth = offlineMode ? null : getAuth(app);
 const analyticsByEnv = process.env.NODE_ENV !== 'production' ? null :  isSupported().then(yes => yes ? getAnalytics(app) : null)
 export const analytics =  analyticsByEnv

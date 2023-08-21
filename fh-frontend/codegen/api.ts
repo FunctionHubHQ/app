@@ -77,6 +77,18 @@ export interface Code {
     parent_id?: string;
     /**
      * 
+     * @type {string}
+     * @memberof Code
+     */
+    function_slug?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Code
+     */
+    version?: string;
+    /**
+     * 
      * @type {Array<string>}
      * @memberof Code
      */
@@ -215,6 +227,74 @@ export interface FHCompletionRequest {
 /**
  * 
  * @export
+ * @interface FHFunction
+ */
+export interface FHFunction {
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
+    slug?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
+    code_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
+    name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
+    description?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof FHFunction
+     */
+    is_public?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof FHFunction
+     */
+    created_at?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof FHFunction
+     */
+    updated_at?: number;
+}
+/**
+ * 
+ * @export
+ * @interface FHFunctions
+ */
+export interface FHFunctions {
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunctions
+     */
+    project_id?: string;
+    /**
+     * 
+     * @type {Array<FHFunction>}
+     * @memberof FHFunctions
+     */
+    functions?: Array<FHFunction>;
+}
+/**
+ * 
+ * @export
  * @interface GenericResponse
  */
 export interface GenericResponse {
@@ -230,6 +310,100 @@ export interface GenericResponse {
      * @memberof GenericResponse
      */
     error?: string;
+}
+/**
+ * 
+ * @export
+ * @interface Project
+ */
+export interface Project {
+    /**
+     * 
+     * @type {string}
+     * @memberof Project
+     */
+    name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Project
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Project
+     */
+    project_id?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof Project
+     */
+    created_at?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Project
+     */
+    updated_at?: number;
+}
+/**
+ * 
+ * @export
+ * @interface ProjectCreateRequest
+ */
+export interface ProjectCreateRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProjectCreateRequest
+     */
+    name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProjectCreateRequest
+     */
+    description?: string;
+}
+/**
+ * 
+ * @export
+ * @interface ProjectUpdateRequest
+ */
+export interface ProjectUpdateRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProjectUpdateRequest
+     */
+    name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProjectUpdateRequest
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProjectUpdateRequest
+     */
+    project_id?: string;
+}
+/**
+ * 
+ * @export
+ * @interface Projects
+ */
+export interface Projects {
+    /**
+     * 
+     * @type {Array<Project>}
+     * @memberof Projects
+     */
+    projects?: Array<Project>;
 }
 /**
  * 
@@ -413,7 +587,7 @@ export const ChatApiAxiosParamCreator = function (configuration?: Configuration)
             assertParamExists('devGptCompletion', 'functionSlug', functionSlug)
             // verify required parameter 'fHCompletionRequest' is not null or undefined
             assertParamExists('devGptCompletion', 'fHCompletionRequest', fHCompletionRequest)
-            const localVarPath = `/gpt-completion/{function_slug}`
+            const localVarPath = `/completion/{function_slug}`
                 .replace(`{${"function_slug"}}`, encodeURIComponent(String(functionSlug)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -450,7 +624,7 @@ export const ChatApiAxiosParamCreator = function (configuration?: Configuration)
         prodCompletionRequest: async (fHCompletionRequest: FHCompletionRequest, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'fHCompletionRequest' is not null or undefined
             assertParamExists('prodCompletionRequest', 'fHCompletionRequest', fHCompletionRequest)
-            const localVarPath = `/gpt-completion`;
+            const localVarPath = `/completion`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -573,6 +747,516 @@ export class ChatApi extends BaseAPI {
      */
     public prodCompletionRequest(fHCompletionRequest: FHCompletionRequest, options?: any) {
         return ChatApiFp(this.configuration).prodCompletionRequest(fHCompletionRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+/**
+ * ProjectApi - axios parameter creator
+ * @export
+ */
+export const ProjectApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Creates a new function
+         * @summary Create a function
+         * @param {string} body FHFunction create request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createFunction: async (body: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'body' is not null or undefined
+            assertParamExists('createFunction', 'body', body)
+            const localVarPath = `/project`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(body, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Creates a project directory
+         * @summary Create a project
+         * @param {ProjectCreateRequest} projectCreateRequest Project create request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createProject: async (projectCreateRequest: ProjectCreateRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectCreateRequest' is not null or undefined
+            assertParamExists('createProject', 'projectCreateRequest', projectCreateRequest)
+            const localVarPath = `/projects`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(projectCreateRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Deletes a function
+         * @summary Delete a function
+         * @param {string} body FHFunction delete request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteFunction: async (body: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'body' is not null or undefined
+            assertParamExists('deleteFunction', 'body', body)
+            const localVarPath = `/project`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(body, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Deletes a project
+         * @summary Delete a project
+         * @param {string} body Project delete request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteProject: async (body: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'body' is not null or undefined
+            assertParamExists('deleteProject', 'body', body)
+            const localVarPath = `/projects`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(body, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Get all functions in a project
+         * @summary Get all functions in a project
+         * @param {string} projectId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllFunctions: async (projectId: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectId' is not null or undefined
+            assertParamExists('getAllFunctions', 'projectId', projectId)
+            const localVarPath = `/project/{project_id}`
+                .replace(`{${"project_id"}}`, encodeURIComponent(String(projectId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Get all projects
+         * @summary Get all projects
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllProjects: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/projects`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Updates project name
+         * @summary Update a project
+         * @param {ProjectUpdateRequest} projectUpdateRequest Project update request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateProject: async (projectUpdateRequest: ProjectUpdateRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'projectUpdateRequest' is not null or undefined
+            assertParamExists('updateProject', 'projectUpdateRequest', projectUpdateRequest)
+            const localVarPath = `/projects`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(projectUpdateRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * ProjectApi - functional programming interface
+ * @export
+ */
+export const ProjectApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = ProjectApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Creates a new function
+         * @summary Create a function
+         * @param {string} body FHFunction create request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async createFunction(body: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CodeUpdateResult>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.createFunction(body, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Creates a project directory
+         * @summary Create a project
+         * @param {ProjectCreateRequest} projectCreateRequest Project create request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async createProject(projectCreateRequest: ProjectCreateRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Projects>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.createProject(projectCreateRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Deletes a function
+         * @summary Delete a function
+         * @param {string} body FHFunction delete request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deleteFunction(body: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<FHFunctions>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deleteFunction(body, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Deletes a project
+         * @summary Delete a project
+         * @param {string} body Project delete request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deleteProject(body: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Projects>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deleteProject(body, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Get all functions in a project
+         * @summary Get all functions in a project
+         * @param {string} projectId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAllFunctions(projectId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<FHFunctions>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllFunctions(projectId, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Get all projects
+         * @summary Get all projects
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAllProjects(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Projects>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllProjects(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * Updates project name
+         * @summary Update a project
+         * @param {ProjectUpdateRequest} projectUpdateRequest Project update request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async updateProject(projectUpdateRequest: ProjectUpdateRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Project>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updateProject(projectUpdateRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * ProjectApi - factory interface
+ * @export
+ */
+export const ProjectApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = ProjectApiFp(configuration)
+    return {
+        /**
+         * Creates a new function
+         * @summary Create a function
+         * @param {string} body FHFunction create request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createFunction(body: string, options?: any): AxiosPromise<CodeUpdateResult> {
+            return localVarFp.createFunction(body, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Creates a project directory
+         * @summary Create a project
+         * @param {ProjectCreateRequest} projectCreateRequest Project create request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createProject(projectCreateRequest: ProjectCreateRequest, options?: any): AxiosPromise<Projects> {
+            return localVarFp.createProject(projectCreateRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Deletes a function
+         * @summary Delete a function
+         * @param {string} body FHFunction delete request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteFunction(body: string, options?: any): AxiosPromise<FHFunctions> {
+            return localVarFp.deleteFunction(body, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Deletes a project
+         * @summary Delete a project
+         * @param {string} body Project delete request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deleteProject(body: string, options?: any): AxiosPromise<Projects> {
+            return localVarFp.deleteProject(body, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Get all functions in a project
+         * @summary Get all functions in a project
+         * @param {string} projectId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllFunctions(projectId: string, options?: any): AxiosPromise<FHFunctions> {
+            return localVarFp.getAllFunctions(projectId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Get all projects
+         * @summary Get all projects
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllProjects(options?: any): AxiosPromise<Projects> {
+            return localVarFp.getAllProjects(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Updates project name
+         * @summary Update a project
+         * @param {ProjectUpdateRequest} projectUpdateRequest Project update request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateProject(projectUpdateRequest: ProjectUpdateRequest, options?: any): AxiosPromise<Project> {
+            return localVarFp.updateProject(projectUpdateRequest, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * ProjectApi - object-oriented interface
+ * @export
+ * @class ProjectApi
+ * @extends {BaseAPI}
+ */
+export class ProjectApi extends BaseAPI {
+    /**
+     * Creates a new function
+     * @summary Create a function
+     * @param {string} body FHFunction create request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public createFunction(body: string, options?: any) {
+        return ProjectApiFp(this.configuration).createFunction(body, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Creates a project directory
+     * @summary Create a project
+     * @param {ProjectCreateRequest} projectCreateRequest Project create request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public createProject(projectCreateRequest: ProjectCreateRequest, options?: any) {
+        return ProjectApiFp(this.configuration).createProject(projectCreateRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Deletes a function
+     * @summary Delete a function
+     * @param {string} body FHFunction delete request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public deleteFunction(body: string, options?: any) {
+        return ProjectApiFp(this.configuration).deleteFunction(body, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Deletes a project
+     * @summary Delete a project
+     * @param {string} body Project delete request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public deleteProject(body: string, options?: any) {
+        return ProjectApiFp(this.configuration).deleteProject(body, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Get all functions in a project
+     * @summary Get all functions in a project
+     * @param {string} projectId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public getAllFunctions(projectId: string, options?: any) {
+        return ProjectApiFp(this.configuration).getAllFunctions(projectId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Get all projects
+     * @summary Get all projects
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public getAllProjects(options?: any) {
+        return ProjectApiFp(this.configuration).getAllProjects(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Updates project name
+     * @summary Update a project
+     * @param {ProjectUpdateRequest} projectUpdateRequest Project update request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public updateProject(projectUpdateRequest: ProjectUpdateRequest, options?: any) {
+        return ProjectApiFp(this.configuration).updateProject(projectUpdateRequest, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

@@ -8,7 +8,8 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.CodeUpdateResult;
-import net.functionhub.api.Functions;
+import net.functionhub.api.FHFunction;
+import net.functionhub.api.FHFunctions;
 import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
@@ -169,7 +170,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(result.getUid());
         assertNotNull(result.getVersion());
 
-        Functions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());
+        FHFunctions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());
         assertNotNull(functions);
         assertEquals(1, functions.getFunctions().size());
         assertNotNull(functions.getFunctions().get(0).getSlug());
@@ -186,7 +187,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
             .description("This is a demo project created by TestNG 1");
         Projects projects = projectService.createProject(request1);
         CodeUpdateResult result = projectService.createFunction(projects.getProjects().get(0).getProjectId());
-        Functions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());
+        FHFunctions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());
         assertNotNull(functions);
         assertEquals(1, functions.getFunctions().size());
         functions = projectService.deleteFunction(functions.getFunctions().get(0).getSlug());
@@ -220,7 +221,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(result.getUid());
         assertNotNull(result.getVersion());
 
-        Functions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());
+        FHFunctions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());
         assertNotNull(functions);
         assertEquals(1, functions.getFunctions().size());
 

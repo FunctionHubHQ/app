@@ -17,8 +17,8 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const loginLayout = pathname.includes("/login")
-  const projectsLayout = pathname.includes("/projects/")
-  const applyGlobalLayout = !(loginLayout || projectsLayout)
+  const editorLayout = pathname.includes("/editor")
+  const applyGlobalLayout = !(loginLayout || editorLayout)
 
   return (
     <html lang="en" className="[color-scheme:dark]">
@@ -34,7 +34,7 @@ export default function RootLayout({
         </div>
         }
 
-        {projectsLayout && <div className="min-h-screen">
+        {editorLayout && <div className="min-h-screen">
           <div className="mx-auto max-w-full lg:px-1 py-16">
             <div className="">
               <div className="rounded-lg bg-[#1e1e1e]">{children}</div>

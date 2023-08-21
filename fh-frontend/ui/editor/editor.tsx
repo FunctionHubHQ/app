@@ -1,5 +1,5 @@
 "use client"
-import React, {useEffect, useState} from 'react';
+import React, {FC, useEffect, useState} from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { historyField } from '@codemirror/commands';
 import { javascript } from '@codemirror/lang-javascript';
@@ -15,16 +15,20 @@ import {
   UserApi,
   UserProfileResponse
 } from "#/codegen";
-import {auth} from "#/ui/utils/firebase-setup";
-import {headerConfig} from "#/ui/utils/headerConfig";
+import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
-import SandboxTabs from "#/ui/interactive-api/sandboxTabs";
+import SandboxTabs, from "#/ui/interactive-api/sandboxTabs";
 import DeployModal from "#/ui/editor/deploy-modal";
+import {useAuthContext} from "#/context/AuthContext";
 
-function CodeEditor() {
+export interface CodeEditorProps {
+  userCode?: Code
+  setUserCode: (userCode: Code) => void
+}
+
+const CodeEditor: FC<CodeEditorProps> = (props) => {
   const [serializedStateMain, setSerializedStateMain] = useState<string>();
   const [mainCode, setMainCode] = useState<string>();
-  const [code, setCode] = useState<Code | null>({})
   const [codeCommitInProgress, setCodeCommitInProgress] = useState(false)
   const [deployInProgress, setDeployInProgress] = useState(false)
   const [apiKey, setApiKey] = useState<string | undefined>(undefined)
@@ -34,18 +38,19 @@ function CodeEditor() {
   const [deploymentMessage, setDeploymentMessage] = useState<string | undefined>(undefined)
   const [showDeploymentModal, setShowDeploymentModal] = useState(false)
   const [deploymentFailed, setDeploymentFailed] = useState(false)
+  const { user } = useAuthContext()
 
-  const getCodeKey = (prefix: string) => {
-    return  prefix +' _codeValue';
+  const getCodeKey = () => {
+    return  "main_" + props.userCode?.uid as string
   }
 
-  const getStateKey = (prefix: string) => {
-    return prefix + '_editorState'
+  const getStateKey = () => {
+    return 'editorState_' + props.userCode?.uid as string
   }
 
-  const onCodeChange = (value: string, viewUpdate: any, keyPrefix: string) => {
-    const codeKey = getCodeKey(keyPrefix)
-    const stateKey = getStateKey(keyPrefix);
+  const onCodeChange = (value: string, viewUpdate: any) => {
+    const codeKey = getCodeKey()
+    const stateKey = getStateKey();
     setMainCode(value)
     localStorage.setItem(codeKey, value);
 
@@ -55,111 +60,93 @@ function CodeEditor() {
 
   const onDeploy = () => {
     setDeployInProgress(true)
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        user.getIdTokenResult(false)
-        .then(tokenResult => {
-          if (typeof mainCode === "string") {
-            new RuntimeApi(headerConfig(tokenResult.token))
-            .deploy({
-              uid: code?.uid
-            })
-            .then(result => {
-              DEBUG("Deploy Response: ", result.data)
-              if (result.data?.status === "ok") {
-                setDeploymentMessage("Your function has been deployed!")
-                setShowDeploymentModal(true)
-                setDeploymentFailed(false)
-              } else if (result.data.error) {
-                setDeploymentMessage(result.data.error)
-                setShowDeploymentModal(true)
-                setDeploymentFailed(true)
-              } else {
-                setDeploymentMessage(undefined)
-                setShowDeploymentModal(false)
-                setDeploymentFailed(false)
-              }
-             setDeployInProgress(false)
-            }).catch(e => {
-              setDeployInProgress(false)
-              ERROR(e.message)
-            })
+    getAuthToken(user).then(token => {
+      if (token && typeof mainCode === "string") {
+        new RuntimeApi(headerConfig(token))
+        .deploy({
+          uid: props.userCode?.uid
+        })
+        .then(result => {
+          DEBUG("Deploy Response: ", result.data)
+          if (result.data?.status === "ok") {
+            setDeploymentMessage("Your function has been deployed!")
+            setShowDeploymentModal(true)
+            setDeploymentFailed(false)
+          } else if (result.data.error) {
+            setDeploymentMessage(result.data.error)
+            setShowDeploymentModal(true)
+            setDeploymentFailed(true)
+          } else {
+            setDeploymentMessage(undefined)
+            setShowDeploymentModal(false)
+            setDeploymentFailed(false)
           }
+          setDeployInProgress(false)
         }).catch(e => {
           setDeployInProgress(false)
           ERROR(e.message)
         })
-      } else {
-        setDeployInProgress(false)
       }
     })
   }
 
-  const onCommit = () => {
+  const onCommit =  () => {
     setCodeCommitInProgress(true)
     setFunctionSlug(undefined)
     setVersion(undefined)
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        user.getIdTokenResult(false)
-        .then(tokenResult => {
-          if (typeof mainCode === "string") {
-            new RuntimeApi(headerConfig(tokenResult.token))
-            .updateCode({
-              uid: code?.uid,
-              user_id: user.uid,
-              code: btoa(mainCode),
-              fields_to_update: ["code"]
-            })
-            .then(result => {
-              const _code = {...code}
-              DEBUG("Update Response: ", result.data)
-              _code["uid"] = result.data.uid
-              setFunctionSlug(result.data.slug)
-              setVersion(result.data.version)
-              setCode(_code)
-              setCodeCommitInProgress(false)
-            }).catch(e => {
-              setCodeCommitInProgress(false)
-              ERROR(e.message)
-            })
-          }
-        }).catch(e => {
-          setCodeCommitInProgress(false)
-          ERROR(e.message)
-        })
-      } else {
-        setCodeCommitInProgress(false)
+    getAuthToken(user).then(token => {
+      if (token) {
+        if (typeof mainCode === "string") {
+          new RuntimeApi(headerConfig(token))
+          .updateCode({
+            uid: props.userCode?.uid,
+            user_id: user.uid,
+            code: btoa(mainCode),
+            fields_to_update: ["code"]
+          })
+          .then(result => {
+            const _code = {...props.userCode}
+            DEBUG("Update Response: ", result.data)
+            _code["uid"] = result.data.uid
+            setFunctionSlug(result.data.slug)
+            setVersion(result.data.version)
+            props.setUserCode(_code)
+            setCodeCommitInProgress(false)
+          }).catch(e => {
+            setCodeCommitInProgress(false)
+            ERROR(e.message)
+          })
+        }
       }
     })
   }
 
   useEffect(() => {
     initState()
-  }, [])
+  }, [props.userCode])
 
   const initState = () => {
-    setSerializedStateMain(localStorage.getItem(getStateKey('main')) || '')
-    setMainCode(localStorage.getItem(getCodeKey('main')) || '');
+    setSerializedStateMain(localStorage.getItem(getStateKey()) || '')
+    if (props.userCode) {
+      // TODO: could ORing between local storage and server response cause a problem?
+      setMainCode(localStorage.getItem(getCodeKey()) || atob(props.userCode?.code || ''));
+      setFunctionSlug(props.userCode.function_slug)
+      setVersion(props.userCode.version)
+    }
     fetchUserProfile()
-    // TODO: Function slug and version should be passed down from static props
-    setFunctionSlug(undefined)
-    setVersion(undefined)
   }
 
   const fetchUserProfile = () => {
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        user.getIdTokenResult(false)
-        .then(tokenResult => {
-          new UserApi(headerConfig(tokenResult.token))
-          .getUserprofile()
-          .then(result => {
-            const response : UserProfileResponse = result.data
-            DEBUG("User Profile: ", response.profile)
-            setBearerToken(tokenResult.token)
-            setApiKey(response.profile?.api_key)
-          }).catch(e => ERROR(e.message))
+    // TODO: fetch the user profile upon login, no need to call this here
+    getAuthToken(user).then(token => {
+      if (token) {
+        new UserApi(headerConfig(token))
+        .getUserprofile()
+        .then(result => {
+          const response : UserProfileResponse = result.data
+          DEBUG("User Profile: ", response.profile)
+          setBearerToken(token)
+          setApiKey(response.profile?.api_key)
         }).catch(e => ERROR(e.message))
       }
     })

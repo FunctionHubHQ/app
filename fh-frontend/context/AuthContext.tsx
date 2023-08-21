@@ -1,9 +1,11 @@
 'use client'
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   onAuthStateChanged, User,
 } from 'firebase/auth';
 import {auth} from "#/ui/utils/firebase-setup";
+import nookies from 'nookies';
+import {ERROR} from "#/ui/utils/utils";
 
 // const auth = getAuth(firebase_app);
 
@@ -15,12 +17,24 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   const [user, setUser] = React.useState<User | null>(null);
   const [loading, setLoading] = React.useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    console.log("Auth: ", auth)
+    if (!auth) {
+      setUser(null)
+      setLoading(false)
+      return
+    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
+        user.getIdTokenResult(false)
+            .then(tokenResult => {
+              nookies.set(undefined, 'token', tokenResult.token, { path: '/' });
+            }).catch(e => ERROR(e))
+
       } else {
         setUser(null);
+        nookies.set(undefined, 'token', '', { path: '/' });
       }
       setLoading(false);
     });

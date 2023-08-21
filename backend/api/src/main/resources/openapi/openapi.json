@@ -659,6 +659,39 @@
         }
       }
     },
+    "/project/{project_id}": {
+      "get": {
+        "tags": [
+          "project"
+        ],
+        "summary": "Get all functions in a project",
+        "description": "Get all functions in a project",
+        "operationId": "getAllFunctions",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Project ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All functions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FHFunctions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/project": {
       "post": {
         "tags": [
@@ -669,7 +702,7 @@
         "operationId": "createFunction",
         "requestBody": {
           "required": true,
-          "description": "Function create request",
+          "description": "FHFunction create request",
           "content": {
             "application/json": {
               "schema": {
@@ -701,7 +734,7 @@
         "operationId": "deleteFunction",
         "requestBody": {
           "required": true,
-          "description": "Function delete request",
+          "description": "FHFunction delete request",
           "content": {
             "application/json": {
               "schema": {
@@ -717,38 +750,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Functions"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "project"
-        ],
-        "summary": "Get all functions in a project",
-        "description": "Get all functions in a project",
-        "operationId": "getAllFunctions",
-        "parameters": [
-          {
-            "name": "uid",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "description": "Project ID"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "All functions",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Functions"
+                  "$ref": "#/components/schemas/FHFunctions"
                 }
               }
             }
@@ -809,6 +811,12 @@
             "format": "int64"
           },
           "parent_id": {
+            "type": "string"
+          },
+          "function_slug": {
+            "type": "string"
+          },
+          "version": {
             "type": "string"
           },
           "fields_to_update": {
@@ -997,10 +1005,6 @@
           "project_id": {
             "type": "string"
           },
-          "num_files": {
-            "type": "integer",
-            "format": "int64"
-          },
           "created_at": {
             "type": "integer",
             "format": "int64"
@@ -1011,21 +1015,27 @@
           }
         }
       },
-      "Functions": {
+      "FHFunctions": {
         "type": "object",
         "properties": {
+          "project_id": {
+            "type": "string"
+          },
           "functions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Function"
+              "$ref": "#/components/schemas/FHFunction"
             }
           }
         }
       },
-      "Function": {
+      "FHFunction": {
         "type": "object",
         "properties": {
           "slug": {
+            "type": "string"
+          },
+          "code_id": {
             "type": "string"
           },
           "name": {

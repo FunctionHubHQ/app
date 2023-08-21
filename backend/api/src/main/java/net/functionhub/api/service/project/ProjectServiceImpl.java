@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
-import net.functionhub.api.Functions;
+import net.functionhub.api.FHFunctions;
 import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
@@ -68,7 +68,7 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   @Override
-  public Functions deleteFunction(String functionSlug) {
+  public FHFunctions deleteFunction(String functionSlug) {
     String projectId = "";
     if (!ObjectUtils.isEmpty(functionSlug)) {
       CodeCellEntity cellEntity = codeCellRepo.findBySlug(functionSlug);
@@ -97,8 +97,10 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   @Override
-  public Functions getAllFunctions(String projectId) {
-    return new Functions().functions(
+  public FHFunctions getAllFunctions(String projectId) {
+    return new FHFunctions()
+        .projectId(projectId)
+        .functions(
         projectMapper.mapFromCodeCellEntities(
             codeCellRepo.findByProjectId(UUID.fromString(projectId))));
   }

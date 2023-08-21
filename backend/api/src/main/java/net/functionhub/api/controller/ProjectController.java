@@ -3,7 +3,7 @@ package net.functionhub.api.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.CodeUpdateResult;
-import net.functionhub.api.Functions;
+import net.functionhub.api.FHFunctions;
 import net.functionhub.api.Project;
 import net.functionhub.api.ProjectApi;
 import net.functionhub.api.ProjectCreateRequest;
@@ -24,7 +24,8 @@ public class ProjectController implements ProjectApi {
 
   @Override
   public ResponseEntity<CodeUpdateResult> createFunction(String projectId) {
-    return ResponseEntity.ok(projectService.createFunction(projectId));
+    return ResponseEntity.ok(projectService.createFunction(
+        projectId.replace("\"", "")));
   }
 
   @Override
@@ -33,18 +34,21 @@ public class ProjectController implements ProjectApi {
   }
 
   @Override
-  public ResponseEntity<Functions> deleteFunction(String body) {
-    return ResponseEntity.ok(projectService.deleteFunction(body));
+  public ResponseEntity<FHFunctions> deleteFunction(String projectId) {
+    return ResponseEntity.ok(projectService.deleteFunction(
+        projectId.replace("\"", "")));
   }
 
   @Override
-  public ResponseEntity<Projects> deleteProject(String body) {
-    return ResponseEntity.ok(projectService.deleteProject(body));
+  public ResponseEntity<Projects> deleteProject(String projectId) {
+    return ResponseEntity.ok(projectService.deleteProject(
+        projectId.replace("\"", "")));
   }
 
   @Override
-  public ResponseEntity<Functions> getAllFunctions(String projectId) {
-    return ResponseEntity.ok(projectService.getAllFunctions(projectId));
+  public ResponseEntity<FHFunctions> getAllFunctions(String projectId) {
+    return ResponseEntity.ok(projectService.getAllFunctions(
+        projectId.replace("\"", "")));
   }
 
   @Override

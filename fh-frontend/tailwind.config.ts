@@ -13,6 +13,9 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontSize: {
+        xxs: ['10px', '10px'],
+      },
       // https://vercel.com/design/color
       colors: {
         gray: colors.zinc,

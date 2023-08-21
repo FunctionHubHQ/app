@@ -4,19 +4,34 @@ export type Item = {
   description?: string;
 };
 
-export const demos: { name: string; items: Item[] }[] = [
+export const demos: { description?: string; name: string; items: Item[] }[] = [
+  {
+    name: 'Demo',
+    items: []
+  },
   {
     name: 'Account',
+    description: 'Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts and visual mockups Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts.',
     items: [
       {
-        name: 'Profile',
+        name: 'get_current_time_and_weather',
         slug: 'profile',
-        description: 'Manage your profile',
+        description: 'Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts and visual mockups Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts',
       },
       {
-        name: 'API Keys',
+        name: 'summary_any_website',
         slug: 'api-keys',
-        description: 'Manage API keys',
+        description: 'Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts and visual mockups',
+      },
+      {
+        name: 'turn_html_tables_into_json_object_every_night_on_mondays',
+        slug: 'api-keys',
+        description: 'Lorem ipsum is placeholder ',
+      },
+      {
+        name: 'get_next_available_flight',
+        slug: 'api-keys',
+        description: 'Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts and visual mockups Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts',
       },
     ],
   },
