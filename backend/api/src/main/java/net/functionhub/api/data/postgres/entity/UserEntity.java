@@ -26,10 +26,6 @@ public class UserEntity {
     @Column(name = "uid")
     private String uid;
 
-    @JsonProperty("api_key")
-    @Column(name = "api_key")
-    private String apiKey;
-
     @JsonProperty("handle")
     @Column(name = "handle")
     private String handle;
@@ -47,6 +43,11 @@ public class UserEntity {
     @JsonProperty("is_premium_user")
     @Column(name = "is_premium_user")
     private Boolean isPremiumUser = false;
+
+    @Basic
+    @JsonProperty("anonymous")
+    @Column(name = "anonymous")
+    private Boolean anonymous = false;
 
     @Basic
     @Column(name = "email")

@@ -1086,6 +1086,9 @@
           "api_key": {
             "type": "string"
           },
+          "anonymous": {
+            "type": "boolean"
+          },
           "roles": {
             "type": "object",
             "additionalProperties": {

@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import net.functionhub.api.data.postgres.entity.UserEntity;
+import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.DecodedJwt;
 import net.functionhub.api.service.user.UserService;
@@ -90,14 +91,14 @@ public class SecurityFilter extends OncePerRequestFilter {
       UserProfile user = null;
       Credentials credentials = new Credentials();
       if (bearerToken.startsWith(UserService.apiKeyPrefix)) {
-        UserEntity userEntity = userRepo.findByApiKey(bearerToken);
+        UserProjection userProjection = userRepo.findByApiKey(bearerToken);
         user = new UserProfile();
-        user.setEmail(userEntity.getEmail());
-        user.setName(userEntity.getFullName());
-        user.setUid(userEntity.getUid());
+        user.setEmail(userProjection.getEmail());
+        user.setName(userProjection.getName());
+        user.setUid(userProjection.getUid());
         user.setRoles(new HashMap<>());
-        user.setPicture(userEntity.getAvatarUrl());
-        user.setApiKey(userEntity.getApiKey());
+        user.setPicture(userProjection.getAvatar());
+        user.setApiKey(userProjection.getApiKey());
         user.setAuthMode(AuthMode.AK.name());
       } else {
         try {
@@ -117,10 +118,10 @@ public class SecurityFilter extends OncePerRequestFilter {
           user.setAuthMode(AuthMode.FB.name());
           credentials.setAuthToken(bearerToken);
           credentials.setDecodedFirebaseToken(decodedToken);
-          UserEntity userEntity = userRepo.findByUid(user.getUid());
-          if (userEntity != null) {
+          UserProjection userProjection = userRepo.findByUidProjection(user.getUid());
+          if (userProjection != null) {
             // userEntity could be null if this is the registration flow
-            user.setApiKey(userEntity.getApiKey());
+            user.setApiKey(userProjection.getApiKey());
           }
         }
       }

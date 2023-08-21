@@ -66,6 +66,7 @@ export default function ProjectMenu() {
                 <Menu.Item>
                   {({ active }) => (
                       <button
+                          // onClick={}
                           className={`${
                               active ? 'bg-gray-100 text-gray-900' : 'text-gray-900'
                           } group flex w-full items-center rounded-md px-2 py-2 text-sm`}

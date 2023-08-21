@@ -1,7 +1,10 @@
 package net.functionhub.api.service.user;
 
+import com.beust.ah.A;
+import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
+import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.props.EntitlementProps;
@@ -25,6 +28,7 @@ import org.springframework.util.ObjectUtils;
 public class UserServiceImpl implements UserService {
   private final SecurityFilter securityFilter;
   private final UserRepo userRepo;
+  private final ApiKeyRepo apiKeyRepo;
   private final EntitlementRepo entitlementRepo;
   private final EntitlementProps entitlementProps;
 
@@ -45,9 +49,14 @@ public class UserServiceImpl implements UserService {
         newUser.setEmail(userProfile.getEmail());
         newUser.setUid(userProfile.getUid());
         newUser.setFullName(userProfile.getName());
-        newUser.setApiKey(apiKeyPrefix + FHUtils.generateUid(46));
         log.info("Creating new user with  uid = {}", newUser.getUid());
         userRepo.save(newUser);
+
+        ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
+        apiKeyEntity.setApiKey(apiKeyPrefix + FHUtils.generateUid(46));
+        apiKeyEntity.setUserId(newUser.getUid());
+        apiKeyRepo.save(apiKeyEntity);
+        
         EntitlementEntity entitlements = new EntitlementEntity();
         entitlements.setUid(UUID.randomUUID());
         entitlements.setUserId(userProfile.getUid());

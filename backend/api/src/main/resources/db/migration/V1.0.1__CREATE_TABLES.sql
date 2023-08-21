@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS public.user (
     full_name varchar(255),
     email varchar(255),
     roles varchar(255)[],
-    api_key varchar(64),
     avatar_url varchar,
+    anonymous boolean NOT NULL default false,
     is_premium_user boolean NOT NULL default false,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -17,6 +17,17 @@ CREATE TABLE IF NOT EXISTS public.user (
 );
 ALTER TABLE public.user OWNER TO root;
 comment on table public.user is 'Basic user information';
+
+CREATE TABLE IF NOT EXISTS public.api_key (
+    id BIGSERIAL NOT NULL primary key,
+    user_id varchar(255) NOT NULL,
+    api_key varchar(64) NOT NULL,
+    is_vendor_key boolean NOT NULL default false,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(api_key, user_id)
+);
+ALTER TABLE public.api_key OWNER TO root;
+comment on table public.api_key is 'User API Keys';
 
 CREATE TABLE IF NOT EXISTS public.code_cell (
     uid uuid NOT NULL primary key,
@@ -91,6 +102,7 @@ CREATE TABLE IF NOT EXISTS public.commit_history (
     deployed boolean NOT NULL default false,
     code varchar,
     json_schema varchar,
+    full_openapi_schema varchar,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE public.commit_history OWNER TO root;

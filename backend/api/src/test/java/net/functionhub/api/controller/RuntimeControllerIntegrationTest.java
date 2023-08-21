@@ -15,6 +15,7 @@ import net.functionhub.api.FHCompletionRequest;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
+import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.service.runtime.RuntimeService;
@@ -86,7 +87,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};;
 
-    private UserEntity user;
+    private UserProjection user;
     private final String code = "import moment from \"npm:moment\";\n"
         + "\n"
         + "type TempUnit = \"CELCIUS\" | \"FAHRENHEIT\";\n"
@@ -136,14 +137,14 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @BeforeClass
     public void setup() {
-//        flywayMigration.migrate(true);
+        flywayMigration.migrate(true);
         String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
         testHelper.prepareSecurity(userId);
         userService.getOrCreateUserprofile();
         String authToken = tokenService.generateJwtToken();
         try {
             Thread.sleep(5000L);
-            user = userRepo.findByUid(userId);
+            user = userRepo.findByUidProjection(userId);
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
         }

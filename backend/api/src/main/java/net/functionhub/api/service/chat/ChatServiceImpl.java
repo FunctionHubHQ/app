@@ -11,6 +11,7 @@ import net.functionhub.api.UserProfile;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.projection.Deployment;
+import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
@@ -247,7 +248,7 @@ public class ChatServiceImpl implements ChatService {
     }
     // TODO: do not load all user functions for this user_id. Apply limits here
     // TODO: Need to implement projects to group functions
-    UserEntity user = userRepo.findByApiKey(requestHeaders.getHeaders().get("api-key"));
+    UserProjection user = userRepo.findByApiKey(requestHeaders.getHeaders().get("api-key"));
     //TODO: need to fetch only distinct functions because there could be several versions of the
     // same function previously deployed
     List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(user.getUid());

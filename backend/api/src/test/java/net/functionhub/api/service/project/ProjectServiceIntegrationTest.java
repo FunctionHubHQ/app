@@ -15,6 +15,7 @@ import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
 import net.functionhub.api.data.postgres.entity.UserEntity;
+import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.ProjectItemRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
@@ -61,14 +62,17 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
     @Autowired
     private FlywayMigration flywayMigration;
 
+    private UserProjection user;
+
     @BeforeClass
     public void setup() {
+        flywayMigration.migrate(true);
         String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
         testHelper.prepareSecurity(userId);
         userService.getOrCreateUserprofile();
         try {
             Thread.sleep(5000L);
-            UserEntity user = userRepo.findByUid(userId);
+            user = userRepo.findByUidProjection(userId);
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
         }

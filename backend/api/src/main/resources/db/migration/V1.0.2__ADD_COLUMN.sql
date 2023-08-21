@@ -1,1 +1,0 @@
-ALTER TABLE public.commit_history ADD COLUMN full_openapi_schema varchar;
