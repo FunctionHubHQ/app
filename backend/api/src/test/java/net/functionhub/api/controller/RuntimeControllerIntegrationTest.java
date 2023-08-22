@@ -14,7 +14,6 @@ import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.FHCompletionRequest;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
-import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
@@ -144,7 +143,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String authToken = tokenService.generateJwtToken();
         try {
             Thread.sleep(5000L);
-            user = userRepo.findByUidProjection(userId);
+            user = userRepo.findProjectionByUid(userId);
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
         }

@@ -4,6 +4,7 @@ package net.functionhub.api.data.postgres.repo;
 import java.util.List;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,4 +22,11 @@ public interface ApiKeyRepo extends JpaRepository<ApiKeyEntity, Long> {
   ApiKeyEntity findByApiKey(String apiKey);
 
   List<ApiKeyEntity> findByIsVendorKeyAndUserId(boolean isVendorKey, String userId);
+
+  @Query(value = "SELECT * F"
+      + "ROM public.api_key "
+      + "WHERE user_id = ?1 "
+      + "ORDER BY created_at ASC LIMIT 1",
+      nativeQuery = true)
+  ApiKeyEntity findOldestApiKey(String userId);
 }

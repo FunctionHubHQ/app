@@ -2,7 +2,6 @@ package net.functionhub.api.service.user;
 
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.stream.Collectors;
 import net.functionhub.api.ApiKey;
 import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.ApiKeyResponse;
@@ -96,6 +95,9 @@ public class UserServiceImpl implements UserService {
   }
 
   private String redactString(String value) {
+    if (value != null && value.length() < FHUtils.API_KEY_LENGTH) {
+      return  "*".repeat(FHUtils.LONG_UID_LENGTH);
+    }
     return  "*".repeat(value.length());
   }
 
@@ -135,6 +137,6 @@ public class UserServiceImpl implements UserService {
   }
 
   private String generateApiKey() {
-    return apiKeyPrefix + FHUtils.generateUid(46);
+    return apiKeyPrefix + FHUtils.generateUid(FHUtils.API_KEY_LENGTH);
   }
 }

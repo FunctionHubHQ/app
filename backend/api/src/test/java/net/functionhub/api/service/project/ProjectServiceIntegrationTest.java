@@ -8,13 +8,11 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.CodeUpdateResult;
-import net.functionhub.api.FHFunction;
 import net.functionhub.api.FHFunctions;
 import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
-import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.ProjectItemRepo;
@@ -72,7 +70,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         userService.getOrCreateUserprofile();
         try {
             Thread.sleep(5000L);
-            user = userRepo.findByUidProjection(userId);
+            user = userRepo.findProjectionByUid(userId);
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
         }

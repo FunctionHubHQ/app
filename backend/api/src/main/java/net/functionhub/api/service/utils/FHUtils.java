@@ -18,6 +18,7 @@ import org.springframework.util.ResourceUtils;
 public class FHUtils {
   public static final int SHORT_UID_LENGTH = 8;
   public static final int LONG_UID_LENGTH = 16;
+  public static final int API_KEY_LENGTH = 46;
 
   public static String generateUid(int length) {
     StringBuilder builder = new StringBuilder();

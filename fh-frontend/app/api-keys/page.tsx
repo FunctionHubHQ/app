@@ -4,9 +4,10 @@ import AddButton from "#/ui/project/add-button";
 import {useEffect, useState} from "react";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {ApiKey, ApiKeyResponse, FHFunction, FHFunctions, ProjectApi, UserApi} from "#/codegen";
-import {ERROR} from "#/ui/utils/utils";
+import {ERROR, getCreatedAt} from "#/ui/utils/utils";
 import {useAuthContext} from "#/context/AuthContext";
 import DeleteButton from "#/ui/project/delete-button";
+import moment from 'moment'
 
 export default function Page() {
   const [vendorKeyValue, setVendorKeyValue] = useState()
@@ -18,12 +19,46 @@ export default function Page() {
     .catch(e => ERROR(e))
   }, [])
 
-  const onAddVendorKey = async () => {
+  // const onAddVendorKey = async () => {
+  //   const token = await getAuthToken(user)
+  //   if (token) {
+  //     new UserApi(headerConfig(token))
+  //     .upsertApiKey({
+  //       key: vendorKeyValue,
+  //       is_vendor_key: true
+  //     })
+  //     .then(result => {
+  //       const response: ApiKeyResponse = result.data
+  //       setApiKeys(response.keys as Array<FHFunction>)
+  //     }).catch(e => ERROR(e))
+  //   }
+  // }
+
+  const onGenerateKey = async (isVendorKey: boolean) => {
+    if (isVendorKey && !vendorKeyValue) {
+      return
+    }
     const token = await getAuthToken(user)
     if (token) {
       new UserApi(headerConfig(token))
       .upsertApiKey({
-        key: vendorKeyValue,
+        key: isVendorKey ? vendorKeyValue : null,
+        is_vendor_key: isVendorKey
+      })
+      .then(result => {
+        const response: ApiKeyResponse = result.data
+        setApiKeys(response.keys as Array<FHFunction>)
+      }).catch(e => ERROR(e))
+    }
+  }
+
+
+
+  const onDeleteVendorKey = async () => {
+    const token = await getAuthToken(user)
+    if (token) {
+      new UserApi(headerConfig(token))
+      .deleteKey({
         is_vendor_key: true
       })
       .then(result => {
@@ -33,12 +68,12 @@ export default function Page() {
     }
   }
 
-  const onDeleteVendorKey = async () => {
+  const onDeleteKey = async (key: string) => {
     const token = await getAuthToken(user)
     if (token) {
       new UserApi(headerConfig(token))
       .deleteKey({
-        is_vendor_key: true
+        key: key
       })
       .then(result => {
         const response: ApiKeyResponse = result.data
@@ -59,13 +94,10 @@ export default function Page() {
     }
   }
 
-  const getVendorKey = (): string => {
-    const key = apiKeys?.find(it => it.is_vendor_key)?.key
-    if (key) {
-      return key
-    }
-    return 'KEY NOT FOUND'
+  const getVendorKey = (): ApiKey => {
+    return  apiKeys?.find(it => it.is_vendor_key)
   }
+
 
   const onChange = (e) => {
     e.preventDefault()
@@ -73,7 +105,56 @@ export default function Page() {
   }
 
   return (
-    <div className="prose prose-sm prose-invert max-w-none">
+    <div className=" max-w-none ">
+      <div className="py-8">
+        <Boundary labels={['functionhub keys']}>
+          {(!apiKeys || !apiKeys.filter(it => !it.is_vendor_key).length) ?
+              <>
+                <span className="flex text-gray-500 w-full">You don't have a key here. Please add one below</span>
+                <div className="mb-6 py-4">
+                  <input type="text" id="default-input"
+                         onChange={onChange}
+                         className="bg-gray-900 border border-gray-300 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                  <span className="flex text-gray-500 w-full text-xxs py-2">All your API keys are encrypted at rest</span>
+                </div>
+                <AddButton onClick={() => onGenerateKey(false)} label={"Generate Key"}/>
+              </> :
+              <>
+
+                <div className="relative overflow-x-auto shadow-md sm:rounded-lg bg-red">
+                  <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <tbody>
+                    {
+                      apiKeys.filter(it => !it.is_vendor_key).map(apiKey => {
+                        return (
+                        <tr>
+                          <th scope="row"
+                              className="px-6 py-4 text-xxs text-gray-400 whitespace-nowrap dark:text-white">
+                            {apiKey.key}
+                          </th>
+                          <td>
+                            {getCreatedAt(apiKey.created_at as number)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <DeleteButton onClick={() => onDeleteKey(apiKey.key as string)} label={"Delete Key"}
+                                          addClass={false}/>
+                          </td>
+                        </tr>
+                        )
+                      })
+                    }
+
+
+                    </tbody>
+                  </table>
+                </div>
+                <AddButton onClick={() => onGenerateKey(false)} label={"Generate Key"}/>
+              </>
+          }
+        </Boundary>
+
+      </div>
+      <div className="py-8">
       <Boundary labels={['openai key']} color={'blue'}>
         {(!apiKeys || !apiKeys.filter(it => it.is_vendor_key).length) ?
           <>
@@ -84,41 +165,30 @@ export default function Page() {
                      className="bg-gray-900 border border-gray-300 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
               <span className="flex text-gray-500 w-full text-xxs py-2">All your API keys are encrypted at rest</span>
             </div>
-            <AddButton onClick={onAddVendorKey} label={"Add Key"}/>
+            <AddButton onClick={() => onGenerateKey(true)} label={"Add Key"}/>
           </> :
-            <>
-              <div className="mb-6 py-4">
-                <span className="flex text-gray-500 w-full text-lg py-2">{getVendorKey()}</span>
-              </div>
-              <DeleteButton onClick={onDeleteVendorKey} label={"Delete Key"}/>
-            </>
+
+            <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+              <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <tbody>
+                <tr>
+                  <th scope="row"
+                      className="px-6 py-4 text-lg text-gray-400 whitespace-nowrap dark:text-white">
+                    {getVendorKey().key}
+                  </th>
+                  <td>
+                    {getCreatedAt(getVendorKey().created_at as number)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <DeleteButton onClick={onDeleteVendorKey} label={"Delete Key"} addClass={false}/>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
         }
       </Boundary>
-      {/*<h1 className="text-xl font-bold">Error Handling</h1>*/}
-
-      {/*<ul>*/}
-      {/*  <li>*/}
-      {/*    <code>error.js</code> defines the error boundary for a route segment*/}
-      {/*    and the children below it. It can be used to show specific error*/}
-      {/*    information, and functionality to attempt to recover from the error.*/}
-      {/*  </li>*/}
-      {/*  <li>*/}
-      {/*    Trying navigation pages and triggering an error inside nested layouts.*/}
-      {/*    Notice how the error is isolated to that segment, while the rest of*/}
-      {/*    the app remains interactive.*/}
-      {/*  </li>*/}
-      {/*</ul>*/}
-
-      {/*<div className="flex gap-2">*/}
-      {/*  <BuggyButton />*/}
-
-      {/*  <ExternalLink href="https://nextjs.org/docs/app/building-your-application/routing/error-handling">*/}
-      {/*    Docs*/}
-      {/*  </ExternalLink>*/}
-      {/*  <ExternalLink href="https://github.com/vercel/app-playground/tree/main/app/error-handling">*/}
-      {/*    Code*/}
-      {/*  </ExternalLink>*/}
-      {/*</div>*/}
+      </div>
     </div>
   );
 }

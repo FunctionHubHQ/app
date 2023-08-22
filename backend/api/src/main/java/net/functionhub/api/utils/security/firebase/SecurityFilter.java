@@ -3,8 +3,9 @@ package net.functionhub.api.utils.security.firebase;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
-import net.functionhub.api.data.postgres.entity.UserEntity;
+import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
+import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.DecodedJwt;
 import net.functionhub.api.service.user.UserService;
@@ -65,6 +66,7 @@ public class SecurityFilter extends OncePerRequestFilter {
     private final UnsecurePaths unsecurePaths;
     private final JwtValidationService jwtValidationService;
     private final UserRepo userRepo;
+    private final ApiKeyRepo apiKeyRepo;
 
   @Override
   protected void doFilterInternal(HttpServletRequest httpServletRequest,
@@ -118,10 +120,10 @@ public class SecurityFilter extends OncePerRequestFilter {
           user.setAuthMode(AuthMode.FB.name());
           credentials.setAuthToken(bearerToken);
           credentials.setDecodedFirebaseToken(decodedToken);
-          UserProjection userProjection = userRepo.findByUidProjection(user.getUid());
-          if (userProjection != null) {
+          ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(user.getUid());
+          if (apiKeyEntity != null) {
             // userEntity could be null if this is the registration flow
-            user.setApiKey(userProjection.getApiKey());
+            user.setApiKey(apiKeyEntity.getApiKey());
           }
         }
       }
