@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.user (
     id BIGSERIAL NOT NULL primary key,
     uid varchar(255),
-    handle varchar(255),
+    username varchar(255),
     full_name varchar(255),
     email varchar(255),
     roles varchar(255)[],

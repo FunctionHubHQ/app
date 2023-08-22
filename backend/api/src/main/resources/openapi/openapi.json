@@ -624,6 +624,68 @@
         }
       }
     },
+    "/username": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Check if username exists",
+        "operationId": "usernameExists",
+        "requestBody": {
+          "required": true,
+          "description": "Username check",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsernameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Username response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsernameResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Update username",
+        "operationId": "updateUsername",
+        "requestBody": {
+          "required": true,
+          "description": "Username request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsernameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Username response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/projects": {
       "post": {
         "tags": [
@@ -1111,6 +1173,22 @@
           }
         }
       },
+      "UsernameRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "UsernameResponse": {
+        "type": "object",
+        "properties": {
+          "is_available": {
+            "type": "boolean"
+          }
+        }
+      },
       "Project": {
         "type": "object",
         "properties": {
@@ -1206,6 +1284,9 @@
           },
           "anonymous": {
             "type": "boolean"
+          },
+          "username": {
+            "type": "string"
           },
           "roles": {
             "type": "object",

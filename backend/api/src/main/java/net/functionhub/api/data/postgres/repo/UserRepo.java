@@ -23,6 +23,7 @@ public interface UserRepo extends JpaRepository<UserEntity, Long> {
         + "u.email as email, "
         + "u.full_name as name, "
         + "u.avatar_url as avatar, "
+        + "u.username as username, "
         + "a.api_key as api_key " +
         "FROM public.user u JOIN public.api_key a ON u.uid = a.user_id "
         + "WHERE a.api_key = ?1",
@@ -34,9 +35,16 @@ public interface UserRepo extends JpaRepository<UserEntity, Long> {
         + "u.email as email, "
         + "u.full_name as name, "
         + "u.avatar_url as avatar, "
+        + "u.username as username, "
         + "a.api_key as api_key " +
         "FROM public.user u JOIN public.api_key a ON u.uid = a.user_id "
         + "WHERE u.uid = ?1",
         nativeQuery = true)
     UserProjection findProjectionByUid(String uid);
+
+    @Query(value = "SELECT count(*)" +
+        "FROM public.user u "
+        + "WHERE u.username = ?1",
+        nativeQuery = true)
+    Integer findUsernameCount(String username);
 }

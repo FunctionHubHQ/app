@@ -4,6 +4,8 @@ import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.UserProfile;
 import net.functionhub.api.UserProfileResponse;
+import net.functionhub.api.UsernameRequest;
+import net.functionhub.api.UsernameResponse;
 
 /**
  * @author Biz Melesse
@@ -35,4 +37,8 @@ public interface UserService {
   ApiKeyResponse upsertApiKey(ApiKeyRequest apiKeyRequest);
 
   ApiKeyResponse deleteKey(ApiKeyRequest apiKeyRequest);
+
+  UsernameResponse usernameExists(UsernameRequest usernameRequest);
+
+  UserProfileResponse updateUsername(UsernameRequest usernameRequest);
 }

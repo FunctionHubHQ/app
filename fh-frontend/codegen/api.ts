@@ -594,6 +594,12 @@ export interface UserProfile {
     anonymous?: boolean;
     /**
      * 
+     * @type {string}
+     * @memberof UserProfile
+     */
+    username?: string;
+    /**
+     * 
      * @type {{ [key: string]: boolean; }}
      * @memberof UserProfile
      */
@@ -629,6 +635,32 @@ export interface UserProfileResponse {
      * @memberof UserProfileResponse
      */
     profile?: UserProfile;
+}
+/**
+ * 
+ * @export
+ * @interface UsernameRequest
+ */
+export interface UsernameRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof UsernameRequest
+     */
+    username?: string;
+}
+/**
+ * 
+ * @export
+ * @interface UsernameResponse
+ */
+export interface UsernameResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UsernameResponse
+     */
+    is_available?: boolean;
 }
 
 /**
@@ -2350,6 +2382,42 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
         },
         /**
          * 
+         * @summary Update username
+         * @param {UsernameRequest} usernameRequest Username request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateUsername: async (usernameRequest: UsernameRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'usernameRequest' is not null or undefined
+            assertParamExists('updateUsername', 'usernameRequest', usernameRequest)
+            const localVarPath = `/username`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(usernameRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary Generate an api key or insert a vendor key
          * @param {ApiKeyRequest} apiKeyRequest Api key request
          * @param {*} [options] Override http request option.
@@ -2378,6 +2446,42 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
             localVarRequestOptions.data = serializeDataIfNeeded(apiKeyRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Check if username exists
+         * @param {UsernameRequest} usernameRequest Username check
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        usernameExists: async (usernameRequest: UsernameRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'usernameRequest' is not null or undefined
+            assertParamExists('usernameExists', 'usernameRequest', usernameRequest)
+            const localVarPath = `/username`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(usernameRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -2427,6 +2531,17 @@ export const UserApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary Update username
+         * @param {UsernameRequest} usernameRequest Username request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async updateUsername(usernameRequest: UsernameRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserProfileResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updateUsername(usernameRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
          * @summary Generate an api key or insert a vendor key
          * @param {ApiKeyRequest} apiKeyRequest Api key request
          * @param {*} [options] Override http request option.
@@ -2434,6 +2549,17 @@ export const UserApiFp = function(configuration?: Configuration) {
          */
         async upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ApiKeyResponse>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.upsertApiKey(apiKeyRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Check if username exists
+         * @param {UsernameRequest} usernameRequest Username check
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async usernameExists(usernameRequest: UsernameRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UsernameResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.usernameExists(usernameRequest, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -2476,6 +2602,16 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
         },
         /**
          * 
+         * @summary Update username
+         * @param {UsernameRequest} usernameRequest Username request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateUsername(usernameRequest: UsernameRequest, options?: any): AxiosPromise<UserProfileResponse> {
+            return localVarFp.updateUsername(usernameRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Generate an api key or insert a vendor key
          * @param {ApiKeyRequest} apiKeyRequest Api key request
          * @param {*} [options] Override http request option.
@@ -2483,6 +2619,16 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
          */
         upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any): AxiosPromise<ApiKeyResponse> {
             return localVarFp.upsertApiKey(apiKeyRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Check if username exists
+         * @param {UsernameRequest} usernameRequest Username check
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        usernameExists(usernameRequest: UsernameRequest, options?: any): AxiosPromise<UsernameResponse> {
+            return localVarFp.usernameExists(usernameRequest, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -2530,6 +2676,18 @@ export class UserApi extends BaseAPI {
 
     /**
      * 
+     * @summary Update username
+     * @param {UsernameRequest} usernameRequest Username request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public updateUsername(usernameRequest: UsernameRequest, options?: any) {
+        return UserApiFp(this.configuration).updateUsername(usernameRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
      * @summary Generate an api key or insert a vendor key
      * @param {ApiKeyRequest} apiKeyRequest Api key request
      * @param {*} [options] Override http request option.
@@ -2538,6 +2696,18 @@ export class UserApi extends BaseAPI {
      */
     public upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any) {
         return UserApiFp(this.configuration).upsertApiKey(apiKeyRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Check if username exists
+     * @param {UsernameRequest} usernameRequest Username check
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public usernameExists(usernameRequest: UsernameRequest, options?: any) {
+        return UserApiFp(this.configuration).usernameExists(usernameRequest, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

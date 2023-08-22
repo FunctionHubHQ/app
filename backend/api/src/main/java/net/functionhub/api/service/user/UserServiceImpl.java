@@ -5,6 +5,8 @@ import java.util.List;
 import net.functionhub.api.ApiKey;
 import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.ApiKeyResponse;
+import net.functionhub.api.UsernameRequest;
+import net.functionhub.api.UsernameResponse;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
@@ -12,6 +14,7 @@ import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.props.EntitlementProps;
+import net.functionhub.api.service.runtime.Slugify;
 import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.security.firebase.SecurityFilter;
 import net.functionhub.api.UserProfile;
@@ -35,7 +38,7 @@ public class UserServiceImpl implements UserService {
   private final ApiKeyRepo apiKeyRepo;
   private final EntitlementRepo entitlementRepo;
   private final EntitlementProps entitlementProps;
-
+  private final Slugify slugify;
 
   @Override
   public UserProfileResponse getOrCreateUserprofile() {
@@ -134,6 +137,42 @@ public class UserServiceImpl implements UserService {
         }
     }
     return getApiKeys();
+  }
+
+  @Override
+  public UsernameResponse usernameExists(UsernameRequest usernameRequest) {
+    if (!ObjectUtils.isEmpty(usernameRequest)) {
+      String username = cleanUsername(usernameRequest.getUsername());
+      int minUserNameLength = 4;
+      int maxUserNameLength = 255;
+      if (username.length() >= minUserNameLength && username.length() < maxUserNameLength) {
+        int count = userRepo.findUsernameCount(username);
+        return new UsernameResponse()
+            .isAvailable(count == 0);
+      }
+    }
+    return new UsernameResponse()
+        .isAvailable(false);
+  }
+
+  @Override
+  public UserProfileResponse updateUsername(UsernameRequest usernameRequest) {
+    UserProfile profile = FHUtils.getSessionUser();
+    if (!ObjectUtils.isEmpty(usernameRequest) &&
+        !ObjectUtils.isEmpty(usernameRequest.getUsername())) {
+      String username = cleanUsername(usernameRequest.getUsername());
+      UserEntity entity = userRepo.findByUid(profile.getUid());
+      entity.setUsername(username);
+      userRepo.save(entity);
+      profile.setUsername(username);
+    }
+    return new UserProfileResponse().profile(profile);
+  }
+
+  private String cleanUsername(String username) {
+    return slugify.toSlug(username)
+        .strip()
+        .replace("-", "_");
   }
 
   private String generateApiKey() {

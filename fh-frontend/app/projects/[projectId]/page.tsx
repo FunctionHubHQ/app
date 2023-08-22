@@ -128,7 +128,7 @@ export default function Page() {
                             functionSlug={currentModalSlug}
                             onDelete={onDeleteFunction}
                         />
-                        <div className="grid grid-flow-col justify-stretch ">
+                        <div className="grid grid-flow-col justify-stretch">
                           <div>
                             <Link href={getFunctionPath(_function.code_id as string)}>
                             <div className="font-medium text-gray-200 group-hover:text-gray-50 max-w-[10px]">

@@ -2,6 +2,8 @@ package net.functionhub.api.controller;
 
 import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.ApiKeyResponse;
+import net.functionhub.api.UsernameRequest;
+import net.functionhub.api.UsernameResponse;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.UserApi;
 import net.functionhub.api.UserProfileResponse;
@@ -36,7 +38,17 @@ public class UserController implements UserApi {
   }
 
   @Override
+  public ResponseEntity<UserProfileResponse> updateUsername(UsernameRequest usernameRequest) {
+    return ResponseEntity.ok(userService.updateUsername(usernameRequest));
+  }
+
+  @Override
   public ResponseEntity<ApiKeyResponse> upsertApiKey(ApiKeyRequest apiKeyRequest) {
     return ResponseEntity.ok(userService.upsertApiKey(apiKeyRequest));
+  }
+
+  @Override
+  public ResponseEntity<UsernameResponse> usernameExists(UsernameRequest usernameRequest) {
+    return ResponseEntity.ok(userService.usernameExists(usernameRequest));
   }
 }

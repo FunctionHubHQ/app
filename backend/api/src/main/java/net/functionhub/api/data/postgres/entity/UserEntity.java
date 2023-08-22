@@ -26,9 +26,9 @@ public class UserEntity {
     @Column(name = "uid")
     private String uid;
 
-    @JsonProperty("handle")
-    @Column(name = "handle")
-    private String handle;
+    @JsonProperty("username")
+    @Column(name = "username")
+    private String username;
 
     @JsonProperty("avatar_url")
     @Column(name = "avatar_url")

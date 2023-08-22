@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
+import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
@@ -102,6 +103,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         user.setPicture(userProjection.getAvatar());
         user.setApiKey(userProjection.getApiKey());
         user.setAuthMode(AuthMode.AK.name());
+        user.setUsername(userProjection.getUsername());
       } else {
         try {
           DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);
@@ -118,8 +120,14 @@ public class SecurityFilter extends OncePerRequestFilter {
           }
           user = firebaseTokenToUser(decodedToken);
           user.setAuthMode(AuthMode.FB.name());
+
+          UserEntity userEntity = userRepo.findByUid(user.getUid());
+          user.setUsername(userEntity.getUsername());
+
           credentials.setAuthToken(bearerToken);
           credentials.setDecodedFirebaseToken(decodedToken);
+          // TODO 2 db calls with the one above so not very efficient for production use. This is why
+          //    prod should use api key instead of firebase tokens
           ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(user.getUid());
           if (apiKeyEntity != null) {
             // userEntity could be null if this is the registration flow

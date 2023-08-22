@@ -3,11 +3,10 @@ import {Boundary} from "#/ui/boundary";
 import AddButton from "#/ui/project/add-button";
 import {useEffect, useState} from "react";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
-import {ApiKey, ApiKeyResponse, FHFunction, FHFunctions, ProjectApi, UserApi} from "#/codegen";
+import {ApiKey, ApiKeyResponse, FHFunction, UserApi} from "#/codegen";
 import {ERROR, getCreatedAt} from "#/ui/utils/utils";
 import {useAuthContext} from "#/context/AuthContext";
 import DeleteButton from "#/ui/project/delete-button";
-import moment from 'moment'
 
 export default function Page() {
   const [vendorKeyValue, setVendorKeyValue] = useState()
@@ -18,21 +17,6 @@ export default function Page() {
     initKeys()
     .catch(e => ERROR(e))
   }, [])
-
-  // const onAddVendorKey = async () => {
-  //   const token = await getAuthToken(user)
-  //   if (token) {
-  //     new UserApi(headerConfig(token))
-  //     .upsertApiKey({
-  //       key: vendorKeyValue,
-  //       is_vendor_key: true
-  //     })
-  //     .then(result => {
-  //       const response: ApiKeyResponse = result.data
-  //       setApiKeys(response.keys as Array<FHFunction>)
-  //     }).catch(e => ERROR(e))
-  //   }
-  // }
 
   const onGenerateKey = async (isVendorKey: boolean) => {
     if (isVendorKey && !vendorKeyValue) {
