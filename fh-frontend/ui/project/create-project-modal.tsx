@@ -22,6 +22,8 @@ const CreateProjectModal: FC<CreateProjectModalProps> = (props) => {
     if (name && description) {
       props.onProjectCreate(name, description)
     }
+    setName('')
+    setDescription('')
     return false
   }
 

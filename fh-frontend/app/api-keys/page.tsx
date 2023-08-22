@@ -108,49 +108,32 @@ export default function Page() {
     <div className=" max-w-none ">
       <div className="py-8">
         <Boundary labels={['functionhub keys']}>
-          {(!apiKeys || !apiKeys.filter(it => !it.is_vendor_key).length) ?
-              <>
-                <span className="flex text-gray-500 w-full">You don't have a key here. Please add one below</span>
-                <div className="mb-6 py-4">
-                  <input type="text" id="default-input"
-                         onChange={onChange}
-                         className="bg-gray-900 border border-gray-300 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-                  <span className="flex text-gray-500 w-full text-xxs py-2">All your API keys are encrypted at rest</span>
-                </div>
-                <AddButton onClick={() => onGenerateKey(false)} label={"Generate Key"}/>
-              </> :
-              <>
-
-                <div className="relative overflow-x-auto shadow-md sm:rounded-lg bg-red">
-                  <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <tbody>
-                    {
-                      apiKeys.filter(it => !it.is_vendor_key).map(apiKey => {
-                        return (
-                        <tr>
-                          <th scope="row"
-                              className="px-6 py-4 text-xxs text-gray-400 whitespace-nowrap dark:text-white">
-                            {apiKey.key}
-                          </th>
-                          <td>
-                            {getCreatedAt(apiKey.created_at as number)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <DeleteButton onClick={() => onDeleteKey(apiKey.key as string)} label={"Delete Key"}
-                                          addClass={false}/>
-                          </td>
-                        </tr>
-                        )
-                      })
-                    }
-
-
-                    </tbody>
-                  </table>
-                </div>
-                <AddButton onClick={() => onGenerateKey(false)} label={"Generate Key"}/>
-              </>
-          }
+          <div className="relative overflow-x-auto shadow-md sm:rounded-lg bg-red">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <tbody>
+              {
+                apiKeys.filter(it => !it.is_vendor_key).map(apiKey => {
+                  return (
+                      <tr key={apiKey.key}>
+                        <th scope="row"
+                            className="px-6 py-4 text-xxs text-gray-400 whitespace-nowrap dark:text-white">
+                          {apiKey.key}
+                        </th>
+                        <td>
+                          {getCreatedAt(apiKey.created_at as number)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <DeleteButton onClick={() => onDeleteKey(apiKey.key as string)} label={"Delete Key"}
+                                        addClass={false}/>
+                        </td>
+                      </tr>
+                  )
+                })
+              }
+              </tbody>
+            </table>
+          </div>
+          <AddButton onClick={() => onGenerateKey(false)} label={"Generate Key"}/>
         </Boundary>
 
       </div>

@@ -26,9 +26,7 @@ export default function Page() {
   }, [])
 
   const onProjectCreate = async (name: string, description: string) => {
-    DEBUG("OnProjectCreate: ", name, description)
     const token = await getAuthToken(user)
-    DEBUG("tokenResult: ", token)
     if (token) {
       setCreationInProgress(true)
       new ProjectApi(headerConfig(token))

@@ -54,6 +54,9 @@ public class GlobalControllerExceptionHandler {
       String[] tokens = message.split(":");
       return tokens[0];
     }
+    if (message.toLowerCase().contains("JDBC exception".toLowerCase())) {
+      return "Internal Server Error";
+    }
     return message;
   }
 }

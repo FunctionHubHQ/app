@@ -7,8 +7,6 @@ import {auth} from "#/ui/utils/firebase-setup";
 import nookies from 'nookies';
 import {ERROR} from "#/ui/utils/utils";
 
-// const auth = getAuth(firebase_app);
-
 export const AuthContext = React.createContext({});
 
 export const useAuthContext = () => React.useContext(AuthContext);
