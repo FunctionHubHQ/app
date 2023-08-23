@@ -8,6 +8,7 @@ import {usePathname} from "next/navigation";
 import Footer from "#/ui/nav/footer";
 import {AuthContextProvider} from "#/context/AuthContext";
 import HeaderNav from "#/ui/nav/header";
+import React from "react";
 
 
 export default function RootLayout({
@@ -19,7 +20,8 @@ export default function RootLayout({
   const loginLayout = pathname.includes("/login")
   const pricingLayout = pathname.includes("/pricing")
   const editorLayout = pathname.includes("edit:")
-  const applyGlobalLayout = !(loginLayout || editorLayout || pricingLayout)
+  const homePage = pathname === '/'
+  const applyGlobalLayout = !(loginLayout || editorLayout || pricingLayout || homePage)
 
   return (
     <html lang="en" className="[color-scheme:dark]">
@@ -53,6 +55,13 @@ export default function RootLayout({
             </div>
         }
 
+        { homePage &&
+            <div className="min-h-screen pt-20">
+              <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
+                <div className="p-3.5 lg:p-6">{children}</div>
+              </div>
+            </div>
+        }
 
         {applyGlobalLayout &&
         <div className="min-h-screen pt-20">

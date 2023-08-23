@@ -1,4 +1,4 @@
-import { demos } from '#/lib/demos';
+import { hubPages } from '#/lib/hubPages';
 import Link from 'next/link';
 
 export default function Page() {
@@ -6,7 +6,7 @@ export default function Page() {
     <div className="space-y-8">
 
       <div className="space-y-10 text-white">
-        {demos.map((section) => {
+        {hubPages.map((section) => {
           return (
             <div key={section.name} className="space-y-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">
