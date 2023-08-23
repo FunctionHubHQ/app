@@ -1,6 +1,7 @@
 'use client'
 import {useAuthContext} from "#/context/AuthContext";
 import FHButton from "#/ui/project/fh-button";
+import Link from "next/link";
 
 export default function Page() {
   const { user } = useAuthContext()
@@ -18,7 +19,9 @@ export default function Page() {
             <div className="grid grid-flow-col justify-stretch items-center">
               {!user &&
                   <div className="pb-4">
-                    <FHButton onClick={onSignIn} label="Sign In"/>
+                    <Link href="/login">
+                    <FHButton label="Sign In"/>
+                    </Link>
                   </div>
               }
               <div className="ml-2">
