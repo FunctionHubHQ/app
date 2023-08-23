@@ -4,7 +4,6 @@ import {
   onAuthStateChanged, User,
 } from 'firebase/auth';
 import {auth} from "#/ui/utils/firebase-setup";
-import nookies from 'nookies';
 import {ERROR} from "#/ui/utils/utils";
 
 export const AuthContext = React.createContext({});
@@ -25,14 +24,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
-        user.getIdTokenResult(false)
-            .then(tokenResult => {
-              nookies.set(undefined, 'token', tokenResult.token, { path: '/' });
-            }).catch(e => ERROR(e))
-
       } else {
         setUser(null);
-        nookies.set(undefined, 'token', '', { path: '/' });
       }
       setLoading(false);
     });
