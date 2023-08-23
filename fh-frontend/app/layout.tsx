@@ -17,8 +17,9 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const loginLayout = pathname.includes("/login")
+  const pricingLayout = pathname.includes("/pricing")
   const editorLayout = pathname.includes("edit:")
-  const applyGlobalLayout = !(loginLayout || editorLayout)
+  const applyGlobalLayout = !(loginLayout || editorLayout || pricingLayout)
 
   return (
     <html lang="en" className="[color-scheme:dark]">
@@ -44,14 +45,23 @@ export default function RootLayout({
         </div>
         }
 
+        {pricingLayout &&
+            <div className="min-h-screen pt-20">
+              <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
+                  <div className="p-3.5 lg:p-6">{children}</div>
+              </div>
+            </div>
+        }
+
+
         {applyGlobalLayout &&
         <div className="min-h-screen pt-20">
           <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
 
             <div >
-              <div className="rounded-lg bg-black">
-                <AddressBar />
-              </div>
+              {/*<div className="rounded-lg bg-black">*/}
+              {/*  <AddressBar />*/}
+              {/*</div>*/}
             </div>
             <div className="bg-vc-border-gradient rounded-lg p-px shadow-lg shadow-black/20">
               <div className="rounded-lg bg-black p-3.5 lg:p-6">{children}</div>

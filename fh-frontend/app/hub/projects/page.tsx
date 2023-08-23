@@ -86,7 +86,7 @@ export default function Page() {
                     <Boundary labels={[project?.name as string]} color="default" key={project?.project_id}>
                       <div className="space-y-5">
                         <div className="grid grid-flow-col justify-stretch ">
-                          <Link href={'/projects/' + project.project_id}>
+                          <Link href={'/hub/projects/' + project.project_id}>
                             <div>
                               {/*<div className="text-xs font-semibold uppercase tracking-wider text-gray-400">*/}
                               {/*  {project?.name}*/}

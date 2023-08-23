@@ -70,15 +70,15 @@ export default function Page() {
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-1">
       <div className="flex justify-center items-center pt-8">
         <img className="w-20 h-20 rounded-full"
-             src={user.photoURL}
-             alt={user.displayName}/>
+             src={user?.photoURL}
+             alt={user?.displayName}/>
       </div>
       <div>
-        <span className="flex justify-center items-center">{user.displayName}</span>
+        <span className="flex justify-center items-center">{user?.displayName}</span>
       </div>
 
       <div className="py-8">
-      <Boundary labels={['']} color={'blue'}>
+        {user && <Boundary labels={['']} color={'blue'}>
         <>
           <span className="flex text-gray-800 w-full mb-4 text-center justify-start">Create a username below</span>
           <span className="flex text-gray-500 w-full text-sm">Username</span>
@@ -117,6 +117,7 @@ export default function Page() {
           <AddButton label={"Update Profile"} onClick={onUpdateProfile} hideIcon={true} disabled={!usernameAvailable}/>
         </>
       </Boundary>
+        }
       </div>
     </div>
   );

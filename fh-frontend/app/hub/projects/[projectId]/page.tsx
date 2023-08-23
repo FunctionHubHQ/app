@@ -59,7 +59,7 @@ export default function Page() {
   }
 
   const getFunctionPath = (codeId: string): string => {
-    return `/projects/${projectId}/edit:${codeId}`
+    return `/hub/projects/${projectId}/edit:${codeId}`
   }
 
   const getAllFunctions = async () => {
@@ -172,79 +172,6 @@ export default function Page() {
               </div>
               <AddButton onClick={onAddFunction} label={"Add Function"}/>
             </div>
-
-            // <div className="space-y-10 text-white">
-            //   {projects?.projects?.map((project) => {
-            //     return (
-            //         <div key={project?.project_id} className="space-y-5">
-            //           {/*<div className="grid grid-flow-col justify-stretch ">*/}
-            //           {/*  <div>*/}
-            //           {/*    <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">*/}
-            //           {/*      {project?.name}*/}
-            //           {/*    </div>*/}
-            //           {/*    <div className="text-xs font tracking-wider text-gray-400 max-w-[600px]">*/}
-            //           {/*      {project?.description}*/}
-            //           {/*    </div>*/}
-            //           {/*  </div>*/}
-            //           {/*  <div className="flex justify-end">*/}
-            //           {/*    <ProjectMenu/>*/}
-            //           {/*  </div>*/}
-            //           {/*</div>*/}
-            //           <AddFunctionButton onClick={onAddFunction}/>
-            //           <div className="grid grid-cols-1 gap-5 lg:grid-cols-1">
-            //             {fhFunctions?.map((_function: FHFunction) => {
-            //               return (
-            //                   <div
-            //                       key={_function.slug}
-            //                       className="group block space-y-1.5 rounded-lg bg-gray-900 px-5 py-3 hover:bg-gray-800"
-            //                   >
-            //                     {/*<div className="font-medium text-gray-200 group-hover:text-gray-50">*/}
-            //                     {/*  {item.name}*/}
-            //                     {/*</div>*/}
-            //
-            //
-            //                     <div className="grid grid-flow-col justify-stretch ">
-            //                       <div>
-            //                         <div className="font-medium text-gray-200 group-hover:text-gray-50 max-w-[10px]">
-            //                           {_function.name}
-            //                         </div>
-            //                       </div>
-            //                     </div>
-            //
-            //                     {_function.description ? (
-            //                         <div className="line-clamp-3 text-sm text-gray-400 group-hover:text-gray-300">
-            //                           {_function.description}
-            //                         </div>
-            //                     ) : null}
-            //
-            //
-            //                     <div className="grid grid-flow-col justify-stretch">
-            //                       <div>
-            //                         <div className="font-medium text-gray-200 group-hover:text-gray-50 mt-4">
-            //                           <FunctionToggle/>
-            //                         </div>
-            //                       </div>
-            //                       <div className="flex justify-end mt-4">
-            //                         <button
-            //                             className='text-gray-900 group  items-center rounded-md px-2 py-2 text-sm'
-            //                         >
-            //                           <AiOutlineDelete
-            //                               color={'#a1a1a1'}
-            //                               title="Delete"
-            //                               width="48px"
-            //                           />
-            //                         </button>
-            //                       </div>
-            //                     </div>
-            //                   </div>
-            //               );
-            //             })}
-            //           </div>
-            //         </div>
-            //     );
-            //   })}
-            //   <AddFunctionButton onClick={onAddFunction}/>
-            // </div>
         }
       </div>
   );

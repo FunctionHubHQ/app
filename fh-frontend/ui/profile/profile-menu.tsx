@@ -38,7 +38,6 @@ export default function ProfileDropdown() {
               <img className="w-7 h-7 rounded-full" id="avatarButton" data-dropdown-toggle="userDropdown"  data-dropdown-placement="bottom-start"
                    src={user.photoURL}
                    alt="User dropdown"/>
-              {/*<div className="mt-1 ml-2 mr-2"><span>{getUserName()}</span></div>*/}
             </Menu.Button>
           </div>
           <Transition
@@ -54,7 +53,7 @@ export default function ProfileDropdown() {
               <div className="px-1 py-1 ">
                 <Menu.Item>
                   {({ active }) => (
-                      <a href="/profile">
+                      <a href="/hub/profile">
                         <button
                             className={`${
                                 active ? 'bg-gray-100 text-gray-900' : 'text-gray-900'
@@ -75,7 +74,7 @@ export default function ProfileDropdown() {
               <div className="px-1 py-1 ">
                 <Menu.Item>
                   {({ active }) => (
-                      <a href="/projects">
+                      <a href="/hub/projects">
                         <button
                             className={`${
                                 active ? 'bg-gray-100 text-gray-900' : 'text-gray-900'
@@ -94,7 +93,7 @@ export default function ProfileDropdown() {
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
-                      <a href="/api-keys">
+                      <a href="/hub/api-keys">
                         <button
                             className={`${
                                 active ? 'bg-gray-100 text-gray-900' : 'text-gray-900'
