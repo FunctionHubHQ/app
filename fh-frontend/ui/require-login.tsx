@@ -8,9 +8,9 @@ export default function RequireLogin({
 }: {
   children: React.ReactNode;
 }) {
-  const {user} = useAuthContext()
+  const {authUser} = useAuthContext()
   const router = useRouter()
-  if (!user) {
+  if (!authUser) {
     router.push("/login")
   }
   return (

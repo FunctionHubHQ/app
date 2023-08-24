@@ -4,7 +4,7 @@ import FHButton from "#/ui/project/fh-button";
 import Link from "next/link";
 
 export default function Page() {
-  const { user } = useAuthContext()
+  const { authUser } = useAuthContext()
 
   const onSignIn = () => {
 
@@ -17,7 +17,7 @@ export default function Page() {
             <h2 className="mb-4 text-5xl font-extrabold text-white dark:text-white">Build powerful AI applications that can call
               <span className="ml-2 italic text-vercel-pink">any</span> API</h2>
             <div className="grid grid-flow-col justify-stretch items-center">
-              {!user &&
+              {!authUser &&
                   <div className="pb-4">
                     <Link href="/login">
                     <FHButton label="Sign In"/>

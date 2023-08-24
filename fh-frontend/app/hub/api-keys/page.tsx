@@ -11,7 +11,7 @@ import DeleteButton from "#/ui/project/delete-button";
 export default function Page() {
   const [vendorKeyValue, setVendorKeyValue] = useState()
   const [apiKeys, setApiKeys] = useState<Array<ApiKey>>([])
-  const { user } = useAuthContext()
+  const { authUser } = useAuthContext()
 
   useEffect(() => {
     initKeys()
@@ -22,7 +22,7 @@ export default function Page() {
     if (isVendorKey && !vendorKeyValue) {
       return
     }
-    const token = await getAuthToken(user)
+    const token = await getAuthToken(authUser)
     if (token) {
       new UserApi(headerConfig(token))
       .upsertApiKey({
@@ -39,7 +39,7 @@ export default function Page() {
 
 
   const onDeleteVendorKey = async () => {
-    const token = await getAuthToken(user)
+    const token = await getAuthToken(authUser)
     if (token) {
       new UserApi(headerConfig(token))
       .deleteKey({
@@ -53,7 +53,7 @@ export default function Page() {
   }
 
   const onDeleteKey = async (key: string) => {
-    const token = await getAuthToken(user)
+    const token = await getAuthToken(authUser)
     if (token) {
       new UserApi(headerConfig(token))
       .deleteKey({
@@ -67,7 +67,7 @@ export default function Page() {
   }
 
   const initKeys = async () => {
-    const token = await getAuthToken(user)
+    const token = await getAuthToken(authUser)
     if (token) {
       new UserApi(headerConfig(token))
       .getApiKeys()

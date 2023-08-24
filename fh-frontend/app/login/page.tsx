@@ -17,12 +17,12 @@ import {useRouter} from "next/navigation";
 
 
 export default function Page() {
-  const {user} = useAuthContext()
+  const {authUser} = useAuthContext()
   const router = useRouter()
 
   useEffect(() => {
-    if (user) router.push("/hub")
-  }, [user])
+    if (authUser) router.push("/hub")
+  }, [authUser])
 
   /**
    * Sign in user using Google login pop screen. After login, persist the user

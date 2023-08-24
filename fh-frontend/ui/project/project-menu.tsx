@@ -14,10 +14,6 @@ import {
 
 import { Menu, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
-import {useAuthContext} from "#/context/AuthContext";
-import {auth} from "#/ui/utils/firebase-setup";
-import {useRouter} from "next/navigation";
-import {DEBUG, ERROR} from "#/ui/utils/utils";
 
 export default function ProjectMenu() {
 

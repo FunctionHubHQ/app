@@ -5,7 +5,7 @@ import {useEffect, useState} from "react";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {
   UserApi,
-  UsernameResponse, UserProfile, UserProfileResponse
+  UsernameResponse, UserProfileResponse
 } from "#/codegen";
 import {ERROR} from "#/ui/utils/utils";
 import {useAuthContext} from "#/context/AuthContext";
@@ -14,46 +14,35 @@ import {AiOutlineCheck, AiOutlineClose} from 'react-icons/ai'
 
 export default function Page() {
   const [usernameAvailable, setUsernameAvailable] = useState(false)
-  const [value, setValue] = useState<string | undefined>(undefined)
-  const [userProfile, setUserProfile] = useState<UserProfile | undefined>(undefined)
-  const { user } = useAuthContext()
+  const [username, setUsername] = useState<string | undefined>(undefined)
+  const { authUser, fhUser } = useAuthContext()
 
   useEffect(() => {
     initProfile()
-    .catch(e => ERROR(e))
   }, [])
 
-  const initProfile = async () => {
-    const token = await getAuthToken(user)
-    if (token) {
-      new UserApi(headerConfig(token))
-      .getUserprofile()
-      .then(result => {
-        const response: UserProfileResponse = result.data
-        setUserProfile(response.profile)
-        setValue(response.profile?.username)
-      }).catch(e => ERROR(e))
-    }
+  const initProfile = () => {
+    setUsername(fhUser?.username)
   }
 
   const onUpdateProfile = async () => {
-    const token = await getAuthToken(user)
-    if (token && usernameAvailable && value) {
+    const token = await getAuthToken(authUser)
+    if (token && usernameAvailable && username) {
       new UserApi(headerConfig(token))
       .updateUsername({
-        username: value
+        username: username
       })
       .then(result => {
         const response: UserProfileResponse = result.data
-        setValue(response.profile?.username)
+        setUsername(response.profile?.username)
       }).catch(e => ERROR(e))
     }
   }
 
   const onChange = async (e) => {
     e.preventDefault()
-    setValue(e.target.value)
-    const token = await getAuthToken(user)
+    setUsername(e.target.value)
+    const token = await getAuthToken(authUser)
     if (token && e.target.value) {
       new UserApi(headerConfig(token))
       .usernameExists({
@@ -70,22 +59,22 @@ export default function Page() {
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-1">
       <div className="flex justify-center items-center pt-8">
         <img className="w-20 h-20 rounded-full"
-             src={user?.photoURL}
-             alt={user?.displayName}/>
+             src={authUser?.photoURL}
+             alt={authUser?.displayName}/>
       </div>
       <div>
-        <span className="flex justify-center items-center">{user?.displayName}</span>
+        <span className="flex justify-center items-center">{authUser?.displayName}</span>
       </div>
 
       <div className="py-8">
-        {user && <Boundary labels={['']} color={'blue'}>
+        {authUser && <Boundary labels={['']} color={'blue'}>
         <>
           <span className="flex text-gray-800 w-full mb-4 text-center justify-start">Create a username below</span>
           <span className="flex text-gray-500 w-full text-sm">Username</span>
           <div className="mb-6 py-2">
             <input type="text" id="default-input"
                    onChange={onChange}
-                   value={value}
+                   value={username}
                    className="bg-gray-900 border border-gray-300 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
             <span className="flex text-gray-500 w-full text-xxs py-2 ml-1">
               {
@@ -100,7 +89,7 @@ export default function Page() {
                   </>
               }
               {
-                  value && !usernameAvailable && value != userProfile?.username &&
+                  username && !usernameAvailable && username != fhUser?.username &&
                   <>
                     <AiOutlineClose
                         color={'#ff0000'}

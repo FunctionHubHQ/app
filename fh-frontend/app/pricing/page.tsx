@@ -2,7 +2,7 @@
 import {useAuthContext} from "#/context/AuthContext";
 
 export default function Page() {
-  const { user } = useAuthContext()
+  const { authUser } = useAuthContext()
 
   return (
       <section className=" dark:bg-gray-900">

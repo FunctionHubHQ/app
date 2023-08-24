@@ -24,7 +24,7 @@ export default function Page() {
   const [projects, setProjects] = useState<Projects | undefined>(undefined)
   const [fhFunctions, setFhFunctions] = useState<Array<FHFunction>>([])
   const [projectId, setProjectId] = useState('')
-  const { user } = useAuthContext()
+  const { authUser } = useAuthContext()
   const router = useRouter()
   const pathname = usePathname();
 
@@ -42,7 +42,7 @@ export default function Page() {
 
   const onAddFunction = async () => {
     DEBUG("onAddFunction: ", projectId)
-    const token = await getAuthToken(user)
+    const token = await getAuthToken(authUser)
     DEBUG("tokenResult: ", token)
     if (token) {
       // setCreationInProgress(true)
@@ -63,7 +63,7 @@ export default function Page() {
   }
 
   const getAllFunctions = async () => {
-    const token = await getAuthToken(user)
+    const token = await getAuthToken(authUser)
     if (token) {
       new ProjectApi(headerConfig(token))
       .getAllFunctions(projectId)
@@ -89,7 +89,7 @@ export default function Page() {
     console.log("About to delete: ", currentModalSlug)
     if (currentModalSlug) {
       setShowFunctionDeleteModal(false)
-      const token = await getAuthToken(user)
+      const token = await getAuthToken(authUser)
       if (token) {
         new ProjectApi(headerConfig(token))
         .deleteFunction(currentModalSlug)

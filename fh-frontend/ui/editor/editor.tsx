@@ -11,9 +11,7 @@ import UseAnimations from "react-useanimations";
 import loading from 'react-useanimations/lib/loading';
 import {
   Code,
-  RuntimeApi,
-  UserApi,
-  UserProfileResponse
+  RuntimeApi
 } from "#/codegen";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
@@ -38,7 +36,7 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
   const [deploymentMessage, setDeploymentMessage] = useState<string | undefined>(undefined)
   const [showDeploymentModal, setShowDeploymentModal] = useState(false)
   const [deploymentFailed, setDeploymentFailed] = useState(false)
-  const { user } = useAuthContext()
+  const { authUser, fhUser } = useAuthContext()
 
   const getCodeKey = () => {
     return  "main_" + props.userCode?.uid as string
@@ -60,7 +58,7 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
 
   const onDeploy = () => {
     setDeployInProgress(true)
-    getAuthToken(user).then(token => {
+    getAuthToken(authUser).then(token => {
       if (token && typeof mainCode === "string") {
         new RuntimeApi(headerConfig(token))
         .deploy({
@@ -94,13 +92,13 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
     setCodeCommitInProgress(true)
     setFunctionSlug(undefined)
     setVersion(undefined)
-    getAuthToken(user).then(token => {
+    getAuthToken(authUser).then(token => {
       if (token) {
         if (typeof mainCode === "string") {
           new RuntimeApi(headerConfig(token))
           .updateCode({
             uid: props.userCode?.uid,
-            user_id: user.uid,
+            user_id: authUser.uid,
             code: btoa(mainCode),
             fields_to_update: ["code"]
           })
@@ -133,21 +131,14 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
       setFunctionSlug(props.userCode.function_slug)
       setVersion(props.userCode.version)
     }
-    fetchUserProfile()
+    setTokens()
   }
 
-  const fetchUserProfile = () => {
-    // TODO: fetch the user profile upon login, no need to call this here
-    getAuthToken(user).then(token => {
+  const setTokens = () => {
+    getAuthToken(authUser).then(token => {
       if (token) {
-        new UserApi(headerConfig(token))
-        .getUserprofile()
-        .then(result => {
-          const response : UserProfileResponse = result.data
-          DEBUG("User Profile: ", response.profile)
-          setBearerToken(token)
-          setApiKey(response.profile?.api_key)
-        }).catch(e => ERROR(e.message))
+        setBearerToken(token)
+        setApiKey(fhUser?.api_key)
       }
     })
   }

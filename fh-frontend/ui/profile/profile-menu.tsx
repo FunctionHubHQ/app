@@ -13,7 +13,7 @@ import {useRouter} from "next/navigation";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
 
 export default function ProfileDropdown() {
-  const {user} = useAuthContext()
+  const {authUser} = useAuthContext()
   const router = useRouter()
 
   const logout = () => {
@@ -24,7 +24,7 @@ export default function ProfileDropdown() {
 
   const getUserName = () => {
     const maxLength = 20;
-    let handle = user.displayName; // get handle from server
+    let handle = authUser.displayName; // get handle from server
     if (handle && handle.length > maxLength) {
       handle = handle.substring(0, maxLength - 3) + "..."
     }
@@ -36,7 +36,7 @@ export default function ProfileDropdown() {
           <div>
             <Menu.Button className="relative flex rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-200 mb-1">
               <img className="w-7 h-7 rounded-full" id="avatarButton" data-dropdown-toggle="userDropdown"  data-dropdown-placement="bottom-start"
-                   src={user.photoURL}
+                   src={authUser.photoURL}
                    alt="User dropdown"/>
             </Menu.Button>
           </div>

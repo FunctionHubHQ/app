@@ -16,7 +16,7 @@ export default function Page() {
   const [openModal, setOpenModal] = useState(false)
   const [creationInProgress, setCreationInProgress] = useState(false)
   const [projects, setProjects] = useState<Projects | undefined>(undefined)
-  const { user } = useAuthContext()
+  const { authUser } = useAuthContext()
 
   useEffect(() => {
     if (!projects) {
@@ -26,7 +26,7 @@ export default function Page() {
   }, [])
 
   const onProjectCreate = async (name: string, description: string) => {
-    const token = await getAuthToken(user)
+    const token = await getAuthToken(authUser)
     if (token) {
       setCreationInProgress(true)
       new ProjectApi(headerConfig(token))
@@ -48,7 +48,7 @@ export default function Page() {
   }
 
   const getAllProjects = async () => {
-    const token = await getAuthToken(user)
+    const token = await getAuthToken(authUser)
     if (token) {
       new ProjectApi(headerConfig(token))
       .getAllProjects()

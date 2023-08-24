@@ -4,28 +4,42 @@ import {
   onAuthStateChanged, User,
 } from 'firebase/auth';
 import {auth} from "#/ui/utils/firebase-setup";
-import {ERROR} from "#/ui/utils/utils";
+import {DEBUG, ERROR} from "#/ui/utils/utils";
+import {UserApi, UserProfile, UserProfileResponse} from "#/codegen";
+import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 
 export const AuthContext = React.createContext({});
 
 export const useAuthContext = () => React.useContext(AuthContext);
 
 export const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = React.useState<User | null>(null);
+  const [authUser, setAuthUser] = React.useState<User | null>(null);
+  const [fhUser, setFhUser] = React.useState<UserProfile | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   useEffect(() => {
-    console.log("Auth: ", auth)
     if (!auth) {
-      setUser(null)
+      setAuthUser(null)
+      setFhUser(null)
       setLoading(false)
       return
     }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setUser(user);
+        setAuthUser(user);
+        getAuthToken(user).then(token => {
+          if (token) {
+            new UserApi(headerConfig(token))
+            .getUserprofile()
+            .then(result => {
+              const response : UserProfileResponse = result.data
+              setFhUser(response.profile as UserProfile)
+            }).catch(e => ERROR(e.message))
+          }
+        })
       } else {
-        setUser(null);
+        setAuthUser(null);
+        setFhUser(null)
       }
       setLoading(false);
     });
@@ -34,7 +48,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
   }, []);
 
   return (
-      <AuthContext.Provider value={{ user }}>
+      <AuthContext.Provider value={{ authUser, fhUser }}>
         {loading ? <div className="flex items-center justify-center h-screen">
           <div role="status">
             <svg aria-hidden="true"

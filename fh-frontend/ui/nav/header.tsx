@@ -7,7 +7,7 @@ import FHButton from "#/ui/project/fh-button";
 
 const HeaderNav = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const {user} = useAuthContext()
+  const {authUser} = useAuthContext()
   return (
       <>
         <nav className="bg-[#1e1e1e] dark:bg-gray-900 fixed w-full z-1000 top-0 left-0">
@@ -44,7 +44,7 @@ const HeaderNav = () => {
                 </div>
                 <div className="hidden sm:ml-6 sm:block">
                   <div className="flex space-x-4">
-                    {user &&
+                    {authUser &&
                         <a href="/hub"
                            className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Dashboard</a>
                     }
@@ -62,7 +62,7 @@ const HeaderNav = () => {
               <div
                   className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
 
-                {user ? <div className="relative ml-3">
+                {authUser ? <div className="relative ml-3">
                       <ProfileDropdown/>
                     </div> :
                     <a href="/login">

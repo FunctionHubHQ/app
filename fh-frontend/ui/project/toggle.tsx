@@ -1,10 +1,20 @@
 import { useState } from 'react'
 import { Switch } from '@headlessui/react'
+import {useAuthContext} from "#/context/AuthContext";
 
 function FunctionToggle() {
   const [enabled, setEnabled] = useState(false)
+  const [showError, setShowError] = useState(false)
+  const {fhUser} = useAuthContext()
+
+  const onChange = () => {
+    if (!!fhUser?.username) {
+      alert("username: " + fhUser.username)
+    }
+  }
 
   return (
+      <div>
       <div className="flex items-center">
         <span className="text-xxs text-gray-600 px-2">Private</span>
       <Switch
@@ -22,6 +32,7 @@ function FunctionToggle() {
         />
       </Switch>
         <span className="text-xxs text-gray-600 px-2">Public</span>
+      </div>
       </div>
   )
 }
