@@ -31,7 +31,7 @@ export const Boundary = ({
   labels = ['children'],
   size = 'default',
   color = 'default',
-  animateRerendering = true,
+  animateRerendering = false,
 }: {
   children: React.ReactNode;
   labels?: string[];

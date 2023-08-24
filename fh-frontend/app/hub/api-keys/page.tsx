@@ -9,7 +9,7 @@ import {useAuthContext} from "#/context/AuthContext";
 import DeleteButton from "#/ui/project/delete-button";
 
 export default function Page() {
-  const [vendorKeyValue, setVendorKeyValue] = useState()
+  const [vendorKeyValue, setVendorKeyValue] = useState<string | undefined>()
   const [apiKeys, setApiKeys] = useState<Array<ApiKey>>([])
   const { authUser } = useAuthContext()
 
@@ -19,14 +19,14 @@ export default function Page() {
   }, [])
 
   const onGenerateKey = async (isVendorKey: boolean) => {
-    if (isVendorKey && !vendorKeyValue) {
+    if (isVendorKey && !(vendorKeyValue?.trim().length > 0)) {
       return
     }
     const token = await getAuthToken(authUser)
     if (token) {
       new UserApi(headerConfig(token))
       .upsertApiKey({
-        key: isVendorKey ? vendorKeyValue : null,
+        key: isVendorKey ? vendorKeyValue : undefined,
         is_vendor_key: isVendorKey
       })
       .then(result => {
