@@ -150,7 +150,9 @@ export default function Page() {
                         <div className="grid grid-flow-col justify-stretch">
                           <div>
                             <div className="font-medium text-gray-200 group-hover:text-gray-50 mt-4">
-                              <FunctionToggle/>
+                              <FunctionToggle
+                                  codeId={_function.code_id as string}
+                                  isPublic={_function.is_public as boolean}/>
                             </div>
                           </div>
                           <div className="flex justify-end mt-4">

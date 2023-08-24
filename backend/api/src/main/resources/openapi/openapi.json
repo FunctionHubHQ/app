@@ -970,9 +970,6 @@
             "type": "string",
             "description": "Code cell uid"
           },
-          "user_id": {
-            "type": "string"
-          },
           "code": {
             "type": "string"
           },

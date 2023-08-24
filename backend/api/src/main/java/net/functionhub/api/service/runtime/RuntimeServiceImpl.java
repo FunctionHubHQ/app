@@ -331,57 +331,55 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public CodeUpdateResult updateCode(Code code) {
-    String userId = code.getUserId();
     String rawCode = null;
     CodeCellEntity updatedCell = null;
-    if (!ObjectUtils.isEmpty(userId)) {
-      if (ObjectUtils.isEmpty(code.getUid())) {
-        if (!ObjectUtils.isEmpty(code.getCode())) {
-          rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
-        }
-        CodeCellEntity codeCell = new CodeCellEntity();
-        codeCell.setUid(UUID.randomUUID());
-        codeCell.setCode(code.getCode());
-        codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
-        codeCell.setUserId(userId);
-        codeCell.setIsActive(isBelowActiveLimit(code.getUserId()));
-        codeCell.setIsPublic(false);
-        codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
-        codeCell.setSlug(getUniqueSlug());
-        codeCell.setVersion(generateCodeVersion());
-        if (!ObjectUtils.isEmpty(code.getParentId())) {
-          codeCell.setParentId(UUID.fromString(code.getParentId()));
+    if (ObjectUtils.isEmpty(code.getUid())) {
+      if (!ObjectUtils.isEmpty(code.getCode())) {
+        rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
+      }
+      CodeCellEntity codeCell = new CodeCellEntity();
+      codeCell.setUid(UUID.randomUUID());
+      codeCell.setCode(code.getCode());
+      codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
+      codeCell.setUserId(FHUtils.getSessionUser().getUid());
+      codeCell.setIsActive(isBelowActiveLimit(FHUtils.getSessionUser().getUid()));
+      codeCell.setIsPublic(false);
+      codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
+      codeCell.setSlug(getUniqueSlug());
+      codeCell.setVersion(generateCodeVersion());
+      if (!ObjectUtils.isEmpty(code.getParentId())) {
+        codeCell.setParentId(UUID.fromString(code.getParentId()));
+      }
+      codeCell.setDeployed(false);
+      codeCellRepo.save(codeCell);
+      updatedCell = codeCell;
+    }
+    else {
+      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(code.getUid()));
+      if (codeCell != null && !ObjectUtils.isEmpty(code.getFieldsToUpdate())) {
+        for (String field : code.getFieldsToUpdate()) {
+          if (field.equals("code")) {
+            codeCell.setCode(code.getCode());
+            codeCell.setVersion(generateCodeVersion());
+            rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
+            codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
+            codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
+          }
+          else if (field.equals("is_active")) {
+            if (isBelowActiveLimit(FHUtils.getSessionUser().getUid()) || !code.getIsActive()) {
+              codeCell.setIsActive(code.getIsActive());
+            }
+          } else if (field.equals("is_public")) {
+            codeCell.setIsPublic(code.getIsPublic());
+          }
         }
         codeCell.setDeployed(false);
+        codeCell.setUpdatedAt(LocalDateTime.now());
         codeCellRepo.save(codeCell);
         updatedCell = codeCell;
       }
-      else {
-        CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(code.getUid()));
-        if (codeCell != null && !ObjectUtils.isEmpty(code.getFieldsToUpdate())) {
-          for (String field : code.getFieldsToUpdate()) {
-            if (field.equals("code")) {
-              codeCell.setCode(code.getCode());
-              codeCell.setVersion(generateCodeVersion());
-              rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
-              codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
-              codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
-            }
-            else if (field.equals("is_active")) {
-              if (isBelowActiveLimit(userId) || !code.getIsActive()) {
-                codeCell.setIsActive(code.getIsActive());
-              }
-            } else if (field.equals("is_public")) {
-              codeCell.setIsPublic(code.getIsPublic());
-            }
-          }
-          codeCell.setDeployed(false);
-          codeCell.setUpdatedAt(LocalDateTime.now());
-          codeCellRepo.save(codeCell);
-          updatedCell = codeCell;
-        }
-      }
-      if (updatedCell != null) {
+    }
+    if (updatedCell != null) {
         // Reset schema fields
         updatedCell.setFullOpenApiSchema(null);
         updatedCell.setJsonSchema(null);
@@ -407,7 +405,6 @@ public class RuntimeServiceImpl implements RuntimeService {
             .slug(updatedCell.getSlug())
             .version(updatedCell.getVersion());
       }
-    }
     return new CodeUpdateResult();
   }
 
@@ -474,7 +471,6 @@ public class RuntimeServiceImpl implements RuntimeService {
             .uid(uid)
             .functionSlug(codeCell.getSlug())
             .version(codeCell.getVersion())
-            .userId(codeCell.getUserId())
             .isActive(codeCell.getIsActive())
             .isPublic(codeCell.getIsPublic())
             .updatedAt(codeCell.getUpdatedAt().toEpochSecond(ZoneOffset.UTC))

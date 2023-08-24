@@ -45,7 +45,6 @@ public class ProjectServiceImpl implements ProjectService {
     Code code = new Code()
         .isActive(true)
         .isPublic(false)
-        .userId(FHUtils.getSessionUser().getUid())
         .code(Base64.getEncoder().encodeToString(template.getBytes()));
     CodeUpdateResult result = runtimeService.updateCode(code);
     ProjectItemEntity projectItemEntity = new ProjectItemEntity();
