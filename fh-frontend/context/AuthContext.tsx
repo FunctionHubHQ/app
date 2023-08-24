@@ -24,19 +24,12 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       setLoading(false)
       return
     }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthUser(user);
-        getAuthToken(user).then(token => {
-          if (token) {
-            new UserApi(headerConfig(token))
-            .getUserprofile()
-            .then(result => {
-              const response : UserProfileResponse = result.data
-              setFhUser(response.profile as UserProfile)
-            }).catch(e => ERROR(e.message))
-          }
-        })
+        const token = await getAuthToken(user)
+        const response: UserProfileResponse = await new UserApi(headerConfig(token)).getUserprofile()
+        setFhUser(response.profile as UserProfile)
       } else {
         setAuthUser(null);
         setFhUser(null)
