@@ -602,6 +602,38 @@
         }
       }
     },
+    "/code/fork": {
+      "post": {
+        "tags": [
+          "project"
+        ],
+        "summary": "Fork user code",
+        "operationId": "forkCode",
+        "requestBody": {
+          "required": true,
+          "description": "Fork request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fork result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodeUpdateResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user/": {
       "get": {
         "tags": [
@@ -960,6 +992,17 @@
           },
           "is_vendor_key": {
             "type": "boolean"
+          }
+        }
+      },
+      "ForkRequest": {
+        "type": "object",
+        "properties": {
+          "parent_code_id": {
+            "type": "string"
+          },
+          "project_id": {
+            "type": "string"
           }
         }
       },

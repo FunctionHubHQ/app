@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunctions;
+import net.functionhub.api.ForkRequest;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
@@ -41,17 +42,11 @@ public class ProjectServiceImpl implements ProjectService {
   @Override
   public CodeUpdateResult createFunction(String projectId) {
     String template = FHUtils.loadFile("ts/functionTemplate.ts");
-    Code code = new Code()
+    return upsertCode(new Code()
         .isActive(true)
         .isPublic(false)
-        .code(Base64.getEncoder().encodeToString(template.getBytes()));
-    CodeUpdateResult result = runtimeService.updateCode(code);
-    ProjectItemEntity projectItemEntity = new ProjectItemEntity();
-    projectItemEntity.setProjectId(UUID.fromString(projectId));
-    projectItemEntity.setUid(UUID.randomUUID());
-    projectItemEntity.setCodeId(UUID.fromString(result.getUid()));
-    projectItemRepo.save(projectItemEntity);
-    return result;
+        .code(Base64.getEncoder().encodeToString(template.getBytes())), projectId);
+
   }
 
   @Override
@@ -105,7 +100,7 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   public Projects getAllProjects() {
-    List<ProjectEntity> projects = projectRepo.findByUserIdOrderByCreatedAtDesc(FHUtils.getSessionUser().getUid());
+    List<ProjectEntity> projects = projectRepo.findByUserIdOrderByUpdatedAtDesc(FHUtils.getSessionUser().getUid());
     return new Projects().projects(projectMapper.mapFromProjectEntities(projects));
   }
 
@@ -120,5 +115,26 @@ public class ProjectServiceImpl implements ProjectService {
       projectRepo.save(entity);
     }
     return getAllProjects();
+  }
+
+  @Override
+  public CodeUpdateResult forkCode(ForkRequest forkRequest) {
+    CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(forkRequest.getParentCodeId()));
+    if (codeCell != null) {
+      return runtimeService.updateCode(new Code()
+          .code(codeCell.getCode())
+          .parentId(codeCell.getUid().toString()));
+    }
+    return new CodeUpdateResult();
+  }
+
+  private CodeUpdateResult upsertCode(Code code, String projectId) {
+    CodeUpdateResult result = runtimeService.updateCode(code);
+    ProjectItemEntity projectItemEntity = new ProjectItemEntity();
+    projectItemEntity.setProjectId(UUID.fromString(projectId));
+    projectItemEntity.setUid(UUID.randomUUID());
+    projectItemEntity.setCodeId(UUID.fromString(result.getUid()));
+    projectItemRepo.save(projectItemEntity);
+    return result;
   }
 }

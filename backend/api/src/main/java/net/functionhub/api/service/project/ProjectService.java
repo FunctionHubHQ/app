@@ -1,7 +1,9 @@
 package net.functionhub.api.service.project;
 
+import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunctions;
+import net.functionhub.api.ForkRequest;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
@@ -18,5 +20,6 @@ public interface ProjectService {
   FHFunctions getAllFunctions(String projectId);
   Projects getAllProjects();
   Projects updateProject(ProjectUpdateRequest projectUpdateRequest);
+  CodeUpdateResult forkCode(ForkRequest forkRequest);
 
 }

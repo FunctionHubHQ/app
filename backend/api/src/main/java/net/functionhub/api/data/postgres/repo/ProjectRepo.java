@@ -15,5 +15,5 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Transactional
 public interface ProjectRepo extends JpaRepository<ProjectEntity, UUID> {
-  List<ProjectEntity> findByUserIdOrderByCreatedAtDesc(String uid);
+  List<ProjectEntity> findByUserIdOrderByUpdatedAtDesc(String uid);
 }

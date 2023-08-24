@@ -2,8 +2,10 @@ package net.functionhub.api.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunctions;
+import net.functionhub.api.ForkRequest;
 import net.functionhub.api.Project;
 import net.functionhub.api.ProjectApi;
 import net.functionhub.api.ProjectCreateRequest;
@@ -43,6 +45,11 @@ public class ProjectController implements ProjectApi {
   public ResponseEntity<Projects> deleteProject(String projectId) {
     return ResponseEntity.ok(projectService.deleteProject(
         projectId.replace("\"", "")));
+  }
+
+  @Override
+  public ResponseEntity<CodeUpdateResult> forkCode(ForkRequest forkRequest) {
+    return ResponseEntity.ok(projectService.forkCode(forkRequest));
   }
 
   @Override

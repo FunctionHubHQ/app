@@ -170,8 +170,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
         // 1. Create code cell
         String updateResultStr = request("/update-code", "POST", new Code()
-            .code(codeEncoded)
-            .userId(user.getUid()));
+            .code(codeEncoded));
 
         CodeUpdateResult updateResult = objectMapper
             .readValue(updateResultStr, CodeUpdateResult.class);

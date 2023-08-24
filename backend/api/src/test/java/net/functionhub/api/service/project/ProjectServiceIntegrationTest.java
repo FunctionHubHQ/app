@@ -9,10 +9,12 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunctions;
+import net.functionhub.api.ForkRequest;
 import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
+import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.ProjectItemRepo;
@@ -148,16 +150,48 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
             .projectId(projects.getProjects().get(0).getProjectId())
             .name("Updated name")
             .description("Updated description");
-        Project project = projectService.updateProject(updateRequest);
-        assertNotNull(project);
-        assertEquals(project.getName(), updateRequest.getName());
-        assertEquals(project.getDescription(), updateRequest.getDescription());
-        assertEquals(project.getProjectId(), updateRequest.getProjectId());
+        Projects updatedProjects = projectService.updateProject(updateRequest);
+        assertNotNull(updatedProjects);
+        assertEquals(updatedProjects.getProjects().get(0).getName(), updateRequest.getName());
+        assertEquals(updatedProjects.getProjects().get(0).getDescription(), updateRequest.getDescription());
+        assertEquals(updatedProjects.getProjects().get(0).getProjectId(), updateRequest.getProjectId());
     }
 
 
     @Test
     public void createFunctionTest() {
+        createAndAssertFunctions();
+    }
+
+    @Test
+    public void forkTest() {
+        FHFunctions functions = createAndAssertFunctions();
+
+        // Create a new project and fork the function to that
+        ProjectCreateRequest projRequest = new ProjectCreateRequest()
+            .name("My Demo Project")
+            .description("This is a demo project created by TestNG");
+        Projects projects = projectService.createProject(projRequest);
+        assertNotNull(projects);
+        assertNotNull(projects.getProjects());
+        assertEquals(2, projects.getProjects().size());
+        String projectId = projects.getProjects().get(0).getProjectId();
+
+        CodeUpdateResult forkResult = projectService.forkCode(new ForkRequest()
+            .projectId(projectId)
+            .parentCodeId(functions.getFunctions().get(0).getCodeId()));
+        assertNotNull(forkResult);
+        assertNotNull(forkResult.getVersion());
+        assertNotNull(forkResult.getUid());
+        assertNotNull(forkResult.getUid());
+
+        CodeCellEntity forkedCell = codeCellRepo.findByUid(UUID.fromString(forkResult.getUid()));
+        assertNotNull(forkedCell);
+        assertNotNull(forkedCell.getParentId());
+        assertEquals(functions.getFunctions().get(0).getCodeId(), forkedCell.getParentId().toString());
+    }
+
+    private FHFunctions createAndAssertFunctions() {
         ProjectCreateRequest request1 = new ProjectCreateRequest()
             .name("My Demo Project 1")
             .description("This is a demo project created by TestNG 1");
@@ -180,6 +214,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(functions.getFunctions().get(0).getIsPublic());
         assertNotNull(functions.getFunctions().get(0).getCreatedAt());
         assertNotNull(functions.getFunctions().get(0).getUpdatedAt());
+        return functions;
     }
 
     @Test
