@@ -602,6 +602,37 @@
         }
       }
     },
+    "/explore": {
+      "get": {
+        "tags": [
+          "project"
+        ],
+        "summary": "Get all public functions",
+        "operationId": "getAllPublicFunctions",
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Code update response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Code"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/code/fork": {
       "post": {
         "tags": [

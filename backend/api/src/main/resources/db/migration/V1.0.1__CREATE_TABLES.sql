@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS public.code_cell (
     is_public boolean NOT NULL default false,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(slug)
+    UNIQUE(slug, user_id)
 );
 ALTER TABLE public.code_cell OWNER TO root;
 
@@ -65,7 +65,8 @@ CREATE TABLE IF NOT EXISTS public.entitlement (
     daily_invocations bigint NOT NULL,
     functions bigint NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(uid, user_id)
 );
 ALTER TABLE public.entitlement OWNER TO root;
 
@@ -75,7 +76,8 @@ CREATE TABLE IF NOT EXISTS public.usage (
     tokens bigint NOT NULL,
     daily_invocations bigint NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(uid, user_id)
 );
 ALTER TABLE public.usage OWNER TO root;
 
@@ -85,7 +87,8 @@ CREATE TABLE IF NOT EXISTS public.project (
     project_name varchar(255) NOT NULL,
     description varchar(255) NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(uid, user_id)
 );
 ALTER TABLE public.project OWNER TO root;
 
@@ -93,7 +96,8 @@ CREATE TABLE IF NOT EXISTS public.project_item (
     uid uuid NOT NULL primary key,
     project_id uuid NOT NULL,
     code_id uuid NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(uid, code_id, project_id)
 );
 ALTER TABLE public.project_item OWNER TO root;
 
@@ -106,27 +110,7 @@ CREATE TABLE IF NOT EXISTS public.commit_history (
     code varchar,
     json_schema varchar,
     full_openapi_schema varchar,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(code_cell_id, user_id)
 );
 ALTER TABLE public.commit_history OWNER TO root;
-
-CREATE TABLE IF NOT EXISTS public.fcm_token (
-    id BIGSERIAL PRIMARY KEY NOT NULL,
-    user_id bigint,
-    fcm_token varchar(255) NOT NULL,
-    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-ALTER TABLE public.fcm_token OWNER TO root;
-
-CREATE TABLE IF NOT EXISTS public.chat_history (
-    id BIGSERIAL PRIMARY KEY NOT NULL,
-    fcm_token_id bigint NOT NULL,
-    code_cell_uid uuid NOT NULL,
-    chat_id varchar(16),
-    message varchar NOT NULL,
-    is_gpt boolean NOT NULL,
-    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-ALTER TABLE public.chat_history OWNER TO root;
