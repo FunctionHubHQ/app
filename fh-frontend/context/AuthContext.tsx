@@ -28,8 +28,13 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       if (user) {
         setAuthUser(user);
         const token = await getAuthToken(user)
-        const response: UserProfileResponse = await new UserApi(headerConfig(token)).getUserprofile()
-        setFhUser(response.profile as UserProfile)
+        try {
+          const response: UserProfileResponse = await new UserApi(headerConfig(token)).getUserprofile()
+          setFhUser(response.profile as UserProfile)
+        } catch (e) {
+          ERROR(e)
+        }
+
       } else {
         setAuthUser(null);
         setFhUser(null)
