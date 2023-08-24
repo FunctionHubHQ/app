@@ -95,12 +95,6 @@ export interface Code {
      * @type {string}
      * @memberof Code
      */
-    user_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Code
-     */
     code?: string;
     /**
      * 
@@ -1178,7 +1172,7 @@ export const ProjectApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async updateProject(projectUpdateRequest: ProjectUpdateRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Project>> {
+        async updateProject(projectUpdateRequest: ProjectUpdateRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Projects>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.updateProject(projectUpdateRequest, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -1258,7 +1252,7 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        updateProject(projectUpdateRequest: ProjectUpdateRequest, options?: any): AxiosPromise<Project> {
+        updateProject(projectUpdateRequest: ProjectUpdateRequest, options?: any): AxiosPromise<Projects> {
             return localVarFp.updateProject(projectUpdateRequest, options).then((request) => request(axios, basePath));
         },
     };

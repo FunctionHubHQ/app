@@ -2,7 +2,6 @@ package net.functionhub.api.service.project;
 
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunctions;
-import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
@@ -18,6 +17,6 @@ public interface ProjectService {
   Projects deleteProject(String projectId);
   FHFunctions getAllFunctions(String projectId);
   Projects getAllProjects();
-  Project updateProject(ProjectUpdateRequest projectUpdateRequest);
+  Projects updateProject(ProjectUpdateRequest projectUpdateRequest);
 
 }

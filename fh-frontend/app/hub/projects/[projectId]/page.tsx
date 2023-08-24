@@ -9,19 +9,16 @@ import {DEBUG, ERROR} from "#/ui/utils/utils";
 import {CodeUpdateResult, FHFunction, FHFunctions, ProjectApi, Projects} from "#/codegen";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {useAuthContext} from "#/context/AuthContext";
-import ProjectMenu from "#/ui/project/project-menu";
 import FunctionToggle from "#/ui/project/toggle";
 import {AiOutlineDelete} from "react-icons/ai";
 import Link from "next/link";
-import DeleteFunctionModal from "#/ui/project/delete-function-modal";
+import DeleteConfirmationModal from "#/ui/project/delete-confirmation-modal";
 
 
 
 export default function Page() {
-  const [creationInProgress, setCreationInProgress] = useState(false)
   const [currentModalSlug, setCurrentModalSlug] = useState<string | undefined>(undefined)
-  const [showFunctionDeleteModal, setShowFunctionDeleteModal] = useState(false)
-  const [projects, setProjects] = useState<Projects | undefined>(undefined)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [fhFunctions, setFhFunctions] = useState<Array<FHFunction>>([])
   const [projectId, setProjectId] = useState('')
   const { authUser } = useAuthContext()
@@ -41,9 +38,7 @@ export default function Page() {
   }, [projectId])
 
   const onAddFunction = async () => {
-    DEBUG("onAddFunction: ", projectId)
     const token = await getAuthToken(authUser)
-    DEBUG("tokenResult: ", token)
     if (token) {
       // setCreationInProgress(true)
       new ProjectApi(headerConfig(token))
@@ -75,20 +70,18 @@ export default function Page() {
   }
 
   const onShowFunctionDeleteModal = (functionSlug: string) => {
-    console.log("Setting current modal slug: ", functionSlug)
     setCurrentModalSlug(functionSlug)
-    setShowFunctionDeleteModal(true)
+    setShowDeleteModal(true)
   }
   
   const onCloseFunctionDeleteModal = () => {
     setCurrentModalSlug(undefined)
-    setShowFunctionDeleteModal(false)
+    setShowDeleteModal(false)
   }
   
   const onDeleteFunction = async () => {
-    console.log("About to delete: ", currentModalSlug)
     if (currentModalSlug) {
-      setShowFunctionDeleteModal(false)
+      setShowDeleteModal(false)
       const token = await getAuthToken(authUser)
       if (token) {
         new ProjectApi(headerConfig(token))
@@ -105,7 +98,7 @@ export default function Page() {
   return (
       <div className="space-y-8">
         {(!fhFunctions || !fhFunctions.length) ?
-            <Boundary labels={['functions']} color="blue">
+            <Boundary labels={['functions']} color="blue" animateRerendering={false}>
               <div className="text-vercel-blue space-y-4">
                 <h2 className="text-lg font-bold">Not Found</h2>
 
@@ -113,6 +106,7 @@ export default function Page() {
                 <AddButton onClick={onAddFunction} label={"Add Function"}/>
               </div>
             </Boundary> :
+            <Boundary labels={['functions']} color="blue" animateRerendering={false}>
             <div className="space-y-10 text-white">
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-1">
                 {fhFunctions?.map((_function: FHFunction) => {
@@ -121,12 +115,11 @@ export default function Page() {
                           key={_function.slug}
                           className="group block space-y-1.5 rounded-lg bg-gray-900 px-5 py-3 hover:bg-gray-800"
                       >
-                        <DeleteFunctionModal
-                            key={_function.slug as string}
-                            isOpen={showFunctionDeleteModal}
+                        <DeleteConfirmationModal
+                            isOpen={showDeleteModal}
                             onClose={onCloseFunctionDeleteModal}
-                            functionSlug={currentModalSlug}
                             onDelete={onDeleteFunction}
+                            resourceName={'function'}
                         />
                         <div className="grid grid-flow-col justify-stretch">
                           <div>
@@ -174,6 +167,7 @@ export default function Page() {
               </div>
               <AddButton onClick={onAddFunction} label={"Add Function"}/>
             </div>
+            </Boundary>
         }
       </div>
   );

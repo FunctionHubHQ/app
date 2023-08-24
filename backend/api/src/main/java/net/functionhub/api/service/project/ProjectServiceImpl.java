@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunctions;
-import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
@@ -111,7 +110,7 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   @Override
-  public Project updateProject(ProjectUpdateRequest projectUpdateRequest) {
+  public Projects updateProject(ProjectUpdateRequest projectUpdateRequest) {
     Optional<ProjectEntity> entityOpt = projectRepo.findById(UUID.fromString(projectUpdateRequest.getProjectId()));
     if (entityOpt.isPresent()) {
       ProjectEntity entity = entityOpt.get();
@@ -119,8 +118,7 @@ public class ProjectServiceImpl implements ProjectService {
       entity.setDescription(projectUpdateRequest.getDescription());
       entity.setUpdatedAt(LocalDateTime.now());
       projectRepo.save(entity);
-      return projectMapper.mapFromProjectEntity(entity);
     }
-    return null;
+    return getAllProjects();
   }
 }

@@ -1,5 +1,5 @@
 "use client"
-import {FC, useState} from "react";
+import {FC, useEffect, useState} from "react";
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 import {DEBUG} from "#/ui/utils/utils";
@@ -9,18 +9,44 @@ export interface CreateProjectModalProps {
   action: string,
   onClose: () => void,
   creationInProgress: boolean,
-  onProjectCreate: (name: string, description: string) => void
+  name?: string,
+  description?: string,
+  projectId?: string,
+  onProjectCreate?: (name: string, description: string) => void
+  onProjectUpdate?: (name: string, description: string) => void
 }
 
 const CreateProjectModal: FC<CreateProjectModalProps> = (props) => {
-  const [name, setName] = useState<string>("")
-  const [description, setDescription] = useState<string>("")
+  const [name, setName] = useState<string | undefined>('')
+  const [description, setDescription] = useState<string | undefined>('')
   const charLimit = 255;
+
+  useEffect(() => {
+    setName(props.name)
+    setDescription(props.description)
+  }, [props.name, props.description])
+  const isValid = (value: string | undefined): boolean => {
+    return !!value && value.trim().length > 0
+  }
 
   const onCreate = (e) => {
     e.preventDefault()
-    if (name && description) {
-      props.onProjectCreate(name, description)
+    if (isValid(name) && isValid(description)) {
+      if (props?.onProjectCreate) {
+        props?.onProjectCreate(name as string, description as string)
+      }
+    }
+    setName('')
+    setDescription('')
+    return false
+  }
+
+  const onUpdate = (e) => {
+    e.preventDefault()
+    if (isValid(name) && isValid(description) && props.projectId) {
+      if (props.onProjectUpdate) {
+        props.onProjectUpdate(name as string, description as string)
+      }
     }
     setName('')
     setDescription('')
@@ -60,7 +86,7 @@ const CreateProjectModal: FC<CreateProjectModalProps> = (props) => {
             </Transition.Child>
 
             <div className="fixed inset-0 overflow-y-auto">
-              <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <div className="flex min-h-full items-start justify-center p-4 text-center py-20">
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -70,12 +96,12 @@ const CreateProjectModal: FC<CreateProjectModalProps> = (props) => {
                     leaveFrom="opacity-100 scale-100"
                     leaveTo="opacity-0 scale-95"
                 >
-                  <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-2 text-left align-middle shadow-xl transition-all">
                     <div className="relative w-full max-w-md max-h-full">
                       <div className="relative bg-white rounded-lg">
                         <div className="px-6 py-6 lg:px-8">
-                          <h3 className="mb-4 text-xl font-medium text-gray-900 dark:text-white">Create a Project</h3>
-                          <form className="space-y-6" onSubmit={onCreate}>
+                          <h3 className="mb-4 text-xl font-medium text-gray-900 dark:text-white">{props?.projectId ? 'Update a Project' : 'Create a Project'}</h3>
+                          <form className="space-y-6" onSubmit={props?.projectId ? onUpdate : onCreate}>
                             <div>
                               <label htmlFor="email"
                                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Name</label>

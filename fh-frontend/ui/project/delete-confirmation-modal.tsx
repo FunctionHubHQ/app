@@ -5,14 +5,14 @@ import {FC} from "react";
 import * as React from "react";
 import {HiOutlineExclamationCircle} from "react-icons/hi";
 
-export interface DeleteFunctionModalProps {
+export interface DeleteConfirmationModalProps {
   isOpen: boolean,
   onClose: () => void,
-  functionSlug?: string,
+  resourceName: string,
   onDelete: () => void
 }
 
-const DeleteFunctionModal: FC<DeleteFunctionModalProps> = (props) => {
+const DeleteConfirmationModal: FC<DeleteConfirmationModalProps> = (props) => {
 
   // flex min-h-full items-center justify-center p-4 text-center
   return (
@@ -30,7 +30,7 @@ const DeleteFunctionModal: FC<DeleteFunctionModalProps> = (props) => {
             <div className="text-center">
               <HiOutlineExclamationCircle className="mx-auto mb-4 h-14 w-14 text-gray-400 dark:text-gray-200" />
               <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
-                Are you sure you want to delete this function? This is an irreversible action.
+                {`Are you sure you want to delete this ${props.resourceName}? This is an irreversible action.`}
               </h3>
               <div className="flex justify-center gap-4">
                 <Button color="failure" onClick={props.onDelete}>
@@ -46,4 +46,4 @@ const DeleteFunctionModal: FC<DeleteFunctionModalProps> = (props) => {
       </>
   )
 }
-export default DeleteFunctionModal;
+export default DeleteConfirmationModal;

@@ -4,16 +4,21 @@ import AddProjectButton from "#/ui/project/add-project-button";
 import {useEffect, useState} from "react";
 import CreateProjectModal from "#/ui/project/create-project-modal";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
-import { ProjectApi, Projects} from "#/codegen";
+import {Project, ProjectApi, Projects} from "#/codegen";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {useAuthContext} from "#/context/AuthContext";
-import ProjectMenu from "#/ui/project/project-menu";
 
 import * as React from "react";
 import Link from "next/link";
+import DeleteConfirmationModal from "#/ui/project/delete-confirmation-modal";
+import {AiOutlineDelete, AiOutlineEdit} from "react-icons/ai";
 
 export default function Page() {
-  const [openModal, setOpenModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [currentOpenModalId, setCurrentOpenModalId] = useState<string | undefined>(undefined)
+  const [currentSelectedProject, setCurrentSelectedProject] = useState<Project | undefined>(undefined)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [creationInProgress, setCreationInProgress] = useState(false)
   const [projects, setProjects] = useState<Projects | undefined>(undefined)
   const { authUser } = useAuthContext()
@@ -38,7 +43,30 @@ export default function Page() {
         const response : Projects = result.data
         DEBUG("Projects: ", response)
         setProjects(response)
-        setOpenModal(false)
+        setShowCreateModal(false)
+        setCreationInProgress(false)
+      }).catch(e => {
+        setCreationInProgress(false)
+        ERROR(e.message)
+      })
+    }
+  }
+
+  const onProjectUpdate = async (name: string, description: string) => {
+    const token = await getAuthToken(authUser)
+    if (token && currentOpenModalId) {
+      setCreationInProgress(true)
+      setShowEditModal(false)
+      new ProjectApi(headerConfig(token))
+      .updateProject({
+        name: name,
+        description: description,
+        project_id: currentOpenModalId
+      })
+      .then(result => {
+        const response : Projects = result.data
+        DEBUG("Projects: ", response)
+        setProjects(response)
         setCreationInProgress(false)
       }).catch(e => {
         setCreationInProgress(false)
@@ -62,50 +90,158 @@ export default function Page() {
     }
   }
 
+  const onShowProjectDeleteModal = (projectId: string) => {
+    setCurrentOpenModalId(projectId)
+    setShowDeleteModal(true)
+  }
+
+  const onCloseDeleteProjectModal = () => {
+    setCurrentOpenModalId(undefined)
+    setShowDeleteModal(false)
+  }
+
+  const onShowProjectUpdateModal = (project: Project) => {
+    setCurrentOpenModalId(project.project_id)
+    setCurrentSelectedProject(project)
+    setShowEditModal(true)
+  }
+
+  const onCloseProjectUpdateModal = () => {
+    setCurrentOpenModalId(undefined)
+    setCurrentSelectedProject(undefined)
+    setShowEditModal(false)
+  }
+
+  const onDeleteProject = async () => {
+    if (currentOpenModalId) {
+      setShowDeleteModal(false)
+      const token = await getAuthToken(authUser)
+      if (token) {
+        new ProjectApi(headerConfig(token))
+        .deleteProject(currentOpenModalId)
+        .then(result => {
+          const projects: Projects = result.data
+          DEBUG("onDeleteProject: ", projects)
+          setProjects(projects)
+        }).catch(e => ERROR(e))
+      }
+    }
+  }
+
   return (
       <div>
         <CreateProjectModal
             action={"Create"}
             creationInProgress={creationInProgress}
             onProjectCreate={onProjectCreate}
-            isOpen={openModal}
-            onClose={() => setOpenModal(false)}/>
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}/>
+
+        <CreateProjectModal
+            action={"Save"}
+            creationInProgress={creationInProgress}
+            onProjectUpdate={onProjectUpdate}
+            isOpen={showEditModal}
+            projectId={currentOpenModalId}
+            name={currentSelectedProject?.name}
+            description={currentSelectedProject?.description}
+            onClose={onCloseProjectUpdateModal}/>
 
         {(!projects || !projects.projects?.length) ?
-            <Boundary labels={['projects']} color="pink">
-              <div className="text-vercel-pink space-y-4">
+            <Boundary labels={['projects']} color="default" animateRerendering={false}>
+              <div className="text-vercel-blue space-y-4">
                 <h2 className="text-lg font-bold">Not Found</h2>
 
                 <p className="text-sm">You have no projects. Click below to create one.</p>
-                <AddProjectButton onClick={() => setOpenModal(true)}/>
+                <AddProjectButton onClick={() => setShowCreateModal(true)}/>
               </div>
             </Boundary> :
-            <div className="space-y-10 text-white">
+            <Boundary labels={['projects']} color="default" animateRerendering={false}>
+              <div className="space-y-10 text-white">
               {projects?.projects?.map((project) => {
                 return (
-                    <Boundary labels={[project?.name as string]} color="default" key={project?.project_id}>
-                      <div className="space-y-5">
-                        <div className="grid grid-flow-col justify-stretch ">
+                    <div
+                        key={project?.project_id}
+                        className="group block space-y-1.5 rounded-lg bg-gray-900 px-5 py-3 hover:bg-gray-800"
+                    >
+                      <DeleteConfirmationModal
+                          isOpen={showDeleteModal}
+                          onClose={onCloseDeleteProjectModal}
+                          onDelete={onDeleteProject}
+                          resourceName={'project'}
+                      />
+                      <div className="grid grid-flow-col justify-stretch">
+                        <div>
                           <Link href={'/hub/projects/' + project.project_id}>
-                            <div>
-                              {/*<div className="text-xs font-semibold uppercase tracking-wider text-gray-400">*/}
-                              {/*  {project?.name}*/}
-                              {/*</div>*/}
-                              <div className="text-xs font tracking-wider text-gray-400 max-w-[600px]">
-                                {project?.description}
-                              </div>
+                            <div className="font-medium text-gray-200 group-hover:text-gray-50">
+                              {project?.name}
                             </div>
                           </Link>
-                          <div className="flex justify-end">
-                            <ProjectMenu/>
-                          </div>
                         </div>
                       </div>
-                    </Boundary>
+
+                      {project?.description? (
+                          <Link href={'/hub/projects/' + project.project_id}>
+                            <div className="line-clamp-3 text-sm text-gray-400 group-hover:text-gray-300">
+                              {project?.description}
+                            </div>
+                          </Link>
+                      ) : null}
+
+
+                      <div className="grid grid-flow-col justify-stretch">
+                        <div>
+                          <div className="font-medium text-gray-200 group-hover:text-gray-50 mt-4">
+                          </div>
+                        </div>
+                        <div className="flex justify-end mt-4">
+                          <button
+                              onClick={() => onShowProjectUpdateModal(project)}
+                              className='text-gray-900 group  items-center rounded-md px-2 py-2 text-sm'
+                          >
+                            <AiOutlineEdit
+                                color={'#a1a1a1'}
+                                title="Edit"
+                                width="48px"
+                            />
+                          </button>
+                          <button
+                              onClick={() => onShowProjectDeleteModal(project.project_id as string)}
+                              className='text-gray-900 group  items-center rounded-md px-2 py-2 text-sm'
+                          >
+                            <AiOutlineDelete
+                                color={'#a1a1a1'}
+                                title="Delete"
+                                width="48px"
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+
+                      // <div className="space-y-5" key={project?.project_id}>
+                      //   <div className="grid grid-flow-col justify-stretch ">
+                      //     <Link href={'/hub/projects/' + project.project_id}>
+                      //       <div>
+                      //         {/*<div className="text-xs font-semibold uppercase tracking-wider text-gray-400">*/}
+                      //         {/*  {project?.name}*/}
+                      //         {/*</div>*/}
+                      //         <div className="text-xs font tracking-wider text-gray-400 max-w-[600px]">
+                      //           {project?.description}
+                      //         </div>
+                      //       </div>
+                      //     </Link>
+                      //     <div className="flex justify-end">
+                      //       {/*<ProjectMenu/>*/}
+                      //     </div>
+                      //   </div>
+                      // </div>
                 );
               })}
-              <AddProjectButton onClick={() => setOpenModal(true)}/>
+              <AddProjectButton onClick={() => setShowCreateModal(true)}/>
             </div>
+            </Boundary>
         }
       </div>
   );

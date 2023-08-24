@@ -57,7 +57,7 @@ public class ProjectController implements ProjectApi {
   }
 
   @Override
-  public ResponseEntity<Project> updateProject(ProjectUpdateRequest projectUpdateRequest) {
+  public ResponseEntity<Projects> updateProject(ProjectUpdateRequest projectUpdateRequest) {
     return ResponseEntity.ok(projectService.updateProject(projectUpdateRequest));
   }
 }
