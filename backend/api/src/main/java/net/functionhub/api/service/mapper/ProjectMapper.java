@@ -50,10 +50,13 @@ public interface ProjectMapper {
         return new FHFunction()
             .createdAt(entity.getCreatedAt().toEpochSecond(ZoneOffset.UTC))
             .updatedAt(entity.getUpdatedAt().toEpochSecond(ZoneOffset.UTC))
+            .ownerId(entity.getUserId())
             .isPublic(entity.getIsPublic())
             .name(entity.getFunctionName())
             .slug(entity.getSlug())
             .codeId(entity.getUid().toString())
+            .tags(entity.getTags())
+            .forkCount(entity.getForkCount())
             .description(entity.getDescription());
     }
 

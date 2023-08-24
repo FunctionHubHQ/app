@@ -2,11 +2,10 @@ package net.functionhub.api.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
+import net.functionhub.api.FHFunction;
 import net.functionhub.api.FHFunctions;
 import net.functionhub.api.ForkRequest;
-import net.functionhub.api.Project;
 import net.functionhub.api.ProjectApi;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
@@ -61,6 +60,11 @@ public class ProjectController implements ProjectApi {
   @Override
   public ResponseEntity<Projects> getAllProjects() {
     return ResponseEntity.ok(projectService.getAllProjects());
+  }
+
+  @Override
+  public ResponseEntity<FHFunctions> updateFunction(FHFunction fhFunction) {
+    return ResponseEntity.ok(projectService.updateFunction(fhFunction));
   }
 
   @Override

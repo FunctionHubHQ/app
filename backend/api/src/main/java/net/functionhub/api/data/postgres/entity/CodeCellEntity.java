@@ -37,6 +37,19 @@ public class CodeCellEntity {
     @Column(name = "function_name")
     private String functionName;
 
+    @JsonProperty("tags")
+    @Column(name = "tags")
+    private String tags;
+
+    @JsonProperty("fork_count")
+    @Column(name = "fork_count")
+    private Long forkCount  = 0L;
+
+    @Basic
+    @JsonProperty("summary")
+    @Column(name = "summary")
+    private String summary;
+
     @Basic
     @JsonProperty("description")
     @Column(name = "description")

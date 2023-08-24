@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
+import net.functionhub.api.FHFunction;
 import net.functionhub.api.FHFunctions;
 import net.functionhub.api.ForkRequest;
 import net.functionhub.api.ProjectCreateRequest;
@@ -99,6 +100,20 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   @Override
+  public FHFunctions updateFunction(FHFunction fhFunction) {
+    if (!ObjectUtils.isEmpty(fhFunction.getProjectId())) {
+      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(fhFunction.getCodeId()));
+      if (codeCell != null) {
+        // only tags can be updated through this route for now
+        codeCell.setTags(fhFunction.getTags());
+        codeCellRepo.save(codeCell);
+      }
+      return getAllFunctions(fhFunction.getProjectId());
+    }
+    return getAllFunctions(null);
+  }
+
+  @Override
   public Projects getAllProjects() {
     List<ProjectEntity> projects = projectRepo.findByUserIdOrderByUpdatedAtDesc(FHUtils.getSessionUser().getUid());
     return new Projects().projects(projectMapper.mapFromProjectEntities(projects));
@@ -121,6 +136,8 @@ public class ProjectServiceImpl implements ProjectService {
   public CodeUpdateResult forkCode(ForkRequest forkRequest) {
     CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(forkRequest.getParentCodeId()));
     if (codeCell != null) {
+      codeCell.setForkCount(codeCell.getForkCount() + 1);
+      codeCellRepo.save(codeCell);
       return runtimeService.updateCode(new Code()
           .code(codeCell.getCode())
           .parentId(codeCell.getUid().toString()));

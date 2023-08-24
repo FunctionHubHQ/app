@@ -341,11 +341,12 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = new CodeCellEntity();
       codeCell.setUid(UUID.randomUUID());
       codeCell.setCode(code.getCode());
-      codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
+      codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
+      codeCell.setDescription(parseCodeComment(rawCode, "@description"));
+      codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
       codeCell.setUserId(FHUtils.getSessionUser().getUid());
       codeCell.setIsActive(isBelowActiveLimit(FHUtils.getSessionUser().getUid()));
       codeCell.setIsPublic(false);
-      codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
       codeCell.setSlug(getUniqueSlug());
       codeCell.setVersion(generateCodeVersion());
       if (!ObjectUtils.isEmpty(code.getParentId())) {
@@ -443,6 +444,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         }
         // We have reached the end of the property name or description if we encounter
         // a new line character or an empty string
+        // TODO: SUPPORT MULTI-LINE description
         if (propertyStart && (line.endsWith("\n") || ObjectUtils.isEmpty(line))) {
           propertyEnd = true;
         }

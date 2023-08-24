@@ -900,6 +900,36 @@
           }
         }
       },
+      "put": {
+        "tags": [
+          "project"
+        ],
+        "summary": "Update function metadata",
+        "operationId": "updateFunction",
+        "requestBody": {
+          "required": true,
+          "description": "FHFunction update request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FHFunction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FHFunctions"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "project"
@@ -1271,6 +1301,12 @@
           "slug": {
             "type": "string"
           },
+          "owner_id": {
+            "type": "string"
+          },
+          "project_id": {
+            "type": "string"
+          },
           "code_id": {
             "type": "string"
           },
@@ -1288,6 +1324,13 @@
             "format": "int64"
           },
           "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tags": {
+            "type": "string"
+          },
+          "fork_count": {
             "type": "integer",
             "format": "int64"
           }

@@ -189,7 +189,18 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(forkedCell);
         assertNotNull(forkedCell.getParentId());
         assertEquals(functions.getFunctions().get(0).getCodeId(), forkedCell.getParentId().toString());
+
+        CodeCellEntity parentCell = codeCellRepo
+            .findByUid(UUID.fromString(functions.getFunctions().get(0).getCodeId()));
+        assertEquals(1, parentCell.getForkCount().longValue());
     }
+
+    @Test
+    public void updateFunctionTest() {
+        assert false;
+    }
+
+
 
     private FHFunctions createAndAssertFunctions() {
         ProjectCreateRequest request1 = new ProjectCreateRequest()
