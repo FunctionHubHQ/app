@@ -114,6 +114,9 @@ public class ProjectServiceImpl implements ProjectService {
       if (codeCell != null) {
         // only tags can be updated through this route for now
         codeCell.setTags(fhFunction.getTags());
+        if (ObjectUtils.isEmpty(fhFunction.getTags())) {
+          codeCell.setTags("");
+        }
         codeCell.setUpdatedAt(LocalDateTime.now());
         codeCellRepo.save(codeCell);
       }

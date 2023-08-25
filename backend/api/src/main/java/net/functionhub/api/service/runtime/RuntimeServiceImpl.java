@@ -364,7 +364,8 @@ public class RuntimeServiceImpl implements RuntimeService {
             codeCell.setCode(code.getCode());
             codeCell.setVersion(generateCodeVersion());
             rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
-            codeCell.setDescription(parseCodeComment(rawCode, "@summary"));
+            codeCell.setDescription(parseCodeComment(rawCode, "@description"));
+            codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
             codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
           }
           else if (field.equals("is_active")) {
@@ -461,7 +462,11 @@ public class RuntimeServiceImpl implements RuntimeService {
         }
       }
     }
-    return joiner.toString();
+    String result = joiner.toString();
+    if (ObjectUtils.isEmpty(result)) {
+      return "";
+    }
+    return result;
   }
 
   @Override

@@ -35,7 +35,7 @@ public class CodeCellEntity {
 
     @JsonProperty("function_name")
     @Column(name = "function_name")
-    private String functionName;
+    private String functionName = "";
 
     @JsonProperty("tags")
     @Column(name = "tags")
@@ -48,12 +48,12 @@ public class CodeCellEntity {
     @Basic
     @JsonProperty("summary")
     @Column(name = "summary")
-    private String summary;
+    private String summary = "";
 
     @Basic
     @JsonProperty("description")
     @Column(name = "description")
-    private String description;
+    private String description = "";
 
     @Basic
     @JsonProperty("code")
