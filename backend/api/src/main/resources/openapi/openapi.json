@@ -603,29 +603,29 @@
       }
     },
     "/explore": {
-      "get": {
+      "post": {
         "tags": [
           "project"
         ],
         "summary": "Get all public functions",
         "operationId": "getAllPublicFunctions",
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageableRequest"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
-            "description": "Code update response",
+            "description": "Paginated response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Code"
+                  "$ref": "#/components/schemas/PageableResponse"
                 }
               }
             }
@@ -1364,6 +1364,9 @@
           "fork_count": {
             "type": "integer",
             "format": "int64"
+          },
+          "summary": {
+            "type": "string"
           }
         }
       },
@@ -1413,6 +1416,57 @@
           },
           "auth_mode": {
             "type": "string"
+          }
+        }
+      },
+      "PageableRequest": {
+        "type": "object",
+        "required": [
+          "limit",
+          "offset"
+        ],
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sortBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sortDir": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PageableResponse": {
+        "type": "object",
+        "properties": {
+          "totalRecords": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "numPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FHFunction"
+            }
           }
         }
       }

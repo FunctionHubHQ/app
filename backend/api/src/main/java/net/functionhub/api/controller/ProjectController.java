@@ -6,6 +6,8 @@ import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunction;
 import net.functionhub.api.FHFunctions;
 import net.functionhub.api.ForkRequest;
+import net.functionhub.api.PageableRequest;
+import net.functionhub.api.PageableResponse;
 import net.functionhub.api.ProjectApi;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
@@ -60,6 +62,11 @@ public class ProjectController implements ProjectApi {
   @Override
   public ResponseEntity<Projects> getAllProjects() {
     return ResponseEntity.ok(projectService.getAllProjects());
+  }
+
+  @Override
+  public ResponseEntity<PageableResponse> getAllPublicFunctions(PageableRequest pageableRequest) {
+    return ResponseEntity.ok(projectService.getAllPublicFunctions(pageableRequest));
   }
 
   @Override

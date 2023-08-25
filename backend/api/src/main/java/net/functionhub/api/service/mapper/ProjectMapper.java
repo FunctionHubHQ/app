@@ -8,6 +8,7 @@ import net.functionhub.api.FHFunction;
 import net.functionhub.api.Project;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.ProjectEntity;
+import net.functionhub.api.data.postgres.projection.SearchResultProjection;
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.springframework.util.ObjectUtils;
@@ -57,6 +58,7 @@ public interface ProjectMapper {
             .codeId(entity.getUid().toString())
             .tags(entity.getTags())
             .forkCount(entity.getForkCount())
+            .summary(entity.getSummary())
             .description(entity.getDescription());
     }
 
@@ -68,5 +70,25 @@ public interface ProjectMapper {
             .stream()
             .map(this::mapFromCodeCellEntity).
             collect(Collectors.toList());
+    }
+
+    List<FHFunction> mapFromSearchResult(List<SearchResultProjection> results);
+
+    default FHFunction mapFromSearchResult(SearchResultProjection result) {
+        if (result == null) {
+            return null;
+        }
+        return new FHFunction()
+            .createdAt(result.getCreatedat().toEpochSecond(ZoneOffset.UTC))
+            .updatedAt(result.getUpdatedat().toEpochSecond(ZoneOffset.UTC))
+            .ownerId(result.getUserid())
+            .isPublic(result.getIspublic())
+            .name(result.getName())
+            .slug(result.getSlug())
+            .codeId(result.getUid().toString())
+            .tags(result.getTags())
+            .forkCount(result.getForkcount())
+            .summary(result.getSummary())
+            .description(result.getDescription());
     }
 }

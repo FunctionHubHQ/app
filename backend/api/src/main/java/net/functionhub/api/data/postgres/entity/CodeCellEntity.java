@@ -39,7 +39,7 @@ public class CodeCellEntity {
 
     @JsonProperty("tags")
     @Column(name = "tags")
-    private String tags;
+    private String tags = "";
 
     @JsonProperty("fork_count")
     @Column(name = "fork_count")

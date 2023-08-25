@@ -4,22 +4,32 @@ package net.functionhub.api.service.project;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertNull;
+import static org.testng.AssertJUnit.assertTrue;
+
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
+import net.functionhub.api.FHFunction;
 import net.functionhub.api.FHFunctions;
 import net.functionhub.api.ForkRequest;
+import net.functionhub.api.PageableRequest;
+import net.functionhub.api.PageableResponse;
 import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
+import net.functionhub.api.data.postgres.entity.ProjectItemEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.ProjectItemRepo;
+import net.functionhub.api.data.postgres.repo.ProjectRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.service.ServiceTestConfiguration;
+import net.functionhub.api.service.runtime.RuntimeService;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.ServiceTestHelper;
@@ -60,7 +70,13 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
     private ProjectItemRepo projectItemRepo;
 
     @Autowired
+    private ProjectRepo projectRepo;
+
+    @Autowired
     private FlywayMigration flywayMigration;
+
+    @Autowired
+    private RuntimeService runtimeService;
 
     private UserProjection user;
 
@@ -197,10 +213,128 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
     @Test
     public void updateFunctionTest() {
-        assert false;
+        FHFunctions functions = createAndAssertFunctions();
+        FHFunction function = functions.getFunctions().get(0);
+        ProjectItemEntity projectItem = projectItemRepo.findByCodeId(UUID.fromString(function.getCodeId()));
+        FHFunction functionToUpdate = new FHFunction().tags("apple, google, facebook")
+            .projectId(projectItem.getProjectId().toString())
+            .codeId(function.getCodeId());
+        functions = projectService.updateFunction(functionToUpdate);
+        assertNotNull(functions);
+        assertEquals(1, functions.getFunctions().size());
+        FHFunction result = functions.getFunctions().get(0);
+        assertEquals(functionToUpdate.getTags(), result.getTags());
+        assertTrue(result.getUpdatedAt() >= result.getCreatedAt());
     }
 
+    @Test
+    public void getAllPublicFunctionsTest() {
+        int numFunctions = 12;
+        int numPublic = 6;
+        int numProjects = 3;
+        createMultipleFunctions(numFunctions, numPublic, numProjects, 0);
 
+        int totalPublicFunctions = numProjects * numPublic;
+        PageableResponse response = projectService.getAllPublicFunctions(new PageableRequest()
+            .offset(0)
+            .limit(Integer.MAX_VALUE));
+        assertNotNull(response);
+        assertEquals(1, (int) response.getNumPages());
+        assertEquals(totalPublicFunctions, (long) response.getTotalRecords());
+        assertEquals(totalPublicFunctions, response.getRecords().size());
+
+        response = projectService.getAllPublicFunctions(new PageableRequest()
+            .offset(0)
+            .limit(2));
+        assertNotNull(response);
+        assertEquals(9, (int) response.getNumPages());
+        assertEquals(totalPublicFunctions, (long) response.getTotalRecords());
+        assertEquals(2, response.getRecords().size());
+    }
+
+    @Test
+    public void searchAllPublicFunctionsTest() {
+        int numFunctions = 12;
+        int numPublic = 6;
+        int numProjects = 3;
+        int numWithTags = 4;
+        createMultipleFunctions(numFunctions, numPublic, numProjects, numWithTags);
+
+        PageableResponse response = projectService.getAllPublicFunctions(new PageableRequest()
+            .offset(0)
+            .query("facebook")
+            .limit(Integer.MAX_VALUE));
+        assertNotNull(response);
+        int totalTaggedFunctions = numWithTags * numProjects;
+        assertEquals(1, (int) response.getNumPages());
+        assertEquals(totalTaggedFunctions, (long) response.getTotalRecords());
+        assertEquals(totalTaggedFunctions, response.getRecords().size());
+
+        response = projectService.getAllPublicFunctions(new PageableRequest()
+            .offset(0)
+            .query("apple")
+            .limit(3));
+        assertNotNull(response);
+        assertEquals(4, (int) response.getNumPages());
+        assertEquals(totalTaggedFunctions, (long) response.getTotalRecords());
+        assertEquals(3, response.getRecords().size());
+
+        response = projectService.getAllPublicFunctions(new PageableRequest()
+            .offset(4)
+            .query("untitled")
+            .limit(4));
+        assertNotNull(response);
+        assertEquals(5, (int) response.getNumPages());
+        assertEquals(18, (long) response.getTotalRecords());
+        assertEquals(2, response.getRecords().size());
+
+        response = projectService.getAllPublicFunctions(new PageableRequest()
+            .offset(4)
+            .query("UNTITLED")
+            .limit(4));
+        assertNotNull(response);
+        assertEquals(5, (int) response.getNumPages());
+        assertEquals(18, (long) response.getTotalRecords());
+        assertEquals(2, response.getRecords().size());
+    }
+
+    private void createMultipleFunctions(int numFunctions, int numPublic, int numProjects, int numWithTags) {
+        for (int i = 0; i < numProjects; i++) {
+            ProjectCreateRequest request1 = new ProjectCreateRequest()
+                .name("My Demo Project " + i)
+                .description("This is a demo project created by TestNG " + 1);
+            Projects projects = projectService.createProject(request1);
+            String projectId = projects.getProjects().get(0).getProjectId();
+            int numPrivateFunctions = numFunctions - numPublic;
+            for (int j = 0; j < numPublic; j++) {
+                projectService.createFunction(projectId);
+            }
+            int tagged = numWithTags;
+            // Toggle all these functions to public
+            for (FHFunction function : projectService.getAllFunctions(projectId).getFunctions()) {
+                Code code = new Code().isPublic(true).uid(function.getCodeId())
+                    .fieldsToUpdate(List.of("is_public"));
+                runtimeService.updateCode(code);
+                if (tagged > 0) {
+                    projectService.updateFunction(
+                        new FHFunction().tags("apple, google, facebook")
+                            .projectId(projectId)
+                            .codeId(function.getCodeId()));
+                    tagged--;
+                }
+            }
+
+            // Create private functions
+            for (int j = 0; j < numPrivateFunctions; j++) {
+                projectService.createFunction(projectId);
+            }
+        }
+
+        long totalFunctionCount = (long) numFunctions * numProjects;
+        assertEquals(numProjects, projectRepo.count());
+        assertEquals(totalFunctionCount, projectItemRepo.count());
+        assertEquals(totalFunctionCount, codeCellRepo.count());
+    }
 
     private FHFunctions createAndAssertFunctions() {
         ProjectCreateRequest request1 = new ProjectCreateRequest()
@@ -220,6 +354,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         FHFunctions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());
         assertNotNull(functions);
         assertEquals(1, functions.getFunctions().size());
+        assertNotNull(functions.getFunctions().get(0).getOwnerId());
         assertNotNull(functions.getFunctions().get(0).getSlug());
         assertNotNull(functions.getFunctions().get(0).getName());
         assertNotNull(functions.getFunctions().get(0).getIsPublic());

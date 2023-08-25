@@ -5,8 +5,12 @@ import java.util.List;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import java.util.UUID;
 import net.functionhub.api.data.postgres.projection.Deployment;
+import net.functionhub.api.data.postgres.projection.SearchResultProjection;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,4 +51,41 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, UUID> {
       nativeQuery = true)
   List<CodeCellEntity> findByProjectId(UUID projectId);
 
+  // TODO: enable query caching here
+  @Query(value = "SELECT * "
+      + "FROM public.code_cell "
+      + "WHERE is_public = true",
+      nativeQuery = true)
+  Page<CodeCellEntity> findAllPublicFunctions(Pageable pageable);
+
+//  @Query(value = "SELECT *, "
+//      + "ts_rank(to_tsvector('english', function_name || ' ' || summary || ' ' || description || ' ' || tags), to_tsquery('english', ?1)) AS rank " +
+//      "FROM code_cell " +
+//      "WHERE to_tsvector('english', function_name || ' ' || summary || ' ' || description || ' ' || tags) @@ to_tsquery('english', ?1) "
+//      + "AND is_public = true " +
+//      "ORDER BY rank DESC",
+//      nativeQuery = true)
+//  Page<CodeCellEntity> searchAllFunctions(String query, Pageable pageable);
+//
+//  @Query(value = "SELECT *, "
+//      + "ts_rank(to_tsvector('english', function_name || ' ' || summary || ' ' || description || ' ' || tags), to_tsquery('english', :query)) AS rank " +
+//      "FROM code_cell " +
+//      "WHERE to_tsvector('english', function_name || ' ' || summary || ' ' || description || ' ' || tags) @@ to_tsquery('english', :query) "
+//      + "AND is_public = true " +
+//      "ORDER BY rank DESC",
+//      nativeQuery = true)
+//  List<CodeCellEntity> searchAllFunctions2(@Param("query") String query);
+
+//  @Query(value = "SELECT * " +
+//      "FROM code_cell " +
+//      "WHERE to_tsvector('english', function_name || ' ' || summary || ' ' || description || ' ' || tags) @@ to_tsquery('english', :query) "
+//      + "AND is_public = true ",
+//      nativeQuery = true)
+//  List<CodeCellEntity> searchAllFunctions3(@Param("query") String query);
+
+
+  @Query(value = "SELECT * " +
+      "FROM search_docs(?1) ",
+      nativeQuery = true)
+  Page<SearchResultProjection> searchAllFunctions(String query, Pageable pageable);
 }

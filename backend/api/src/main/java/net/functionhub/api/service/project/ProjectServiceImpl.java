@@ -1,6 +1,7 @@
 package net.functionhub.api.service.project;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -12,18 +13,25 @@ import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunction;
 import net.functionhub.api.FHFunctions;
 import net.functionhub.api.ForkRequest;
+import net.functionhub.api.PageableRequest;
+import net.functionhub.api.PageableResponse;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.ProjectEntity;
 import net.functionhub.api.data.postgres.entity.ProjectItemEntity;
+import net.functionhub.api.data.postgres.projection.SearchResultProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.ProjectItemRepo;
 import net.functionhub.api.data.postgres.repo.ProjectRepo;
 import net.functionhub.api.service.mapper.ProjectMapper;
 import net.functionhub.api.service.runtime.RuntimeService;
 import net.functionhub.api.service.utils.FHUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
@@ -47,7 +55,6 @@ public class ProjectServiceImpl implements ProjectService {
         .isActive(true)
         .isPublic(false)
         .code(Base64.getEncoder().encodeToString(template.getBytes())), projectId);
-
   }
 
   @Override
@@ -92,6 +99,7 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   public FHFunctions getAllFunctions(String projectId) {
+    assert !ObjectUtils.isEmpty(projectId);
     return new FHFunctions()
         .projectId(projectId)
         .functions(
@@ -106,11 +114,12 @@ public class ProjectServiceImpl implements ProjectService {
       if (codeCell != null) {
         // only tags can be updated through this route for now
         codeCell.setTags(fhFunction.getTags());
+        codeCell.setUpdatedAt(LocalDateTime.now());
         codeCellRepo.save(codeCell);
       }
       return getAllFunctions(fhFunction.getProjectId());
     }
-    return getAllFunctions(null);
+    return new FHFunctions();
   }
 
   @Override
@@ -143,6 +152,50 @@ public class ProjectServiceImpl implements ProjectService {
           .parentId(codeCell.getUid().toString()));
     }
     return new CodeUpdateResult();
+  }
+
+  @Override
+  public PageableResponse getAllPublicFunctions(PageableRequest pageableRequest) {
+    int page = pageableRequest.getOffset();
+    int limit = pageableRequest.getLimit();
+    Sort sort = buildSort(pageableRequest);
+    Pageable pageable = PageRequest.of(page, limit, sort);
+    Page<CodeCellEntity> codeCellPages = null;
+    Page<SearchResultProjection> searchResultPages = null;
+    int totalPages = 0;
+    long totalElements = 0;
+    List<FHFunction> functions = new ArrayList<>();
+    if (!ObjectUtils.isEmpty(pageableRequest.getQuery())) {
+      searchResultPages = codeCellRepo.searchAllFunctions(pageableRequest.getQuery(), PageRequest.of(page, limit));
+      functions = projectMapper.mapFromSearchResult(searchResultPages.getContent());
+      totalPages = searchResultPages.getTotalPages();
+      totalElements = searchResultPages.getTotalElements();
+    } else {
+      codeCellPages = codeCellRepo.findAllPublicFunctions(pageable);
+      functions = projectMapper.mapFromCodeCellEntities(codeCellPages.getContent());
+      totalPages = codeCellPages.getTotalPages();
+      totalElements = codeCellPages.getTotalElements();
+    }
+    return new PageableResponse()
+        .numPages(totalPages)
+        .totalRecords(totalElements)
+        .records(functions);
+  }
+
+  private Sort buildSort(PageableRequest pageableRequest) {
+    Sort sort = Sort.by("created_at").descending(); // Use createdAt to prevent unstable sorting
+    if (!ObjectUtils.isEmpty(pageableRequest.getSortBy()) &&
+        !ObjectUtils.isEmpty(pageableRequest.getSortDir())) {
+      // We only support single-column sorting for now
+      String column = pageableRequest.getSortBy().get(0);
+      String direction = pageableRequest.getSortDir().get(0);
+      if (direction.equals("asc")) {
+        sort = Sort.by(column).ascending();
+      } else {
+        sort = Sort.by(column).descending();
+      }
+    }
+    return sort;
   }
 
   private CodeUpdateResult upsertCode(Code code, String projectId) {

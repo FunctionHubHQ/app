@@ -5,6 +5,8 @@ import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunction;
 import net.functionhub.api.FHFunctions;
 import net.functionhub.api.ForkRequest;
+import net.functionhub.api.PageableRequest;
+import net.functionhub.api.PageableResponse;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
@@ -23,5 +25,6 @@ public interface ProjectService {
   Projects getAllProjects();
   Projects updateProject(ProjectUpdateRequest projectUpdateRequest);
   CodeUpdateResult forkCode(ForkRequest forkRequest);
+  PageableResponse getAllPublicFunctions(PageableRequest pageableRequest);
 
 }

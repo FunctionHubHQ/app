@@ -1,5 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS public;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS public.user (
     id BIGSERIAL NOT NULL primary key,
@@ -36,14 +37,15 @@ CREATE TABLE IF NOT EXISTS public.code_cell (
     function_name varchar(255),
     summary varchar(255),
     description varchar(255),
-    code varchar,
-    interfaces varchar,
-    json_schema varchar,
-    full_openapi_schema varchar,
+    code text,
+    interfaces text,
+    json_schema text,
+    full_openapi_schema text,
     version varchar(32),
     deployed_version varchar(32),
     slug varchar(256),
-    tags varchar,
+--     tags must not be null to
+    tags varchar NOT NULL default '',
     fork_count bigint NOT NULL default 0,
     reason_not_deployable varchar(255),
     is_deployable boolean NOT NULL default true,
@@ -52,9 +54,48 @@ CREATE TABLE IF NOT EXISTS public.code_cell (
     is_public boolean NOT NULL default false,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(slug, user_id)
+    UNIQUE(slug, user_id),
+    search_doc tsvector GENERATED ALWAYS AS (to_tsvector('english', function_name || ' ' || summary || ' ' || description || ' ' || tags)) stored
 );
 ALTER TABLE public.code_cell OWNER TO root;
+CREATE INDEX code_cell_search_idx ON public.code_cell
+    USING GIN(search_doc);
+
+CREATE OR REPLACE FUNCTION search_docs(query text)
+    RETURNS TABLE(
+    uid uuid,
+    userid text,
+    ispublic boolean,
+    slug text,
+    name text,
+    forkcount bigint,
+    summary text,
+    description text,
+    tags text,
+    createdat timestamptz,
+    updatedat timestamptz,
+    rank text
+) AS
+$$
+
+SELECT uid,
+       user_id AS userid,
+       is_public AS ispublic,
+       slug,
+       function_name AS name,
+       fork_count AS forkcount,
+       summary,
+       description,
+       tags,
+       created_at AS createdat,
+       updated_at AS updatedat,
+       ts_rank(search_doc, websearch_to_tsquery('english', query)) AS rank
+FROM public.code_cell
+WHERE search_doc @@ websearch_to_tsquery('english', query) AND
+      is_public = true
+ORDER BY rank DESC;
+$$ LANGUAGE SQL;
+
 
 CREATE TABLE IF NOT EXISTS public.entitlement (
     uid uuid NOT NULL primary key,
@@ -107,10 +148,9 @@ CREATE TABLE IF NOT EXISTS public.commit_history (
     user_id varchar(255) NOT NULL,
     version varchar(32),
     deployed boolean NOT NULL default false,
-    code varchar,
-    json_schema varchar,
-    full_openapi_schema varchar,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(code_cell_id, user_id)
+    code text,
+    json_schema text,
+    full_openapi_schema text,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE public.commit_history OWNER TO root;
