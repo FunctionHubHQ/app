@@ -122,7 +122,10 @@ public class SecurityFilter extends OncePerRequestFilter {
           user.setAuthMode(AuthMode.FB.name());
 
           UserEntity userEntity = userRepo.findByUid(user.getUid());
-          user.setUsername(userEntity.getUsername());
+          if (userEntity != null) {
+            // Entity will be null during registration
+            user.setUsername(userEntity.getUsername());
+          }
 
           credentials.setAuthToken(bearerToken);
           credentials.setDecodedFirebaseToken(decodedToken);

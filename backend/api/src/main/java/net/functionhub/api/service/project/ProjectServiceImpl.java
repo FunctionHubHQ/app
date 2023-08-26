@@ -113,9 +113,10 @@ public class ProjectServiceImpl implements ProjectService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(fhFunction.getCodeId()));
       if (codeCell != null) {
         // only tags can be updated through this route for now
-        codeCell.setTags(fhFunction.getTags());
         if (ObjectUtils.isEmpty(fhFunction.getTags())) {
           codeCell.setTags("");
+        } else {
+          codeCell.setTags(fhFunction.getTags());
         }
         codeCell.setUpdatedAt(LocalDateTime.now());
         codeCellRepo.save(codeCell);

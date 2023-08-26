@@ -20,7 +20,10 @@ public class UnsecurePaths {
       "/actuator/health",
       "/actuator/health/**",
       "/npm",
-      "/npm/**"
+      "/npm/**",
+      "/explore",
+      "/explore/**"
+
   ));
 
   public boolean allow(String path) {
