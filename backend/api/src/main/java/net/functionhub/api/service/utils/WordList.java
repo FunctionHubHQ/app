@@ -25,8 +25,11 @@ public class WordList {
     }
   }
 
-  public String getRandomPhrase(int wordLength) {
-    StringJoiner joiner = new StringJoiner("-");
+  public String getRandomPhrase(int wordLength, boolean hyphenated) {
+    StringJoiner joiner = new StringJoiner(" ");
+    if (hyphenated) {
+      joiner = new StringJoiner("-");
+    }
     Random rand = new Random();
     for (int i = 0; i < wordLength; i++) {
       joiner.add(wordList.get(rand.nextInt(wordList.size())).toLowerCase());

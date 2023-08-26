@@ -60,8 +60,8 @@ public class ProjectServiceImpl implements ProjectService {
   @Override
   public Projects createProject(ProjectCreateRequest projectCreateRequest) {
     ProjectEntity entity = new ProjectEntity();
-    entity.setProjectName(projectCreateRequest.getName());
-    entity.setDescription(projectCreateRequest.getDescription());
+    entity.setProjectName(FHUtils.truncate(projectCreateRequest.getName()));
+    entity.setDescription(FHUtils.truncate(projectCreateRequest.getDescription()));
     entity.setUserId(FHUtils.getSessionUser().getUid());
     entity.setUid(UUID.randomUUID());
     projectRepo.save(entity);

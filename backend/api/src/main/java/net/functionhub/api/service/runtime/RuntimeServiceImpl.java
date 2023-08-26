@@ -11,7 +11,6 @@ import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
-import net.functionhub.api.ForkRequest;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.SpecResult;
 import net.functionhub.api.StatusRequest;
@@ -414,9 +413,9 @@ public class RuntimeServiceImpl implements RuntimeService {
   private String getUniqueSlug() {
     int numTries = 5;
     int wordLength = 6;
-    String slug = wordList.getRandomPhrase(wordLength);
+    String slug = wordList.getRandomPhrase(wordLength, true);
     while (numTries > 0 && codeCellRepo.findBySlug(slug) != null) {
-      slug = wordList.getRandomPhrase(3);
+      slug = wordList.getRandomPhrase(3, true);
       numTries--;
     }
     if (numTries < 0) {

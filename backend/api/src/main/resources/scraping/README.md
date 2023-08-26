@@ -1,1 +1,0 @@
-All user agents were obtained from https://github.com/tamimibrahim17/List-of-user-agents

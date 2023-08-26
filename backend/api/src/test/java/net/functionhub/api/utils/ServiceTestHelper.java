@@ -41,7 +41,6 @@ public class ServiceTestHelper {
         SecurityContextHolder.setContext(securityContext);
     }
 
-
     public String loadFile(String path) {
         File file = null;
         try {
