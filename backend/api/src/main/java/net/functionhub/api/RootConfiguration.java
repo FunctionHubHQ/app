@@ -35,7 +35,7 @@ public class RootConfiguration {
   public void onStart() {
     flywayMigration.migrate(false);
     if (!sourceProps.getProfile().equals("prod")) {
-      seedData.generateSeedData();
+//      seedData.generateSeedData();
     }
   }
 }

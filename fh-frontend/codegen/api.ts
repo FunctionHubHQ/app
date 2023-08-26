@@ -292,6 +292,18 @@ export interface FHFunction {
      * @type {string}
      * @memberof FHFunction
      */
+    owner_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
+    project_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
     code_id?: string;
     /**
      * 
@@ -323,6 +335,24 @@ export interface FHFunction {
      * @memberof FHFunction
      */
     updated_at?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
+    tags?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof FHFunction
+     */
+    fork_count?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
+    summary?: string;
 }
 /**
  * 
@@ -346,6 +376,25 @@ export interface FHFunctions {
 /**
  * 
  * @export
+ * @interface ForkRequest
+ */
+export interface ForkRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof ForkRequest
+     */
+    parent_code_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ForkRequest
+     */
+    project_id?: string;
+}
+/**
+ * 
+ * @export
  * @interface GenericResponse
  */
 export interface GenericResponse {
@@ -361,6 +410,68 @@ export interface GenericResponse {
      * @memberof GenericResponse
      */
     error?: string;
+}
+/**
+ * 
+ * @export
+ * @interface PageableRequest
+ */
+export interface PageableRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof PageableRequest
+     */
+    query?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof PageableRequest
+     */
+    limit: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof PageableRequest
+     */
+    offset: number;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof PageableRequest
+     */
+    sortBy?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof PageableRequest
+     */
+    sortDir?: Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface PageableResponse
+ */
+export interface PageableResponse {
+    /**
+     * 
+     * @type {number}
+     * @memberof PageableResponse
+     */
+    totalRecords?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof PageableResponse
+     */
+    numPages?: number;
+    /**
+     * 
+     * @type {Array<FHFunction>}
+     * @memberof PageableResponse
+     */
+    records?: Array<FHFunction>;
 }
 /**
  * 
@@ -991,6 +1102,42 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
+         * 
+         * @summary Fork user code
+         * @param {ForkRequest} forkRequest Fork request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        forkCode: async (forkRequest: ForkRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'forkRequest' is not null or undefined
+            assertParamExists('forkCode', 'forkRequest', forkRequest)
+            const localVarPath = `/code/fork`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(forkRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Get all functions in a project
          * @summary Get all functions in a project
          * @param {string} projectId 
@@ -1048,6 +1195,78 @@ export const ProjectApiAxiosParamCreator = function (configuration?: Configurati
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Get all public functions
+         * @param {PageableRequest} pageableRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllPublicFunctions: async (pageableRequest: PageableRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'pageableRequest' is not null or undefined
+            assertParamExists('getAllPublicFunctions', 'pageableRequest', pageableRequest)
+            const localVarPath = `/explore`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(pageableRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Update function metadata
+         * @param {FHFunction} fHFunction FHFunction update request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateFunction: async (fHFunction: FHFunction, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'fHFunction' is not null or undefined
+            assertParamExists('updateFunction', 'fHFunction', fHFunction)
+            const localVarPath = `/project`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(fHFunction, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -1145,6 +1364,17 @@ export const ProjectApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
+         * 
+         * @summary Fork user code
+         * @param {ForkRequest} forkRequest Fork request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async forkCode(forkRequest: ForkRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CodeUpdateResult>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.forkCode(forkRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * Get all functions in a project
          * @summary Get all functions in a project
          * @param {string} projectId 
@@ -1163,6 +1393,28 @@ export const ProjectApiFp = function(configuration?: Configuration) {
          */
         async getAllProjects(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Projects>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getAllProjects(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Get all public functions
+         * @param {PageableRequest} pageableRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAllPublicFunctions(pageableRequest: PageableRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PageableResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllPublicFunctions(pageableRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Update function metadata
+         * @param {FHFunction} fHFunction FHFunction update request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async updateFunction(fHFunction: FHFunction, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<FHFunctions>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updateFunction(fHFunction, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -1227,6 +1479,16 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
             return localVarFp.deleteProject(body, options).then((request) => request(axios, basePath));
         },
         /**
+         * 
+         * @summary Fork user code
+         * @param {ForkRequest} forkRequest Fork request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        forkCode(forkRequest: ForkRequest, options?: any): AxiosPromise<CodeUpdateResult> {
+            return localVarFp.forkCode(forkRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Get all functions in a project
          * @summary Get all functions in a project
          * @param {string} projectId 
@@ -1244,6 +1506,26 @@ export const ProjectApiFactory = function (configuration?: Configuration, basePa
          */
         getAllProjects(options?: any): AxiosPromise<Projects> {
             return localVarFp.getAllProjects(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Get all public functions
+         * @param {PageableRequest} pageableRequest 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllPublicFunctions(pageableRequest: PageableRequest, options?: any): AxiosPromise<PageableResponse> {
+            return localVarFp.getAllPublicFunctions(pageableRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Update function metadata
+         * @param {FHFunction} fHFunction FHFunction update request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateFunction(fHFunction: FHFunction, options?: any): AxiosPromise<FHFunctions> {
+            return localVarFp.updateFunction(fHFunction, options).then((request) => request(axios, basePath));
         },
         /**
          * Updates project name
@@ -1314,6 +1596,18 @@ export class ProjectApi extends BaseAPI {
     }
 
     /**
+     * 
+     * @summary Fork user code
+     * @param {ForkRequest} forkRequest Fork request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public forkCode(forkRequest: ForkRequest, options?: any) {
+        return ProjectApiFp(this.configuration).forkCode(forkRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Get all functions in a project
      * @summary Get all functions in a project
      * @param {string} projectId 
@@ -1334,6 +1628,30 @@ export class ProjectApi extends BaseAPI {
      */
     public getAllProjects(options?: any) {
         return ProjectApiFp(this.configuration).getAllProjects(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Get all public functions
+     * @param {PageableRequest} pageableRequest 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public getAllPublicFunctions(pageableRequest: PageableRequest, options?: any) {
+        return ProjectApiFp(this.configuration).getAllPublicFunctions(pageableRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Update function metadata
+     * @param {FHFunction} fHFunction FHFunction update request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectApi
+     */
+    public updateFunction(fHFunction: FHFunction, options?: any) {
+        return ProjectApiFp(this.configuration).updateFunction(fHFunction, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
