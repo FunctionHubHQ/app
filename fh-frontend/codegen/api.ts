@@ -434,7 +434,7 @@ export interface PageableRequest {
      * @type {number}
      * @memberof PageableRequest
      */
-    offset: number;
+    page_num: number;
     /**
      * 
      * @type {Array<string>}

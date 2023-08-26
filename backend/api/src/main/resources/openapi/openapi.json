@@ -1423,7 +1423,7 @@
         "type": "object",
         "required": [
           "limit",
-          "offset"
+          "page_num"
         ],
         "properties": {
           "query": {
@@ -1433,7 +1433,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "offset": {
+          "page_num": {
             "type": "integer",
             "format": "int32"
           },

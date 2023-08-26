@@ -160,7 +160,7 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   public PageableResponse getAllPublicFunctions(PageableRequest pageableRequest) {
-    int page = pageableRequest.getOffset();
+    int page = pageableRequest.getPageNum();
     int limit = pageableRequest.getLimit();
     Sort sort = buildSort(pageableRequest);
     Pageable pageable = PageRequest.of(page, limit, sort);

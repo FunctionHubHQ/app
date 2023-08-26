@@ -4,7 +4,7 @@ import moment from "moment";
 import {createTheme} from "@uiw/codemirror-themes";
 import {tags as t} from "@lezer/highlight";
 import { auth } from "./firebase-setup";
-import {UserApi} from "#/codegen";
+import {ProjectApi, UserApi} from "#/codegen";
 import {headerConfig} from "#/ui/utils/headerConfig";
 
 export const getFormattedDate = (date: number) => {
