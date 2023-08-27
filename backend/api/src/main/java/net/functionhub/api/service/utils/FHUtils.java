@@ -63,6 +63,11 @@ public class FHUtils {
   }
 
   public static UserProfile getSessionUser() {
-    return (UserProfile) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    try {
+      return (UserProfile) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    } catch (Exception e) {
+      return new UserProfile();
+    }
+
   }
 }

@@ -18,10 +18,7 @@ import net.functionhub.api.service.project.ProjectService;
 import net.functionhub.api.service.runtime.RuntimeService;
 import net.functionhub.api.utils.security.Credentials;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
@@ -37,8 +34,8 @@ public class SeedData {
   private final WordList wordList;
   private final UserRepo userRepo;
   private final int numProjects = 12;
-  private final int numPrivateFunctions = 25;
-  private final int numPublicFunctions = 25;
+  private final int numPrivateFunctions = 12;
+  private final int numPublicFunctions = 12;
 
   public void generateSeedData() {
     generateSeedData("bmelesse@elifsis.com");

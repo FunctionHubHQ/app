@@ -295,6 +295,12 @@ export interface FHFunction {
     owner_id?: string;
     /**
      * 
+     * @type {boolean}
+     * @memberof FHFunction
+     */
+    is_owner?: boolean;
+    /**
+     * 
      * @type {string}
      * @memberof FHFunction
      */

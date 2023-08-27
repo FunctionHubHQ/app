@@ -174,7 +174,7 @@ public class ProjectServiceImpl implements ProjectService {
     } else {
       result = codeCellRepo.findAllPublicFunctions(pageable);
     }
-    functions = projectMapper.mapFromProjections(result.getContent());
+    functions = projectMapper.mapFromProjections(result.getContent(), FHUtils.getSessionUser().getUid());
     totalPages = result.getTotalPages();
     totalElements = result.getTotalElements();
     return new PageableResponse()

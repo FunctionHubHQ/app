@@ -68,13 +68,21 @@ public interface ProjectMapper {
         }
         return entities
             .stream()
-            .map(this::mapFromCodeCellEntity).
-            collect(Collectors.toList());
+            .map(this::mapFromCodeCellEntity)
+            .collect(Collectors.toList());
     }
 
-    List<FHFunction> mapFromProjections(List<FHFunctionProjection> results);
+    default List<FHFunction> mapFromProjections(List<FHFunctionProjection> results, String sessionUserId) {
+        if (results == null) {
+            return new ArrayList<>();
+        }
+        return results
+            .stream()
+            .map(it -> mapFromProjection(it, sessionUserId))
+            .collect(Collectors.toList());
+    }
 
-    default FHFunction mapFromProjection(FHFunctionProjection result) {
+    default FHFunction mapFromProjection(FHFunctionProjection result, String sessionUserId) {
         if (result == null) {
             return null;
         }
@@ -82,6 +90,7 @@ public interface ProjectMapper {
             .createdAt(result.getCreatedat().toEpochSecond(ZoneOffset.UTC))
             .updatedAt(result.getUpdatedat().toEpochSecond(ZoneOffset.UTC))
             .ownerId(result.getOwnerid())
+            .isOwner(sessionUserId != null && sessionUserId.equals(result.getOwnerid()))
             .ownerUsername(result.getOwnerusername())
             .ownerAvatar(result.getOwneravatar())
             .isPublic(result.getIspublic())

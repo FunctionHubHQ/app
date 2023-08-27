@@ -58,7 +58,6 @@ const HeaderNav = () => {
                     <a href="/pricing"
                        className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Pricing</a>
                     <div>
-                      {/*<SearchBar/>*/}
                     </div>
                   </div>
                 </div>
@@ -81,19 +80,22 @@ const HeaderNav = () => {
 
               <div className="sm:hidden" id="mobile-menu">
                 <div className="space-y-1 px-2 pb-3 pt-2">
-                  <a href="#"
-                     className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">Team</a>
-                  <a href="#"
-                     className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">Projects</a>
-                  <a href="#"
-                     className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">Calendar</a>
+
+                  {authUser &&
+                      <a href="/hub"
+                         className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">Dashboard</a>
+                  }
+                  <a href="/docs"
+                     className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">Docs</a>
+                  <a href="/examples"
+                     className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">Examples</a>
+                  <a href="/explore"
+                     className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">Explore</a>
+                  <a href="/pricing"
+                     className="text-gray-300 hover:bg-gray-700 hover:text-white block rounded-md px-3 py-2 text-base font-medium">Pricing</a>
                 </div>
               </div>
           }
-
-
-
-
         </nav>
 
       </>

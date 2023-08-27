@@ -24,8 +24,8 @@ export const hubPages: { description?: string; name: string; items: Item[] }[] =
         description: 'FunctionHub documentation',
       },
       {
-        name: 'Tutorials',
-        slug: 'tutorials',
+        name: 'Examples',
+        slug: 'examples',
         description: 'Learn how to create functions',
       },
     ],
@@ -41,7 +41,7 @@ export const hubPages: { description?: string; name: string; items: Item[] }[] =
       {
         name: 'Profile',
         slug: 'hub/profile',
-        description: 'Profile',
+        description: 'Your profile',
       }
     ],
   }

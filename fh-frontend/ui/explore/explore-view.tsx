@@ -5,9 +5,7 @@ import Link from "next/link";
 import Pill from "#/ui/pill";
 import Pagination from "#/ui/pagination";
 import {PageableResponse} from "#/codegen";
-import AddProjectButton from "#/ui/project/add-project-button";
 import {Boundary} from "#/ui/boundary";
-import {AddressBar} from "#/ui/address-bar";
 
 export interface ExploreViewProps {
   data: PageableResponse,
@@ -16,6 +14,7 @@ export interface ExploreViewProps {
 }
 
 const ExploreView: FC<ExploreViewProps> = (props) => {
+
   const getTags = (tags: string | undefined): Array<string> => {
     if (tags && tags.length > 0) {
       return tags.split(",")
@@ -27,10 +26,7 @@ const ExploreView: FC<ExploreViewProps> = (props) => {
 
   return (
       <div className="min-h-screen pt-20">
-        <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
-          {/*<div className="rounded-lg bg-black">*/}
-          {/*  <AddressBar />*/}
-          {/*</div>*/}
+        <div className="mx-auto md:max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8 max-w-full">
           {props.data?.records?.length ?
               props.data?.records?.map(record => {
                 return (
@@ -43,9 +39,11 @@ const ExploreView: FC<ExploreViewProps> = (props) => {
                                  alt="Code owner"/>
                             <span className="pl-2">{record.owner_username}</span>
                           </div>
+                          {!record?.is_owner &&
                           <div className="flex justify-end">
                             <FHForkButton forkCount={record.fork_count}/>
                           </div>
+                          }
                         </div>
 
                         <div className="space-y-6 mt-6">

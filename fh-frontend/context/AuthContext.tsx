@@ -7,6 +7,7 @@ import {auth} from "#/ui/utils/firebase-setup";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
 import {UserApi, UserProfile, UserProfileResponse} from "#/codegen";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
+import { setCookie, deleteCookie } from 'cookies-next';
 
 export const AuthContext = React.createContext({});
 
@@ -28,16 +29,17 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
       if (user) {
         setAuthUser(user);
         const token = await getAuthToken(user)
+        setCookie("token", token)
         try {
           const response: UserProfileResponse = await new UserApi(headerConfig(token)).getUserprofile()
           setFhUser(response.profile as UserProfile)
         } catch (e) {
           ERROR(e)
         }
-
       } else {
         setAuthUser(null);
         setFhUser(null)
+        deleteCookie("token")
       }
       setLoading(false);
     });

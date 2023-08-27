@@ -1336,6 +1336,9 @@
           "owner_id": {
             "type": "string"
           },
+          "is_owner": {
+            "type": "boolean"
+          },
           "owner_username": {
             "type": "string"
           },

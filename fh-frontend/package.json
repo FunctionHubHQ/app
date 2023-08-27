@@ -24,6 +24,7 @@
     "@uiw/codemirror-theme-vscode": "4.21.9",
     "@uiw/react-codemirror": "4.21.9",
     "clsx": "1.2.1",
+    "cookies-next": "3.0.0",
     "date-fns": "2.29.3",
     "dinero.js": "2.0.0-alpha.8",
     "firebase": "10.1.0",
