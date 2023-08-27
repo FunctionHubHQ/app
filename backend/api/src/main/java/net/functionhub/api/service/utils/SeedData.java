@@ -85,7 +85,7 @@ public class SeedData {
     newUser.setUid("u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH));
     newUser.setUsername(wordList.getRandomPhrase(3, true)
         .replace("-", "_"));
-    newUser.setAvatarUrl("https://i.pravatar.cc/300");
+    newUser.setAvatarUrl("https://i.pravatar.cc/300?uniquifier=" + UUID.randomUUID());
     newUser.setFullName("Bob Lee");
     userRepo.save(newUser);
       UserProfile user = new UserProfile().uid(newUser.getUid());

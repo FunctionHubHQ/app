@@ -23,7 +23,9 @@ const Pagination: FC<PaginationProps> = (props) => {
       if (allowNextPage) {
         return "/explore/" + props.next
       }
-      return "/explore/" + props.prev
+      if (props.prev > 1) {
+        return "/explore/" + props.prev
+      }
     }
     return "/explore"
   }
