@@ -3,6 +3,7 @@ import * as React from "react";
 import ProfileDropdown from "#/ui/profile/profile-menu";
 import {useAuthContext} from "#/context/AuthContext";
 import FHButton from "#/ui/project/fh-button";
+// import SearchBar from "#/ui/search-bar";
 
 
 const HeaderNav = () => {
@@ -35,7 +36,7 @@ const HeaderNav = () => {
                   className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex flex-shrink-0 items-center">
                   <a href="/" className="flex items-center mb-2 sm:mb-0">
-                    <img src="/function_hub_white.png" className="h-8 mr-1"
+                    <img src="/function_hub_white.png" className="h-6 mr-1"
                          alt="FunctionHub Logo"/>
                     <span
                         className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">FunctionHub</span>
@@ -43,7 +44,7 @@ const HeaderNav = () => {
 
                 </div>
                 <div className="hidden sm:ml-6 sm:block">
-                  <div className="flex space-x-4">
+                  <div className="flex space-x-4 items-center">
                     {authUser &&
                         <a href="/hub"
                            className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Dashboard</a>
@@ -56,6 +57,9 @@ const HeaderNav = () => {
                        className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Explore</a>
                     <a href="/pricing"
                        className="text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">Pricing</a>
+                    <div>
+                      {/*<SearchBar/>*/}
+                    </div>
                   </div>
                 </div>
               </div>

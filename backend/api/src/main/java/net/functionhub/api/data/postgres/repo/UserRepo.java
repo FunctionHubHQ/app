@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public interface UserRepo extends JpaRepository<UserEntity, Long> {
     UserEntity findByUid(String uid);
+    UserEntity findByEmail(String email);
 
     @Query(value = "SELECT "
         + "u.uid as uid, "

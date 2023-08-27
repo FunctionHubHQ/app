@@ -7,6 +7,7 @@ import Pagination from "#/ui/pagination";
 import {PageableResponse} from "#/codegen";
 import AddProjectButton from "#/ui/project/add-project-button";
 import {Boundary} from "#/ui/boundary";
+import {AddressBar} from "#/ui/address-bar";
 
 export interface ExploreViewProps {
   data: PageableResponse,
@@ -27,7 +28,9 @@ const ExploreView: FC<ExploreViewProps> = (props) => {
   return (
       <div className="min-h-screen pt-20">
         <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
-
+          {/*<div className="rounded-lg bg-black">*/}
+          {/*  <AddressBar />*/}
+          {/*</div>*/}
           {props.data?.records?.length ?
               props.data?.records?.map(record => {
                 return (

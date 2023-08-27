@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.functionhub.api.Code;
@@ -25,7 +27,6 @@ import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.dto.ExecRequestInternal;
 import net.functionhub.api.dto.GenerateSpecRequest;
-import net.functionhub.api.dto.RequestHeaders;
 import net.functionhub.api.props.DenoProps;
 import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.user.UserService.AuthMode;
@@ -77,7 +78,6 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final DenoProps denoProps;
   private final WordList wordList;
   private final SpecTemplate specTemplate;
-  private final RequestHeaders requestHeaders;
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
@@ -153,13 +153,34 @@ public class RuntimeServiceImpl implements RuntimeService {
           .uid(codeCell.getUid().toString());
       ExecResultAsync result = execHelper(request, codeCell);
       if (!ObjectUtils.isEmpty(result.getError())) {
+        if (result.getError().equals("Execution timed out") &&
+            !ObjectUtils.isEmpty(result.getStdOutStr())) {
+          throw new RuntimeException("Execution timed out: Your function must return a value of ResponseEntity type");
+        }
         throw new RuntimeException(result.getError());
       }
-      // TODO: inject the std out into the result for dev and ignore it for prod
-      return JsonParser.parseString(result.getResult()).getAsString();
+      return mergeResult(result, deployed);
     }
     throw new RuntimeException("Requested service not found");
 
+  }
+
+  private String mergeResult(ExecResultAsync result, boolean deployed) {
+    // Inject console logs into the result for dev (not deployed)
+    if (!ObjectUtils.isEmpty(result.getResult()) &&
+        !ObjectUtils.isEmpty(result.getStdOutStr()) &&
+        !deployed) {
+      try {
+        String _result = JsonParser.parseString(result.getResult()).getAsString();
+        Map<String, Object> merged = new HashMap<>(
+            objectMapper.readValue(_result, typeRef));
+        merged.put("console.log", result.getStdOutStr().replace("\"", ""));
+        return objectMapper.writeValueAsString(merged);
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException("Error processing result");
+      }
+    }
+    return JsonParser.parseString(result.getResult()).getAsString();
   }
 
   private ExecResultAsync execHelper(ExecRequest execRequest, CodeCellEntity codeCell) {

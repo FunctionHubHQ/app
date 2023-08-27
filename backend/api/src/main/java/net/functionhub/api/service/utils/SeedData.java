@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @author Biz Melesse created on 8/25/23
@@ -40,6 +41,11 @@ public class SeedData {
   private final int numPublicFunctions = 25;
 
   public void generateSeedData() {
+    generateSeedData("bmelesse@elifsis.com");
+    generateSeedData(null);
+  }
+
+  public void generateSeedData(String email) {
     int minProjectNameLength = 1;
     int maxProjectNameLength = 6;
     int minProjectDescLength = 0;
@@ -47,7 +53,7 @@ public class SeedData {
     Random rand = new Random();
     log.info("Generating seed data");
     for (int i = 0; i < numProjects; i++) {
-      setSecurityContext();
+      setSecurityContext(email);
       int nameLength = rand.nextInt(maxProjectNameLength - minProjectNameLength + 1) + minProjectNameLength;
       int descLength = rand.nextInt(maxProjectDescLength - minProjectDescLength + 1) + minProjectDescLength;
       ProjectCreateRequest request1 = new ProjectCreateRequest()
@@ -77,21 +83,31 @@ public class SeedData {
       }
 
     }
+    log.info("Finished generated seed data");
   }
 
-  private void setSecurityContext() {
-    UserEntity newUser = new UserEntity();
-    newUser.setEmail(wordList.getRandomPhrase(3, true) + "@gmail.com");
-    newUser.setUid("u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH));
-    newUser.setUsername(wordList.getRandomPhrase(3, true)
-        .replace("-", "_"));
-    newUser.setAvatarUrl("https://i.pravatar.cc/300?uniquifier=" + UUID.randomUUID());
-    newUser.setFullName("Bob Lee");
-    userRepo.save(newUser);
-      UserProfile user = new UserProfile().uid(newUser.getUid());
-      UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, new Credentials(),
-              new HashSet<>());
+  private void setSecurityContext(String email) {
+    UserEntity userEntity = new UserEntity();
+    if (!ObjectUtils.isEmpty(email)) {
+      userEntity = userRepo.findByEmail(email);
+    } else {
+      userEntity.setEmail(wordList.getRandomPhrase(3, true) + "@gmail.com");
+      userEntity.setUid("u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH));
+      userEntity.setUsername(wordList.getRandomPhrase(3, true)
+          .replace("-", "_"));
+      userEntity.setAvatarUrl("https://i.pravatar.cc/300?uniquifier=" + UUID.randomUUID());
+      userEntity.setFullName("Bob Lee");
+      userRepo.save(userEntity);
+    }
+    if (userEntity != null) {
+      UserProfile userProfile = new UserProfile().uid(userEntity.getUid());
+      UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+          userProfile, new Credentials(),
+          new HashSet<>());
       SecurityContextHolder.getContext().setAuthentication(authentication);
+    } else {
+      log.error("SeedData failed to create a user");
+    }
   }
 
   private String generateTags() {

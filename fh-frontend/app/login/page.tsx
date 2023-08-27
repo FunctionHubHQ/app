@@ -10,7 +10,7 @@ import {
 import {auth} from "#/ui/utils/firebase-setup";
 import firebase from "firebase/compat";
 import AuthProvider = firebase.auth.AuthProvider;
-import {registerUser} from "#/ui/utils/utils";
+import {DEBUG, ERROR} from "#/ui/utils/utils";
 import {useEffect} from "react";
 import {useAuthContext} from "#/context/AuthContext";
 import {useRouter} from "next/navigation";
@@ -36,14 +36,14 @@ export default function Page() {
       return signInWithPopup(auth, provider)
       .then((result) => {
         if (result.user) {
-          registerUser()
+          DEBUG("Login Success: ", result.user)
         }
       }).catch(e => {
-        console.log(e.message)
+        ERROR(e.message)
       });
     })
     .catch((e) => {
-      console.log(e)
+      ERROR(e.message)
     });
   }
 
