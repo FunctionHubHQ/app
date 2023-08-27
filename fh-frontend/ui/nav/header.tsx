@@ -11,7 +11,7 @@ const HeaderNav = () => {
   const {authUser} = useAuthContext()
   return (
       <>
-        <nav className="bg-[#1e1e1e] dark:bg-gray-900 fixed w-full z-1000 top-0 left-0">
+        <nav className="bg-[#1e1e1e] dark:bg-gray-900 fixed w-full top-0 left-0 z-50">
           <div className="mx-auto max-w-8xl px-2 sm:px-6 lg:px-8">
             <div className="relative flex h-16 items-center justify-between">
               <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
