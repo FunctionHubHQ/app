@@ -41,4 +41,12 @@ public interface UserService {
   UsernameResponse usernameExists(UsernameRequest usernameRequest);
 
   UserProfileResponse updateUsername(UsernameRequest usernameRequest);
+
+  /**
+   * Create an anonymous user with limited privileges. This user
+   * is for making requests to endpoints that would have been unsecure.
+   * We are creating an anonymous user instead because of how deeply
+   * integrated the session user object is into the services.
+   */
+  void createAnonymousUser();
 }

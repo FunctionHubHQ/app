@@ -164,19 +164,16 @@ public class ProjectServiceImpl implements ProjectService {
     int limit = pageableRequest.getLimit();
     Sort sort = buildSort(pageableRequest);
     Pageable pageable = PageRequest.of(page, limit, sort);
-//    Page<CodeCellEntity> codeCellPages = null;
-    Page<FHFunctionProjection> result = null;
-    int totalPages = 0;
-    long totalElements = 0;
-    List<FHFunction> functions = new ArrayList<>();
+    Page<FHFunctionProjection> pageableResult;
+    List<FHFunction> functions;
     if (!ObjectUtils.isEmpty(pageableRequest.getQuery())) {
-      result = codeCellRepo.searchAllFunctions(pageableRequest.getQuery(), PageRequest.of(page, limit));
+      pageableResult = codeCellRepo.searchAllFunctions(pageableRequest.getQuery(), PageRequest.of(page, limit));
     } else {
-      result = codeCellRepo.findAllPublicFunctions(pageable);
+      pageableResult = codeCellRepo.findAllPublicFunctions(pageable);
     }
-    functions = projectMapper.mapFromProjections(result.getContent(), FHUtils.getSessionUser().getUid());
-    totalPages = result.getTotalPages();
-    totalElements = result.getTotalElements();
+    functions = projectMapper.mapFromProjections(pageableResult.getContent(), FHUtils.getSessionUser().getUid());
+    int totalPages = pageableResult.getTotalPages();
+    long totalElements = pageableResult.getTotalElements();
     return new PageableResponse()
         .numPages(totalPages)
         .totalRecords(totalElements)

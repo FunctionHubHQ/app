@@ -13,6 +13,7 @@ import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
+import net.functionhub.api.props.DefaultConfigsProps;
 import net.functionhub.api.props.EntitlementProps;
 import net.functionhub.api.service.runtime.Slugify;
 import net.functionhub.api.service.utils.FHUtils;
@@ -38,6 +39,7 @@ public class UserServiceImpl implements UserService {
   private final ApiKeyRepo apiKeyRepo;
   private final EntitlementRepo entitlementRepo;
   private final EntitlementProps entitlementProps;
+  private final DefaultConfigsProps defaultConfigsProps;
   private final Slugify slugify;
 
   @Override
@@ -167,6 +169,36 @@ public class UserServiceImpl implements UserService {
       profile.setUsername(username);
     }
     return new UserProfileResponse().profile(profile);
+  }
+
+  @Override
+  public void createAnonymousUser() {
+    UserEntity userEntity = userRepo.findByEmail(defaultConfigsProps.getAnonEmail());
+    if (userEntity == null) {
+      userEntity = new UserEntity();
+      userEntity.setAnonymous(true);
+      userEntity.setUsername("anon-" + UUID.randomUUID());
+      userEntity.setEmail(defaultConfigsProps.getAnonEmail());
+      userEntity.setFullName("Anon");
+      userEntity.setUid(UUID.randomUUID().toString());
+      userEntity.setIsPremiumUser(false);
+      userRepo.save(userEntity);
+
+      ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
+      apiKeyEntity.setApiKey(defaultConfigsProps.getAnonApiKey());
+      apiKeyEntity.setUserId(userEntity.getUid());
+      apiKeyRepo.save(apiKeyEntity);
+
+      EntitlementEntity entitlements = new EntitlementEntity();
+      entitlements.setUid(UUID.randomUUID());
+      entitlements.setUserId(userEntity.getUid());
+      entitlements.setTimeout(0L);
+      entitlements.setFunctions(0L);
+      entitlements.setTokens(0L);
+      entitlements.setHttpEgress(0L);
+      entitlements.setDailyInvocations(0L);
+      entitlementRepo.save(entitlements);
+    }
   }
 
   private String cleanUsername(String username) {

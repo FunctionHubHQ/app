@@ -106,7 +106,7 @@ export default function Page() {
                 <AddButton onClick={onAddFunction} label={"Add Function"}/>
               </div>
             </Boundary> :
-            <Boundary labels={['functions']} color="blue" animateRerendering={false}>
+            <Boundary labels={['functions']} color="none" animateRerendering={false}>
             <div className="space-y-10 text-white">
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-1">
                 {fhFunctions?.map((_function: FHFunction) => {

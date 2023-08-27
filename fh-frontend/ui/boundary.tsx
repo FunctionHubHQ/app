@@ -8,12 +8,13 @@ const Label = ({
 }: {
   children: React.ReactNode;
   animateRerendering?: boolean;
-  color?: 'default' | 'pink' | 'blue' | 'violet' | 'cyan' | 'orange';
+  color?: 'default' | 'pink' | 'blue' | 'violet' | 'cyan' | 'orange' | 'none';
 }) => {
   return (
     <div
       className={clsx('rounded-full px-1.5 shadow-[0_0_1px_3px_black]', {
         'bg-gray-800 text-gray-300': color === 'default',
+        'bg-gray-800 text-gray-200': color === 'none',
         'bg-vercel-pink text-white': color === 'pink',
         'bg-vercel-blue text-white': color === 'blue',
         'bg-vercel-cyan text-white': color === 'cyan',
@@ -36,7 +37,7 @@ export const Boundary = ({
   children: React.ReactNode;
   labels?: string[];
   size?: 'xsmall' | 'small' | 'default';
-  color?: 'default' | 'pink' | 'blue' | 'violet' | 'cyan' | 'orange';
+  color?: 'default' | 'pink' | 'blue' | 'violet' | 'cyan' | 'orange' | 'none';
   animateRerendering?: boolean;
 }) => {
   return (
@@ -51,6 +52,7 @@ export const Boundary = ({
         'border-vercel-cyan': color === 'cyan',
         'border-vercel-violet': color === 'violet',
         'border-vercel-orange': color === 'orange',
+        'border-vercel-none': color === 'none',
         'text-vercel-pink animate-[rerender_1s_ease-in-out_1]':
           animateRerendering,
       })}

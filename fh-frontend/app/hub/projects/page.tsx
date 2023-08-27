@@ -156,7 +156,7 @@ export default function Page() {
                 <AddProjectButton onClick={() => setShowCreateModal(true)}/>
               </div>
             </Boundary> :
-            <Boundary labels={['projects']} color="default" animateRerendering={false}>
+            <Boundary labels={['projects']} color="none" animateRerendering={false}>
               <div className="space-y-10 text-white">
               {projects?.projects?.map((project) => {
                 return (

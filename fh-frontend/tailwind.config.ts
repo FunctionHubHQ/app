@@ -27,6 +27,7 @@ export default {
           cyan: '#50E3C2',
           orange: '#F5A623',
           violet: '#7928CA',
+          none: '#000'
         },
       },
       backgroundImage: ({ theme }) => ({
