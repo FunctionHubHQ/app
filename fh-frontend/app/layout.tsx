@@ -18,11 +18,14 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const loginLayout = pathname.includes("/login")
-  const pricingLayout = pathname.includes("/pricing")
   const editorLayout = pathname.includes("edit:")
   const homePageLayout = pathname === '/'
   const exploreLayout = pathname.includes("/explore")
-  const applyGlobalLayout = !(loginLayout || editorLayout || pricingLayout || homePageLayout || exploreLayout)
+  const noBgLayout = pathname.includes("/terms") ||
+      pathname.includes("/privacy") ||
+      pathname.includes("/about") ||
+      pathname.includes("/pricing")
+  const applyGlobalLayout = !(loginLayout || editorLayout || noBgLayout || homePageLayout || exploreLayout)
 
   return (
     <html lang="en" className="[color-scheme:dark]">
@@ -48,7 +51,7 @@ export default function RootLayout({
         </div>
         }
 
-        {pricingLayout &&
+        {noBgLayout &&
             <div className="min-h-screen pt-20">
               <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
                   <div className="p-3.5 lg:p-6">{children}</div>
