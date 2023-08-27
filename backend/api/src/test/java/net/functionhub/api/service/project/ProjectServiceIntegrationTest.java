@@ -82,16 +82,6 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
     @BeforeClass
     public void setup() {
-        flywayMigration.migrate(true);
-        String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
-        testHelper.prepareSecurity(userId);
-        userService.getOrCreateUserprofile();
-        try {
-            Thread.sleep(5000L);
-            user = userRepo.findProjectionByUid(userId);
-        } catch (InterruptedException e) {
-            log.error(e.getLocalizedMessage());
-        }
     }
 
     @AfterTest
@@ -101,8 +91,17 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
     @BeforeMethod
     public void beforeEachTest(Method method) {
-        flywayMigration.migrate(true);
         log.info("  Testcase: " + method.getName() + " has started");
+        flywayMigration.migrate(true);
+        String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
+        testHelper.prepareSecurity(userId);
+        userService.getOrCreateUserprofile();
+        try {
+            Thread.sleep(1000L);
+            user = userRepo.findProjectionByUid(userId);
+        } catch (InterruptedException e) {
+            log.error(e.getLocalizedMessage());
+        }
     }
 
     @AfterMethod
@@ -235,21 +234,22 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         createMultipleFunctions(numFunctions, numPublic, numProjects, 0);
 
         int totalPublicFunctions = numProjects * numPublic;
-        PageableResponse response = projectService.getAllPublicFunctions(new PageableRequest()
-            .offset(0)
+        PageableResponse response = projectService.getAllPublicFunctions(new PageableRequest().pageNum(0)
             .limit(Integer.MAX_VALUE));
         assertNotNull(response);
         assertEquals(1, (int) response.getNumPages());
         assertEquals(totalPublicFunctions, (long) response.getTotalRecords());
         assertEquals(totalPublicFunctions, response.getRecords().size());
+        assertFHFunctions(response.getRecords());
 
         response = projectService.getAllPublicFunctions(new PageableRequest()
-            .offset(0)
+            .pageNum(0)
             .limit(2));
         assertNotNull(response);
         assertEquals(9, (int) response.getNumPages());
         assertEquals(totalPublicFunctions, (long) response.getTotalRecords());
         assertEquals(2, response.getRecords().size());
+        assertFHFunctions(response.getRecords());
     }
 
     @Test
@@ -261,7 +261,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         createMultipleFunctions(numFunctions, numPublic, numProjects, numWithTags);
 
         PageableResponse response = projectService.getAllPublicFunctions(new PageableRequest()
-            .offset(0)
+            .pageNum(0)
             .query("facebook")
             .limit(Integer.MAX_VALUE));
         assertNotNull(response);
@@ -271,7 +271,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertEquals(totalTaggedFunctions, response.getRecords().size());
 
         response = projectService.getAllPublicFunctions(new PageableRequest()
-            .offset(0)
+            .pageNum(0)
             .query("apple")
             .limit(3));
         assertNotNull(response);
@@ -280,22 +280,40 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertEquals(3, response.getRecords().size());
 
         response = projectService.getAllPublicFunctions(new PageableRequest()
-            .offset(4)
+            .pageNum(4)
             .query("untitled")
             .limit(4));
         assertNotNull(response);
         assertEquals(5, (int) response.getNumPages());
         assertEquals(18, (long) response.getTotalRecords());
         assertEquals(2, response.getRecords().size());
+        assertFHFunctions(response.getRecords());
 
         response = projectService.getAllPublicFunctions(new PageableRequest()
-            .offset(4)
+            .pageNum(4)
             .query("UNTITLED")
             .limit(4));
         assertNotNull(response);
         assertEquals(5, (int) response.getNumPages());
         assertEquals(18, (long) response.getTotalRecords());
         assertEquals(2, response.getRecords().size());
+        assertFHFunctions(response.getRecords());
+    }
+
+    private void assertFHFunctions(List<FHFunction> records) {
+        assertTrue(records.size() > 0);
+        for (FHFunction record : records) {
+            assertNotNull(record.getOwnerId());
+//            assertNotNull(record.getOwnerUsername());
+//            assertNotNull(record.getOwnerAvatar());
+//            assertTrue(record.getOwnerAvatar().startsWith("https"));
+            assertNotNull(record.getOwnerId());
+            assertNotNull(record.getSlug());
+            assertNotNull(record.getName());
+            assertNotNull(record.getIsPublic());
+            assertNotNull(record.getCreatedAt());
+            assertNotNull(record.getUpdatedAt());
+        }
     }
 
     private void createMultipleFunctions(int numFunctions, int numPublic, int numProjects, int numWithTags) {

@@ -35,21 +35,21 @@ public class SeedData {
   private final RuntimeService runtimeService;
   private final WordList wordList;
   private final UserRepo userRepo;
-  private final int numProjects = 25;
-  private final int numPrivateFunctions = 50;
-  private final int numPublicFunctions = 50;
+  private final int numProjects = 12;
+  private final int numPrivateFunctions = 25;
+  private final int numPublicFunctions = 25;
 
   public void generateSeedData() {
-    setSecurityContext();
     int minProjectNameLength = 1;
     int maxProjectNameLength = 6;
     int minProjectDescLength = 0;
-    int maxProjectDesLength = 50;
+    int maxProjectDescLength = 50;
     Random rand = new Random();
     log.info("Generating seed data");
     for (int i = 0; i < numProjects; i++) {
+      setSecurityContext();
       int nameLength = rand.nextInt(maxProjectNameLength - minProjectNameLength + 1) + minProjectNameLength;
-      int descLength = rand.nextInt(maxProjectDesLength - minProjectDescLength + 1) + minProjectDescLength;
+      int descLength = rand.nextInt(maxProjectDescLength - minProjectDescLength + 1) + minProjectDescLength;
       ProjectCreateRequest request1 = new ProjectCreateRequest()
           .name("Project: " + wordList.getRandomPhrase(nameLength, false))
           .description("Description: " + wordList.getRandomPhrase(descLength, false));
@@ -80,19 +80,18 @@ public class SeedData {
   }
 
   private void setSecurityContext() {
-    List<UserEntity> userEntities = userRepo.findAll();
-    if (userEntities.size() > 0) {
-      UserEntity userEntity = userEntities.get(0);
-      UserProfile user = new UserProfile().uid(userEntity.getUid());
+    UserEntity newUser = new UserEntity();
+    newUser.setEmail(wordList.getRandomPhrase(3, true) + "@gmail.com");
+    newUser.setUid("u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH));
+    newUser.setUsername(wordList.getRandomPhrase(3, true)
+        .replace("-", "_"));
+    newUser.setAvatarUrl("https://i.pravatar.cc/300");
+    newUser.setFullName("Bob Lee");
+    userRepo.save(newUser);
+      UserProfile user = new UserProfile().uid(newUser.getUid());
       UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, new Credentials(),
               new HashSet<>());
-//      authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
-
-//      SecurityContext securityContext = SecurityContext
-//      Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
-//      SecurityContextHolder.setContext(securityContext);
       SecurityContextHolder.getContext().setAuthentication(authentication);
-    }
   }
 
   private String generateTags() {

@@ -298,6 +298,18 @@ export interface FHFunction {
      * @type {string}
      * @memberof FHFunction
      */
+    owner_username?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
+    owner_avatar?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FHFunction
+     */
     project_id?: string;
     /**
      * 

@@ -21,7 +21,7 @@ import net.functionhub.api.Projects;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.ProjectEntity;
 import net.functionhub.api.data.postgres.entity.ProjectItemEntity;
-import net.functionhub.api.data.postgres.projection.SearchResultProjection;
+import net.functionhub.api.data.postgres.projection.FHFunctionProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.ProjectItemRepo;
 import net.functionhub.api.data.postgres.repo.ProjectRepo;
@@ -164,22 +164,19 @@ public class ProjectServiceImpl implements ProjectService {
     int limit = pageableRequest.getLimit();
     Sort sort = buildSort(pageableRequest);
     Pageable pageable = PageRequest.of(page, limit, sort);
-    Page<CodeCellEntity> codeCellPages = null;
-    Page<SearchResultProjection> searchResultPages = null;
+//    Page<CodeCellEntity> codeCellPages = null;
+    Page<FHFunctionProjection> result = null;
     int totalPages = 0;
     long totalElements = 0;
     List<FHFunction> functions = new ArrayList<>();
     if (!ObjectUtils.isEmpty(pageableRequest.getQuery())) {
-      searchResultPages = codeCellRepo.searchAllFunctions(pageableRequest.getQuery(), PageRequest.of(page, limit));
-      functions = projectMapper.mapFromSearchResult(searchResultPages.getContent());
-      totalPages = searchResultPages.getTotalPages();
-      totalElements = searchResultPages.getTotalElements();
+      result = codeCellRepo.searchAllFunctions(pageableRequest.getQuery(), PageRequest.of(page, limit));
     } else {
-      codeCellPages = codeCellRepo.findAllPublicFunctions(pageable);
-      functions = projectMapper.mapFromCodeCellEntities(codeCellPages.getContent());
-      totalPages = codeCellPages.getTotalPages();
-      totalElements = codeCellPages.getTotalElements();
+      result = codeCellRepo.findAllPublicFunctions(pageable);
     }
+    functions = projectMapper.mapFromProjections(result.getContent());
+    totalPages = result.getTotalPages();
+    totalElements = result.getTotalElements();
     return new PageableResponse()
         .numPages(totalPages)
         .totalRecords(totalElements)

@@ -62,8 +62,10 @@ CREATE INDEX code_cell_search_idx ON public.code_cell
 
 CREATE OR REPLACE FUNCTION search_docs(query text)
     RETURNS TABLE(
-    uid uuid,
-    userid text,
+    codeid uuid,
+    ownerid text,
+    ownerusername text,
+    owneravatar text,
     ispublic boolean,
     slug text,
     name text,
@@ -77,21 +79,23 @@ CREATE OR REPLACE FUNCTION search_docs(query text)
 ) AS
 $$
 
-SELECT uid,
-       user_id AS userid,
-       is_public AS ispublic,
-       slug,
-       function_name AS name,
-       fork_count AS forkcount,
-       summary,
-       description,
-       tags,
-       created_at AS createdat,
-       updated_at AS updatedat,
+SELECT cc.uid as codeid,
+       u.uid AS ownerid,
+       u.username as ownerusername,
+       u.avatar_url as owneravatar,
+       cc.is_public AS ispublic,
+       cc.slug as slug,
+       cc.function_name AS name,
+       cc.fork_count AS forkcount,
+       cc.summary as summary,
+       cc.description as description,
+       cc.tags as tags,
+       cc.created_at AS createdat,
+       cc.updated_at AS updatedat,
        ts_rank(search_doc, websearch_to_tsquery('english', query)) AS rank
-FROM public.code_cell
+FROM public.code_cell cc JOIN public.user u on cc.user_id = u.uid
 WHERE search_doc @@ websearch_to_tsquery('english', query) AND
-      is_public = true
+      cc.is_public = true
 ORDER BY rank DESC;
 $$ LANGUAGE SQL;
 

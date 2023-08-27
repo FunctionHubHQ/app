@@ -36,9 +36,9 @@ const ExploreView: FC<ExploreViewProps> = (props) => {
                         <div className="grid grid-cols-1 grid-rows-1 md:grid-cols-2 lg:grid-cols-2 gap-1">
                           <div className="flex items-center">
                             <img className="w-10 h-10 rounded-full"
-                                 src="https://placehold.co/200x200"
+                                 src={record.owner_avatar}
                                  alt="Code owner"/>
-                            <span className="pl-2">{record.slug}</span>
+                            <span className="pl-2">{record.owner_username}</span>
                           </div>
                           <div className="flex justify-end">
                             <FHForkButton forkCount={record.fork_count}/>

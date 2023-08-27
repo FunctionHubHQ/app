@@ -1329,10 +1329,17 @@
       "FHFunction": {
         "type": "object",
         "properties": {
+
           "slug": {
             "type": "string"
           },
           "owner_id": {
+            "type": "string"
+          },
+          "owner_username": {
+            "type": "string"
+          },
+          "owner_avatar": {
             "type": "string"
           },
           "project_id": {

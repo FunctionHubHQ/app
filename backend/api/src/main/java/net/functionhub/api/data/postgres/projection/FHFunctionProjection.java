@@ -6,9 +6,11 @@ import java.util.UUID;
 /**
  * @author Biz Melesse created on 6/13/23
  */
-public interface SearchResultProjection {
-  UUID getUid();
-  String getUserid();
+public interface FHFunctionProjection {
+  UUID getCodeid();
+  String getOwnerid();
+  String getOwnerusername();
+  String getOwneravatar();
   String getTags();
   String getSlug();
   Long getForkcount();
