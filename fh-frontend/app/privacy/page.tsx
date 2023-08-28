@@ -198,7 +198,7 @@ export default function Page() {
             <p className="py-4">We will let You know via email and/or a prominent notice on Our Service, prior to the change becoming effective and update the &quot;Last updated&quot; date at the top of this Privacy Policy.</p>
             <p className="py-4">You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.</p>
            <h6 className="mb-4 tracking-tight font-extrabold text-white dark:text-white pt-2">Contact Us</h6 >
-            <p>If you have any questions about this Privacy Policy, You can contact us at support@functionhub.net.</p>
+            <p>If you have any questions about this Privacy Policy, You can contact us at  <img src="/support_email_gray.png" alt="FunctionHub Support" width={250} className="inline-flex -ml-2"/>.</p>
           </div>
 
 

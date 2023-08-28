@@ -68,7 +68,7 @@ export default function Page() {
               All purchases are non-refundable. You can cancel your subscription at any time by contacting us using the contact information provided below. Your cancellation will take effect at the end of the current paid term.
             </p>
             <p className="py-4">
-              If you are unsatisfied with our services, please email us at support@functionhub.net.
+              If you are unsatisfied with our services, please email us at  <img src="/support_email_gray.png" alt="FunctionHub Support" width={250} className="inline-flex -ml-2"/>.
             </p>
             <h3 className="mb-4 text-2xl tracking-tight font-extrabold text-white dark:text-white pt-6"> 7. PROHIBITED ACTIVITIES</h3>
             <p>
@@ -239,7 +239,7 @@ export default function Page() {
               In order to resolve a complaint regarding the Site or to receive further information regarding use of the Site, please contact us at:
             </p>
             <p className="py-4">
-              support@functionhub.net
+              <img src="/support_email_gray.png" alt="FunctionHub Support" width={250} className="inline-flex -ml-2"/>
             </p>
           </div>
 
