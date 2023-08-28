@@ -1,9 +1,6 @@
 "use client"
 import '#/styles/globals.css';
 import '#/styles/editor.css'
-import { AddressBar } from '#/ui/address-bar';
-import Byline from '#/ui/byline';
-import { GlobalNav } from '#/ui/global-nav';
 import {usePathname} from "next/navigation";
 import Footer from "#/ui/nav/footer";
 import {AuthContextProvider} from "#/context/AuthContext";

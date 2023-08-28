@@ -1,0 +1,15 @@
+.fh-logo {
+  display: flex;
+  align-items: center;
+}
+.fh-logo #logo-text {
+  padding-left: 0.5rem;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.fh-logo #docs-text {
+  margin-top: -1rem;
+  font-size: 0.75rem;
+  color: #2a2a2a;
+}

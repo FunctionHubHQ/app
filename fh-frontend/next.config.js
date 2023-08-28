@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const DOC_URL = "http://localhost:3001"
+const DOC_URL = "http://localhost:4040"
 const nextConfig = {
   reactStrictMode: true, // Recommended for the `pages` directory, default in `app`.
   experimental: {

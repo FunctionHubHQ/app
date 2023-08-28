@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "description": "Nextra docs template",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 4040",
     "build": "next build",
-    "start": "next start"
+    "start": "next start -p 4040"
   },
   "repository": {
     "type": "git",

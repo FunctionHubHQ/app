@@ -23,7 +23,7 @@ export default function Footer() {
                 <a href="/terms" className="mr-4 hover:underline md:mr-6">Terms</a>
               </li>
               <li>
-                <a href="privacy" className="mr-4 hover:underline md:mr-6 ">Privacy</a>
+                <a href="/privacy" className="mr-4 hover:underline md:mr-6 ">Privacy</a>
               </li>
             </ul>
           </div>
@@ -32,7 +32,5 @@ export default function Footer() {
           {/*    href="https://flowbite.com/" className="hover:underline">Flowbite™</a>. All Rights Reserved.</span>*/}
         </div>
       </footer>
-
-
   );
 }
