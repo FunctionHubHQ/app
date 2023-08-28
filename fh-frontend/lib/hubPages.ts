@@ -23,11 +23,11 @@ export const hubPages: { description?: string; name: string; items: Item[] }[] =
         slug: 'docs',
         description: 'FunctionHub documentation',
       },
-      {
-        name: 'Examples',
-        slug: 'examples',
-        description: 'Learn how to create functions',
-      },
+      // {
+      //   name: 'Examples',
+      //   slug: 'examples',
+      //   description: 'Learn how to create functions',
+      // },
     ],
   },
   {
