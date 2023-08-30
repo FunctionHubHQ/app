@@ -3,6 +3,7 @@ package net.functionhub.api.utils.security.firebase;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import jakarta.servlet.ServletException;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -59,8 +61,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * roles.
  *
  */
-@Component
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class SecurityFilter extends OncePerRequestFilter {
     private final FirebaseService firebaseService;
@@ -72,7 +74,7 @@ public class SecurityFilter extends OncePerRequestFilter {
   @Override
   protected void doFilterInternal(HttpServletRequest httpServletRequest,
       @NotNull HttpServletResponse httpServletResponse,
-      @NotNull FilterChain filterChain) throws IOException {
+      @NotNull FilterChain filterChain) throws IOException, ServletException {
     // All non-preflight requests must have a valid authorization token
     boolean methodExcluded = Stream.of("options")
       .anyMatch(method -> httpServletRequest.getMethod().toLowerCase().contains(method));
@@ -85,11 +87,7 @@ public class SecurityFilter extends OncePerRequestFilter {
             httpServletRequest.getRequestURI()))) {
       verifyToken(httpServletRequest);
     }
-    try {
-      filterChain.doFilter(httpServletRequest, httpServletResponse);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    filterChain.doFilter(httpServletRequest, httpServletResponse);
   }
 
   private void verifyToken(HttpServletRequest httpServletRequest) throws IOException {
@@ -134,6 +132,7 @@ public class SecurityFilter extends OncePerRequestFilter {
           credentials.setDecodedFirebaseToken(decodedToken);
           // TODO 2 db calls with the one above so not very efficient for production use. This is why
           //    prod should use api key instead of firebase tokens
+          String uri = httpServletRequest.getRequestURI();
           ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(user.getUid());
           if (apiKeyEntity != null) {
             // userEntity could be null if this is the registration flow

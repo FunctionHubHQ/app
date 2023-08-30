@@ -59,7 +59,6 @@ import org.springframework.web.filter.CorsFilter;
 @ComponentScan
 @RequiredArgsConstructor
 public class FirebaseSecurityConfiguration {
-
     private final SecurityFilter securityFilter;
     private final ObjectMapper objectMapper;
     private final CorsProps corsProps;

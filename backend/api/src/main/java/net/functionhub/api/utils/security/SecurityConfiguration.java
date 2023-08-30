@@ -29,12 +29,14 @@ public class SecurityConfiguration {
   @Bean
   @Primary
   @RequestScope
-  public RequestHeaders requestHeader(HttpServletRequest httpServletRequest) {
+  public static RequestHeaders requestHeader(HttpServletRequest httpServletRequest) {
     // Normalize the headers by lower-casing all the keys
     Map<String, String> normalized = new HashMap<>();
+    Map<String, String> originalHeaders = new HashMap<>();
     Enumeration<String> headers = httpServletRequest.getHeaderNames();
     while (headers.hasMoreElements()) {
       String header = headers.nextElement();
+      originalHeaders.put(header, httpServletRequest.getHeader(header));
       normalized.put(header.toLowerCase(), httpServletRequest.getHeader(header));
       String key = header.toLowerCase();
       if (key.equals("authorization")) {
@@ -44,6 +46,6 @@ public class SecurityConfiguration {
         }
       }
     }
-    return new RequestHeaders(normalized);
+    return new RequestHeaders(normalized, originalHeaders);
   }
 }

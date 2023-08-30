@@ -10,8 +10,10 @@ import lombok.Getter;
 public class RequestHeaders {
 
   private final Map<String, String> headers;
-  public RequestHeaders(Map<String, String> headers) {
+  private final Map<String, String> originalHeaders;
+  public RequestHeaders(Map<String, String> headers, Map<String, String> originalHeaders) {
     this.headers = headers;
+    this.originalHeaders = originalHeaders;
   }
 }
 
