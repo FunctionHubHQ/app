@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  fh_proxy:
+    image: mitmproxy/mitmproxy
+    container_name: fh_proxy
+    hostname: fh_proxy
+    command: mitmweb --web-host 0.0.0.0 --web-port 8081 -s /data/scripts/redirect.py -s /data/scripts/modify_response.py
+    #    restart: always
+    volumes:
+      - ./:/data
+      - ~/.mitmproxy:/home/mitmproxy/.mitmproxy
+    ports:
+      - "7070:8080"
+      - "7071:8081"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - proxy_network
+networks:
+  proxy_network:
+    driver: bridge
