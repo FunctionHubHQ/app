@@ -71,15 +71,15 @@ public class ProxyServiceImpl implements ProxyService {
     String fhApiKey = null;
     while (headers.hasMoreElements()) {
       String header = headers.nextElement();
-      String key = header.toLowerCase();
-      if (key.equalsIgnoreCase("X-Function-Hub-Proxy-Target")) {
+      if (header.equalsIgnoreCase("X-Function-Hub-Proxy-Target")) {
         fhProxyTarget = httpServletRequest.getHeader(header);
-      } else if (key.equalsIgnoreCase("X-Function-Hub-Key")) {
+      } else if (header.equalsIgnoreCase("X-Function-Hub-Key")) {
         fhApiKey = httpServletRequest.getHeader(header);
       } else {
         rawHeaders.put(header, httpServletRequest.getHeader(header));
       }
     }
+    rawHeaders.put("host", "api.functionhub.net");
     userHttpRequest.setHeaders(rawHeaders);
     userHttpRequest.setProxyTarget(fhProxyTarget);
     userHttpRequest.setFhApiKey(fhApiKey);

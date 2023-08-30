@@ -23,6 +23,7 @@ const Sandbox: FC<SandboxProps> = (props) => {
       <rapi-doc
           spec-url = {props.specUrl}
           nav-item-spacing = "compact"
+          show-components="true"
           header-color = "#ececec"
           render-style = "view"
           update-route = "false"
@@ -39,7 +40,9 @@ const Sandbox: FC<SandboxProps> = (props) => {
           allow-spec-file-load = "false"
           allow-advanced-search = "false"
           schema-description-expanded = "true"
+          response-area-height="50%"
           persist-auth = "true"
+          allow-schema-description-expand-toggle="false"
           css-file = "api-sandbox.css"
           css-classes = "fh-api"
           theme = "dark"
