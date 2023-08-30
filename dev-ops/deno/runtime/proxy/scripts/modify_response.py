@@ -7,6 +7,8 @@ import json
 import os
 import re
 
+
+rewrite_response = False
 # Replacement rules
 rules = {
     ".*/users/.*": {
@@ -15,7 +17,7 @@ rules = {
     },
     "/.*": { # match URL with a regular expression
         "status_code": 201, # replace response code
-        "content": '{"greeting": "Hello, world!"}', # replace content
+        "content": '{"status": "ok"}', # replace content
     },
 }
 
@@ -38,14 +40,16 @@ def request(flow: http.HTTPFlow) -> None:
 
 
 # this is called for a response before returning to the proxy client
+
 def response(flow: http.HTTPFlow) -> None:
-    if 'content-type' in flow.response.headers and flow.response.headers["content-type"].startswith("application/json"):
-        for rule in rules:
-            if re.match(rule, flow.request.path) is not None:
-                ctx.log.info("Matched path for replacement: " +
-                             flow.request.path)
-                replaceResponse(flow, rules[rule])
-                break # use first matched rule
+    if rewrite_response:
+      if 'content-type' in flow.response.headers and flow.response.headers["content-type"].startswith("application/json"):
+          for rule in rules:
+              if re.match(rule, flow.request.path) is not None:
+                  ctx.log.info("Matched path for replacement: " +
+                               flow.request.path)
+                  replaceResponse(flow, rules[rule])
+                  break # use first matched rule
 
 
 def replaceResponse(flow: http.HTTPFlow, rule: dict) -> None:
