@@ -3,12 +3,23 @@ services:
   runtime:
     build: .
     container_name: runtime
+    hostname: runtime
     restart: always
     volumes:
       - ./deno-dir:/deno-dir
+      - ~/.mitmproxy:/.mitmproxy
     ports:
       - "8000:8000"
     environment:
+      - NODE_EXTRA_CA_CERTS=.mitmproxy/mitmproxy-ca.pem
       - DENO_NO_PROMPT=1
+      - HTTP_PROXY=host.docker.internal:7070
+      - HTTPS_PROXY=host.docker.internal:7070
+      - NO_PROXY=host.docker.internal,registry.npmjs.org
     extra_hosts:
     - "host.docker.internal:host-gateway"
+    networks:
+      - proxy_network
+networks:
+  proxy_network:
+    driver: bridge

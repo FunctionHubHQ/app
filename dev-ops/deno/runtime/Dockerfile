@@ -4,4 +4,4 @@ USER deno
 RUN deno cache main.ts
 RUN mkdir -p /var/tmp/log
 EXPOSE 8000
-CMD ["run", "--allow-net", "main.ts"]
+CMD ["run", "--allow-net", "--allow-env=NODE_EXTRA_CA_CERTS", "--allow-read=.mitmproxy/mitmproxy-ca.pem", "main.ts"]

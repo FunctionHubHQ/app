@@ -76,6 +76,9 @@ public class SecurityFilter extends OncePerRequestFilter {
     // All non-preflight requests must have a valid authorization token
     boolean methodExcluded = Stream.of("options")
       .anyMatch(method -> httpServletRequest.getMethod().toLowerCase().contains(method));
+    if (httpServletRequest.getRequestURI().toLowerCase().contains("/favicon.ico")) {
+      return;
+    }
     boolean uriExcluded = unsecurePaths.allow(httpServletRequest.getRequestURI());
     if (!(methodExcluded || uriExcluded ||
         unsecurePaths.allowedOrigin(httpServletRequest.getRemoteHost(),
@@ -101,7 +104,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         user.setUid(userProjection.getUid());
         user.setRoles(new HashMap<>());
         user.setPicture(userProjection.getAvatar());
-        user.setApiKey(userProjection.getApiKey());
+        user.setApiKey(userProjection.getApikey());
         user.setAuthMode(AuthMode.AK.name());
         user.setUsername(userProjection.getUsername());
       } else {
@@ -116,7 +119,7 @@ public class SecurityFilter extends OncePerRequestFilter {
           try {
             decodedToken = FirebaseAuth.getInstance().verifyIdToken(bearerToken);
           } catch (FirebaseAuthException ex) {
-            throw new RuntimeException(ex);
+            throw new RuntimeException(ex.getMessage());
           }
           user = firebaseTokenToUser(decodedToken);
           user.setAuthMode(AuthMode.FB.name());
@@ -188,6 +191,9 @@ public class SecurityFilter extends OncePerRequestFilter {
       } else if (httpServletRequest.getRequestURI().startsWith("/spec")) {
         String[] tokens = httpServletRequest.getRequestURI().split("/");
         bearerToken = tokens[tokens.length - 2];
+      } else if (httpServletRequest.getRequestURI().startsWith("/npm")) {
+        String[] tokens = httpServletRequest.getRequestURI().split("apiKey=");
+        bearerToken = tokens[tokens.length - 1];
       }
       return bearerToken;
   }

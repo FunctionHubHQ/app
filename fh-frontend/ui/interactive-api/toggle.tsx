@@ -2,7 +2,6 @@
 
 import {FC, useState} from 'react'
 import { BsStars } from 'react-icons/bs';
-import {SandboxTabProps} from "#/ui/interactive-api/sandboxTabs";
 import {DEBUG} from "#/ui/utils/utils";
 
 export interface ToggleProps {

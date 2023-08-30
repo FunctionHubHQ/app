@@ -1,8 +1,8 @@
 version: '3.8'
 services:
-  deno_internal:
+  spec_generator:
     build: .
-    container_name: deno_internal
+    container_name: spec_generator
     restart: always
     volumes:
       - ./deno-dir:/deno-dir
