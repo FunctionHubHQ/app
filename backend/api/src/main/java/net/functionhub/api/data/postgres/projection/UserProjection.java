@@ -8,6 +8,6 @@ public interface UserProjection {
   String getName();
   String getUid();
   String getAvatar();
-  String getApiKey();
+  String getApikey();
   String getUsername();
 }

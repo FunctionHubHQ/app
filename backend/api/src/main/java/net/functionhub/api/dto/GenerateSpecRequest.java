@@ -13,4 +13,5 @@ public class GenerateSpecRequest {
   private String uid;
   private String from;
   private String to;
+  private String apiKey;
 }

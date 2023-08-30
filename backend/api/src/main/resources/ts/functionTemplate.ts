@@ -1,3 +1,5 @@
+import axios from 'npm:axios';
+
 export interface RequestEntity {
   /**
    * The person being greeted

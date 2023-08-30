@@ -4,10 +4,12 @@ self.onmessage = async (event) => {
   try {
     // Re-direct console.log statements
     // TODO: may need to handle other console calls
-    console.log = (...args) => {
+    self.console.log = (...args) => {
       const message = args.map(it => JSON.stringify(it)).join(' ');
       self.postMessage({ stdout: message, uid: uid });
     }
+    self.process = {}
+    self.process.env = {}
     const result = await handler(event.data.payload);
     self.postMessage({ result: result, uid: uid });
   } catch (e) {

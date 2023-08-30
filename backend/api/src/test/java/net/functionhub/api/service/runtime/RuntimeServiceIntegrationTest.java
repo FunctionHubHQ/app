@@ -173,7 +173,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
             + "  tags: string[];\n"
             + "  publishDate: string;\n"
             + "};\n";
-        runtimeService.generateJsonSchema(Base64.getEncoder().encodeToString(tsSpec.getBytes()),
+        runtimeService.generateJsonSchema(FHUtils.getSessionUser(), Base64.getEncoder().encodeToString(tsSpec.getBytes()),
             UUID.randomUUID().toString());
     }
 }

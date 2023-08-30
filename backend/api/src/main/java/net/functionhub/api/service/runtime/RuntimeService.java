@@ -4,13 +4,13 @@ import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
-import net.functionhub.api.ForkRequest;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.SpecResult;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import net.functionhub.api.StatusRequest;
 import net.functionhub.api.StatusResponse;
+import net.functionhub.api.UserProfile;
 
 /**
  * @author Biz Melesse created on 7/26/23
@@ -60,7 +60,7 @@ public interface RuntimeService {
   String generateCodeVersion();
   CodeUpdateResult updateCode(Code code);
   Code getCodeDetail(String uid);
-  void generateJsonSchema(String interfaces, String uid);
+  void generateJsonSchema(UserProfile userProfile, String code, String uid);
   String getJsonSchema(String uid);
   GenericResponse handleSpecResult(SpecResult specResult);
   GenericResponse deploy(ExecRequest execRequest);

@@ -5,8 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.functionhub.api.Code;
@@ -199,6 +197,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         if (execRequest.getDeployed() != null && execRequest.getDeployed()) {
           uid += deployedFlag;
         }
+        uid += "apiKey=" + FHUtils.getSessionUser().getApiKey();
         ExecRequestInternal request = new ExecRequestInternal();
         request.setPayload(parseExecRequestPayload(execRequest.getPayload()));
         request.setEnv(sourceProps.getProfile());
@@ -208,6 +207,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         request.setExecId(execId);
         request.setDeployed(execRequest.getDeployed());
         request.setVersion(version);
+        request.setApiKey(FHUtils.getSessionUser().getApiKey());
         Thread.startVirtualThread(() -> submitExecutionTask(request, getRuntimeUrl()));
       }
       return getExecutionResult(execId);
@@ -228,6 +228,7 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public String getUserCode(String uid) {
+    uid = uid.split("apiKey=")[0]; // Drop the apiKey part since we're past authentication
     boolean deployed = false;
     String version = null;
     if (uid != null) {
@@ -238,8 +239,9 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (uid.contains("@")) {
         version = parseVersion(uid);
       }
-      uid = parseUid(uid);
+      uid= parseUid(uid);
       String code = null;
+      String userId = null;
       if (deployed && !ObjectUtils.isEmpty(version)) {
         List<CommitHistoryEntity> commitHistoryEntities = commitHistoryRepo
             .findByCodeCellIdAndVersion(UUID.fromString(uid), version);
@@ -247,26 +249,39 @@ public class RuntimeServiceImpl implements RuntimeService {
       } else {
         CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
         code = entity.getCode();
+        userId = entity.getUserId();
       }
-      if (!ObjectUtils.isEmpty(code)) {
+      if (!ObjectUtils.isEmpty(code) && !ObjectUtils.isEmpty(userId)) {
         String rawCode = new String(Base64.getDecoder().decode(code.getBytes()));
-        return workerScript(rawCode);
+        return workerScript(rawCode, userId);
       }
     }
     return null;
   }
 
-  private String workerScript(String rawCode) {
+  private String workerScript(String rawCode, String userId) {
     StringJoiner joiner = new StringJoiner("\n");
     joiner.add(rawCode);
     try {
       File file = ResourceUtils.getFile("classpath:ts/workerTemplate.ts");
       String workerTemplate =  new String(Files.readAllBytes(file.toPath()));
+      workerTemplate = injectSecrets(workerTemplate, userId);
       joiner.add(workerTemplate);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
     return joiner.toString();
+  }
+
+  private String injectSecrets(String workerTemplate, String userId) {
+    // Inject all of this user's secrets into the global scope of the script
+    ;
+    StringJoiner joiner = new StringJoiner(",\n");
+    String key = "FUNCTION_HUB_KEY";
+    String value = FHUtils.getSessionUser().getApiKey();
+    joiner.add(String.format("'%s':'%s'", key, value));
+    return workerTemplate
+        .replace("self.process.env = {}", String.format("self.process.env = {%s}", joiner));
   }
 
   @Override
@@ -418,7 +433,8 @@ public class RuntimeServiceImpl implements RuntimeService {
           commitHistoryRepo.save(commitHistory);
         });
 
-        Thread.startVirtualThread(() -> generateJsonSchema(
+        final UserProfile userProfile = FHUtils.getSessionUser();
+        Thread.startVirtualThread(() -> generateJsonSchema(userProfile,
             new String(Base64.getDecoder()
                 .decode(finalCell.getCode()
                     .getBytes())), finalCell.getUid()
@@ -509,13 +525,14 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public void generateJsonSchema(String code, String uid) {
+  public void generateJsonSchema(UserProfile userProfile, String code, String uid) {
     GenerateSpecRequest request = new GenerateSpecRequest();
     request.setFile(code);
     request.setEnv(sourceProps.getProfile());
     request.setUid(uid);
     request.setFrom("ts");
     request.setTo("jsc");
+    request.setApiKey(userProfile.getApiKey());
     submitExecutionTask(request, getCodeGenUrl());
   }
 

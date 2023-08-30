@@ -25,7 +25,7 @@ public interface UserRepo extends JpaRepository<UserEntity, Long> {
         + "u.full_name as name, "
         + "u.avatar_url as avatar, "
         + "u.username as username, "
-        + "a.api_key as api_key " +
+        + "a.api_key as apikey " +
         "FROM public.user u JOIN public.api_key a ON u.uid = a.user_id "
         + "WHERE a.api_key = ?1",
         nativeQuery = true)

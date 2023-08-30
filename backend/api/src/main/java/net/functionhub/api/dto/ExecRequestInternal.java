@@ -12,10 +12,10 @@ public class ExecRequestInternal {
   private Map<String, Object> payload;
   private String env;
   private String uid;
-  private String fcmToken;
   private Long timeout;
   private String execId;
   private Boolean validate;
   private Boolean deployed;
   private String version;
+  private String apiKey;
 }

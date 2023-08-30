@@ -18,9 +18,7 @@ public class UnsecurePaths {
 
   private final List<String> paths = new ArrayList<>(List.of(
       "/actuator/health",
-      "/actuator/health/**",
-      "/npm",
-      "/npm/**"
+      "/actuator/health/**"
   ));
 
   public boolean allow(String path) {

@@ -18,7 +18,7 @@ import { Configuration } from "./configuration";
 // @ts-ignore
 import globalAxios, { AxiosPromise, AxiosInstance } from 'axios';
 
-const basePath = process.env.NODE_ENV !== 'production' ? "http://localhost:8080" : "https://api.functionhub.net";
+const basePath = process.env.NODE_ENV !== 'production' ? "http://localhost:9090" : "https://api.functionhub.net";
 export const BASE_PATH = basePath.replace(/\/+$/, "");
 
 /**
