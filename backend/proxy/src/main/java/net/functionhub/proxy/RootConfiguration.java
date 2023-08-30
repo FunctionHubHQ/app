@@ -2,7 +2,7 @@ package net.functionhub.proxy;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.functionhub.proxy.data.DataConfiguration;
+//import net.functionhub.proxy.data.DataConfiguration;
 import net.functionhub.proxy.props.PropConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Import;
 @Slf4j
 @Configuration
 @Import({
-    DataConfiguration.class,
+//    DataConfiguration.class,
     PropConfiguration.class,
 })
 @RequiredArgsConstructor

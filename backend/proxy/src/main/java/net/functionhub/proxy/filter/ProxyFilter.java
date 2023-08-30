@@ -1,5 +1,6 @@
 package net.functionhub.proxy.filter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -10,8 +11,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -22,6 +25,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RequiredArgsConstructor
 public class ProxyFilter extends OncePerRequestFilter {
+  private final ObjectMapper objectMapper;
 
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -45,11 +49,11 @@ public class ProxyFilter extends OncePerRequestFilter {
     }
     if (fhProxyTarget != null) {
       if (fhApiKey == null) {
-        response.setStatus(400);
-        response.setContentType("application/json");
+        response.setStatus(HttpStatus.BAD_REQUEST_400);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         Map<String, String> message = new HashMap<>();
         message.put("error", "Missing X-Function-Hub-Key header");
-        response.getWriter().write(new Gson().toJson(message));
+        objectMapper.writeValue(response.getWriter(), message);
         return;
       }
     }
