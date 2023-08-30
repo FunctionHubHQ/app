@@ -12,7 +12,6 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt'
     implementation 'com.vladmihalcea:hibernate-types-60'
     implementation 'org.hibernate:hibernate-core'
-    implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.apache.httpcomponents:fluent-hc'
     implementation 'com.alibaba:fastjson'
     implementation 'org.jsoup:jsoup'

@@ -60,7 +60,6 @@ configure(subprojects.findAll(it ->
     implementation "org.springframework.security:spring-security-web"
     implementation "org.springframework.security:spring-security-config"
     implementation 'org.apache.httpcomponents:fluent-hc:4.5.14'
-    implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework:spring-websocket:6.0.9'
     implementation 'org.springframework:spring-messaging:6.0.9'
     api 'com.squareup.retrofit2:retrofit:2.9.0'
