@@ -20,7 +20,6 @@ public class GlobalControllerExceptionHandler {
   public ResponseEntity<FHErrorMessage> resourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
     FHErrorMessage message = new FHErrorMessage(
         obfuscateMessage(ex.getMessage()),
-        HttpStatus.NOT_FOUND.value(),
         FHUtils.getCurrentTime());
 
     return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
@@ -30,7 +29,6 @@ public class GlobalControllerExceptionHandler {
   public ResponseEntity<FHErrorMessage> internalError(Exception ex, WebRequest request) {
     FHErrorMessage message = new FHErrorMessage(
         obfuscateMessage(ex.getMessage()),
-        HttpStatus.INTERNAL_SERVER_ERROR.value(),
         FHUtils.getCurrentTime());
 
     return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -41,7 +39,6 @@ public class GlobalControllerExceptionHandler {
       HttpMessageNotReadableException ex, WebRequest request) {
     FHErrorMessage message = new FHErrorMessage(
         obfuscateMessage(ex.getMessage()),
-        HttpStatus.BAD_REQUEST.value(),
         FHUtils.getCurrentTime());
 
     return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);

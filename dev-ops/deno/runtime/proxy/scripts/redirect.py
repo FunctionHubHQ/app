@@ -9,7 +9,6 @@ def request(flow: http.HTTPFlow) -> None:
     # which is useful in transparent mode where we usually only have the IP
     # otherwise.
     flow.request.headers["X-Function-Hub-Proxy-Target"] = flow.request.url
-    flow.request.headers["host"] = "functionhub.net"
     flow.request.headers["User-Agent"] = "FunctionHub/1.0.0"
     flow.request.host = "host.docker.internal"
     flow.request.path = "/proxy"

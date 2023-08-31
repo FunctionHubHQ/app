@@ -1,15 +1,9 @@
 package net.functionhub.proxy.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.proxy.service.ProxyService;
-import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,11 +23,9 @@ public class ProxyController {
           RequestMethod.GET,
           RequestMethod.POST,
           RequestMethod.PUT,
-          RequestMethod.HEAD,
           RequestMethod.DELETE,
           RequestMethod.OPTIONS,
-          RequestMethod.PATCH,
-          RequestMethod.TRACE})
+      })
   public void proxyHandler() throws IOException {
     proxyService.handler();
   }

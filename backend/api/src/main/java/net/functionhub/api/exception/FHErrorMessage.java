@@ -14,7 +14,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class FHErrorMessage {
   private String error;
-  private int code;
   private String timestamp;
 }
 
