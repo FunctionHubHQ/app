@@ -1,8 +1,10 @@
 import os
 import time
 import uuid
+import json
 import argparse
 import subprocess
+import http.client
 
 
 class DenoWorkerThread:
@@ -15,11 +17,23 @@ class DenoWorkerThread:
     self.prev_memory_usage = 0
     self.ppid = ppid  # Parent process ID of the thread
     self.tid = tid  # Thread ID of the thread
-    self.started_at = time.time_ns() // 1000000  # +/- 5 milliseconds
+    self.created_at = time.time_ns() // 1000000  # +/- 5 milliseconds
+    self.updated_at = time.time_ns() // 1000000  # +/- 5 milliseconds
 
 
 def __str__(self):
   return f"ID: {self.id}, Name: {self.name}, CPU Time: {self.curr_cpu_time}, Memory Usage: {self.curr_memory_usage}, PPID: {self.ppid}, TID: {self.tid}"
+
+def request(path, body):
+  # Define the target host and path
+  host = "localhost:8000"
+  conn = http.client.HTTPConnection(host)
+  headers = {
+    "Content-Type": "application/json",
+  }
+  conn.request("POST", path, json.dumps(body), headers)
+  conn.getresponse()
+  conn.close()
 
 
 def get_pids(prefix):
@@ -75,37 +89,57 @@ def get_thread_usage_metrics(ppid, tid) -> DenoWorkerThread:
     data = stat_file.read().split()
     utime_ticks = int(
         data[13])  # 14th field: utime (user mode time in clock ticks)
-    stime_ticks = int(
-        data[14])  # 15th field: stime (kernel mode time in clock ticks)
     clock_ticks_per_second = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
     utime_mseconds = (utime_ticks / clock_ticks_per_second) * 1000
     cpu_time = utime_mseconds
+    print("DEBUG utime_mseconds: ", utime_mseconds, time.time_ns() // 1000000)
 
   thread.tid = tid
   thread.ppid = ppid
   thread.curr_memory_usage = memory_usage
   thread.curr_cpu_time = cpu_time
   thread.name = name
+  thread.updated_at = time.time_ns() // 1000000
 
   return thread
 
+def alert_on_metric_change(thread):
+  """Send an alert if there is any usage change in CPU or memory"""
+  if thread.curr_cpu_time > thread.prev_cpu_time:
+    request("/thread-alarm", {
+      "thread_id": thread.id,
+      "cpu_time": thread.curr_cpu_time,
+      "updated_at": thread.updated_at
+    })
+    print("Sent alarm for : ", thread.tid, thread.id, thread.curr_cpu_time)
 
-def alert_on_threshold(thread, max_cpu_time, max_memory_usage):
-  """Raise an alarm by signaling the Deno runtime that a worker thread has exceeded
-  resource limitations"""
-  # print("About to alert...")
-  pass
+  if thread.curr_memory_usage > thread.prev_memory_usage:
+    request("/thread-alarm", {
+      "thread_id": thread.id,
+      "memory_usage": thread.curr_memory_usage,
+      "updated_at": thread.updated_at
+    })
+    print("Sent alarm for : ", thread.tid, thread.id, thread.curr_memory_usage)
+
+def signal_on_new_thread(thread):
+  """Signal the Deno runtime that a new thread has been detected.
+  The runtime should use the thread ID to keep track of future alarms."""
+  request("/new-thread", {
+    "thread_id": thread.id,
+    "created_at": thread.created_at,
+    "ppid": thread.ppid,
+    "tid": thread.tid
+  })
+  print("Signaled for thread: ", thread.id)
 
 
-def start_monitor(max_cpu_time=5, max_memory_usage=16252928,
-    sampling_rate=0.005):
+def start_monitor(sampling_rate=0.005):
   """Start monitoring Deno worker threads
   :param max_cpu_time max allowed cpu time in milliseconds for a thread (best estimate)
   :param max_memory_usage max allowed memory usage in bytes. Default is 128MB
   :param sampling_rate how often the threads should be scanned
   """
-  print(f"Thread monitor up: max_cpu_time={max_cpu_time}, "
-        f"max_memory_usage={max_memory_usage}, sampling_rate={sampling_rate}")
+  print(f"Thread monitor up: sampling_rate={sampling_rate}")
   active_worker_threads = {}
   while True:
     # Fetch the pid every time since deno could have died and restarted
@@ -116,14 +150,17 @@ def start_monitor(max_cpu_time=5, max_memory_usage=16252928,
       if thread.tid not in active_worker_threads:
         print(
             f"ID: {thread.id}, Name: {thread.name}, CPU Time: {thread.curr_cpu_time}, Memory Usage: {thread.curr_memory_usage}, PPID: {thread.ppid}, TID: {thread.tid}")
+        active_worker_threads[thread.tid] = thread
+        signal_on_new_thread(thread)
       else:
-        thread.started_at = active_worker_threads.get(thread.tid).started_at
+        prev_thread = active_worker_threads.get(thread.tid)
+        prev_thread.prev_cpu_time = prev_thread.curr_cpu_time
+        prev_thread.prev_memory_usage = prev_thread.curr_memory_usage
+        prev_thread.curr_cpu_time = thread.curr_cpu_time
+        prev_thread.curr_memory_usage = thread.curr_memory_usage
+        prev_thread.updated_at = thread.updated_at
 
-      active_worker_threads[thread.tid] = thread
-
-      # Check thread usage limits and raise an alarm if any of them exceed
-      # the threshold
-      alert_on_threshold(thread, max_cpu_time, max_memory_usage)
+        alert_on_metric_change(prev_thread)
 
     # Remove any workers that have finished or exited
     updated_threads = {key: value for key, value in
@@ -132,24 +169,20 @@ def start_monitor(max_cpu_time=5, max_memory_usage=16252928,
 
     # Sample every 5 milliseconds even though the default Kernel clock tick
     # rate is 100hz, i.e. 1 tick every 10 milliseconds
-    break
     time.sleep(sampling_rate)
 
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Deno Worker Thread Monitor")
-  parser.add_argument("max_cpu_time", type=int,
-                      help="Max CPU time in milliseconds")
-  parser.add_argument("max_memory_usage", type=int,
-                      help="Max memory usae in bytes")
+  # parser.add_argument("max_cpu_time", type=int,
+  #                     help="Max CPU time in milliseconds")
+  # parser.add_argument("max_memory_usage", type=int,
+  #                     help="Max memory usae in bytes")
   parser.add_argument("--sampling_rate", type=float, default=0.005,
                       help="Sampling frequency")
   args = parser.parse_args()
 
-  max_cpu_time = args.max_cpu_time
-  max_memory_usage = args.max_memory_usage
+  # max_cpu_time = args.max_cpu_time
+  # max_memory_usage = args.max_memory_usage
   sampling_rate = args.sampling_rate
-  start_monitor(
-      max_cpu_time=max_cpu_time,
-      max_memory_usage=max_memory_usage,
-      sampling_rate=sampling_rate)
+  start_monitor(sampling_rate=sampling_rate)
