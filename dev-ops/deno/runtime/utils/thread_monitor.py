@@ -24,6 +24,7 @@ class DenoWorkerThread:
 def __str__(self):
   return f"ID: {self.id}, Name: {self.name}, CPU Time: {self.curr_cpu_time}, Memory Usage: {self.curr_memory_usage}, PPID: {self.ppid}, TID: {self.tid}"
 
+
 def request(path, body):
   # Define the target host and path
   host = "localhost:8000"
@@ -102,6 +103,7 @@ def get_thread_usage_metrics(ppid, tid) -> DenoWorkerThread:
 
   return thread
 
+
 def alert_on_metric_change(thread):
   """Send an alert if there is any usage change in CPU or memory"""
   if thread.curr_cpu_time > thread.prev_cpu_time:
@@ -110,7 +112,6 @@ def alert_on_metric_change(thread):
       "cpu_time": thread.curr_cpu_time,
       "updated_at": thread.updated_at
     })
-    print("Sent alarm for : ", thread.tid, thread.id, thread.curr_cpu_time)
 
   if thread.curr_memory_usage > thread.prev_memory_usage:
     request("/thread-alarm", {
@@ -118,7 +119,7 @@ def alert_on_metric_change(thread):
       "memory_usage": thread.curr_memory_usage,
       "updated_at": thread.updated_at
     })
-    print("Sent alarm for : ", thread.tid, thread.id, thread.curr_memory_usage)
+
 
 def signal_on_new_thread(thread):
   """Signal the Deno runtime that a new thread has been detected.
@@ -145,21 +146,24 @@ def start_monitor(sampling_rate=0.005):
     deno_pid = get_pids("deno run --allow-net")[0]
     worker_pids = get_pids("{worker-")
     for worker_pid in worker_pids:
-      thread = get_thread_usage_metrics(deno_pid, worker_pid)
-      if thread.tid not in active_worker_threads:
-        print(
-            f"ID: {thread.id}, Name: {thread.name}, CPU Time: {thread.curr_cpu_time}, Memory Usage: {thread.curr_memory_usage}, PPID: {thread.ppid}, TID: {thread.tid}")
-        active_worker_threads[thread.tid] = thread
-        signal_on_new_thread(thread)
-      else:
-        prev_thread = active_worker_threads.get(thread.tid)
-        prev_thread.prev_cpu_time = prev_thread.curr_cpu_time
-        prev_thread.prev_memory_usage = prev_thread.curr_memory_usage
-        prev_thread.curr_cpu_time = thread.curr_cpu_time
-        prev_thread.curr_memory_usage = thread.curr_memory_usage
-        prev_thread.updated_at = thread.updated_at
+      try:
+        thread = get_thread_usage_metrics(deno_pid, worker_pid)
+        if thread.tid not in active_worker_threads:
+          print(
+              f"ID: {thread.id}, Name: {thread.name}, CPU Time: {thread.curr_cpu_time}, Memory Usage: {thread.curr_memory_usage}, PPID: {thread.ppid}, TID: {thread.tid}")
+          active_worker_threads[thread.tid] = thread
+          signal_on_new_thread(thread)
+        else:
+          prev_thread = active_worker_threads.get(thread.tid)
+          prev_thread.prev_cpu_time = prev_thread.curr_cpu_time
+          prev_thread.prev_memory_usage = prev_thread.curr_memory_usage
+          prev_thread.curr_cpu_time = thread.curr_cpu_time
+          prev_thread.curr_memory_usage = thread.curr_memory_usage
+          prev_thread.updated_at = thread.updated_at
 
-        alert_on_metric_change(prev_thread)
+          alert_on_metric_change(prev_thread)
+      except Exception as e:
+        print(f"Encountered an error: {e}")
 
     # Remove any workers that have finished or exited
     updated_threads = {key: value for key, value in
