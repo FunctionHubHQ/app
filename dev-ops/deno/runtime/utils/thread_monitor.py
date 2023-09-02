@@ -92,7 +92,6 @@ def get_thread_usage_metrics(ppid, tid) -> DenoWorkerThread:
     clock_ticks_per_second = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
     utime_mseconds = (utime_ticks / clock_ticks_per_second) * 1000
     cpu_time = utime_mseconds
-    print("DEBUG utime_mseconds: ", utime_mseconds, time.time_ns() // 1000000)
 
   thread.tid = tid
   thread.ppid = ppid
@@ -130,7 +129,7 @@ def signal_on_new_thread(thread):
     "ppid": thread.ppid,
     "tid": thread.tid
   })
-  print("Signaled for thread: ", thread.id)
+  print("Signaled for new thread detection: ", thread.tid, thread.id)
 
 
 def start_monitor(sampling_rate=0.005):

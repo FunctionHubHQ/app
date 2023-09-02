@@ -38,7 +38,6 @@ async function getBody(ctx) {
 
 function executeUserScript(ctx, userScriptUrl, body) {
   // Create a new Web Worker
-  console.log(`DEBUG 1 - ${(new Date()).getTime()}`)
   const worker = new Worker(userScriptUrl,
       {
         type: "module",
@@ -55,8 +54,6 @@ function executeUserScript(ctx, userScriptUrl, body) {
     cpuBaseLine: -1
   }
   threadStatus.set(body.uid, _threadStat)
-  console.log(`DEBUG 2 - ${(new Date()).getTime()}`)
-
 
   let timeoutId, interval;
   // Listen for messages from the Web Worker
@@ -96,11 +93,9 @@ function executeUserScript(ctx, userScriptUrl, body) {
     }
   };
 
-  console.log(`DEBUG 3 - ${(new Date()).getTime()}`)
   // Handle errors from the Web Worker
   worker.onerror = (error) => {
     error.preventDefault();
-    console.log("Worker error listener: ", error.message)
     if (timeoutId) clearTimeout(timeoutId);
     if (interval) clearInterval(interval)
     sendResult(ctx, null,
@@ -112,7 +107,6 @@ function executeUserScript(ctx, userScriptUrl, body) {
 
   stdout[body.uid] = [];
   worker.postMessage({uid: body.uid, payload: body.payload});
-  console.log(`DEBUG 4 - ${(new Date()).getTime()}`)
 
   timeoutId = setTimeout(() => {
     // Terminate the Web Worker when the timeout occurs
@@ -134,8 +128,6 @@ function executeUserScript(ctx, userScriptUrl, body) {
         const delta = status.cpuTime - status.cpuBaseLine
         if (delta > status.cpuThreshold) {
           errorMessage = "CPU timeout"
-          console.log(errorMessage, body.uid, status)
-          console.log("Delta: ", delta)
         }
       } else if (status?.memoryUsage > status?.memoryThreshold) {
         // TODO: consider setting a memory threshold, e.g. what if the initial usage ends up
@@ -167,7 +159,6 @@ async function sendResult(ctx, result, stdout, error) {
     result: JSON.stringify(result),
     std_out: stdout,
   }
-  console.log("Attempting to egress data: ", data)
   const url = getHost(body.env) + "/e-result";
   const sendStatus = await fetch(url, {
     method: "POST",
@@ -204,23 +195,16 @@ async function handleNewThreadSignal(ctx) {
 
 async function handleThreadAlarm(ctx) {
   const body = await getBody(ctx);
-  // console.log("alarm activeWorkers: ", activeWorkers.size, Array.from(activeWorkers.keys()))
+  // TODO: Remove thread_id from activeWorkers if the worker has finished
   const workerUid = activeWorkers.get(body.thread_id)
-  // console.log("handleThreadAlarm: ", body)
-
   if (workerUid) {
-    console.log("Worker found for thread id: ", body.thread_id, workerUid)
-    console.log("body.updated_at: ", body.updated_at)
-    // console.log("Worker uid: ", workerUid)
-    // console.log("Thread alarm keys: ",Array.from(threadStatus.keys()))
-
+    // It takes about 2 seconds to teardown a worker. That is too expensive of an operation.
+    // Need to improve that!
     const newUpdatedAt = body.updated_at
     // WorkerStartTime could be undefined until the worker has fully initializing. There is a 300-400
     // millisecond latency due to 'cold' starting a worker. This should be dealt with later.
     const workerStartTime = workerStartTimes.get(workerUid)
-    console.log("workerStartTime: ", workerStartTime)
     if (workerStartTime && newUpdatedAt >= workerStartTime) {
-      console.log("DEBUG update received after workerStartTime: ", newUpdatedAt, workerStartTime)
       const prevStatus: ThreadStatus = threadStatus.get(workerUid);
       const updatedStatus: ThreadStatus = {
         // The time at which the thread was sampled at
@@ -246,9 +230,6 @@ async function handleThreadAlarm(ctx) {
       }
       threadStatus.set(workerUid, updatedStatus)
     }
-
-    // threadStatus.set(workerUid, body)
-    // activeWorkers.delete(body.thread_id)
   }
   ctx.response.body = {status: "ok"} ;
 }
