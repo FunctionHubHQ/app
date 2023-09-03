@@ -25,7 +25,8 @@ import org.springframework.context.annotation.Configuration;
     OpenAiProps.class,
     EntitlementProps.class,
     JwtProps.class,
-    DefaultConfigsProps.class
+    DefaultConfigsProps.class,
+    MessagesProp.class
 })
 public class PropConfiguration {
 }
