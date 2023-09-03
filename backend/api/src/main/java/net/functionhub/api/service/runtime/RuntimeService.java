@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentMap;
 import net.functionhub.api.StatusRequest;
 import net.functionhub.api.StatusResponse;
 import net.functionhub.api.UserProfile;
+import net.functionhub.api.dto.SessionUser;
 
 /**
  * @author Biz Melesse created on 7/26/23
@@ -60,7 +61,7 @@ public interface RuntimeService {
   String generateCodeVersion();
   CodeUpdateResult updateCode(Code code);
   Code getCodeDetail(String uid);
-  void generateJsonSchema(UserProfile userProfile, String code, String uid);
+  void generateJsonSchema(SessionUser sessionUser, String code, String uid);
   String getJsonSchema(String uid);
   GenericResponse handleSpecResult(SpecResult specResult);
   GenericResponse deploy(ExecRequest execRequest);

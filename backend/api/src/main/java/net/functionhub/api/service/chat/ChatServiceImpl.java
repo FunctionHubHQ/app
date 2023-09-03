@@ -17,6 +17,7 @@ import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.GPTFunction;
 import net.functionhub.api.dto.GPTFunctionCall;
+import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.OpenAiProps;
 import net.functionhub.api.dto.RequestHeaders;
 import net.functionhub.api.service.openai.completion.CompletionRequest;
@@ -270,8 +271,8 @@ public class ChatServiceImpl implements ChatService {
   @Override
   public Map<String, Object> devGptCompletion(String functionSlug,
       FHCompletionRequest fhCompletionRequest) {
-    UserProfile user = FHUtils.getSessionUser();
-    if (!user.getAuthMode().equals(AuthMode.FB.name())) {
+    SessionUser user = FHUtils.getSessionUser();
+    if (!user.getAuthMode().name().equals(AuthMode.FB.name())) {
       throw new RuntimeException("Unsupported authentication mechanism");
     }
 
@@ -280,8 +281,8 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   public Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest) {
-    UserProfile user = FHUtils.getSessionUser();
-    if (!user.getAuthMode().equals(AuthMode.AK.name())) {
+    SessionUser user = FHUtils.getSessionUser();
+    if (!user.getAuthMode().name().equals(AuthMode.AK.name())) {
       throw new RuntimeException("Unsupported authentication mechanism");
     }
     return gptCompletionDeployedRequest(fhCompletionRequest);

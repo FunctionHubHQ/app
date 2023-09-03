@@ -13,6 +13,7 @@ import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
+import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.DefaultConfigsProps;
 import net.functionhub.api.props.EntitlementProps;
 import net.functionhub.api.service.runtime.Slugify;
@@ -44,7 +45,7 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserProfileResponse getOrCreateUserprofile() {
-    UserProfile userProfile = securityFilter.getUser();
+    UserProfile userProfile = FHUtils.getUserProfile();
     Thread.startVirtualThread(() -> createDbUser(userProfile));
     return new UserProfileResponse().profile(userProfile);
   }
@@ -162,11 +163,12 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserProfileResponse updateUsername(UsernameRequest usernameRequest) {
-    UserProfile profile = FHUtils.getSessionUser();
+    SessionUser sessionUser = FHUtils.getSessionUser();
+    UserProfile profile = new UserProfile();
     if (!ObjectUtils.isEmpty(usernameRequest) &&
         !ObjectUtils.isEmpty(usernameRequest.getUsername())) {
       String username = cleanUsername(usernameRequest.getUsername());
-      UserEntity entity = userRepo.findByUid(profile.getUid());
+      UserEntity entity = userRepo.findByUid(sessionUser.getUid());
       entity.setUsername(username);
       userRepo.save(entity);
       profile.setUsername(username);

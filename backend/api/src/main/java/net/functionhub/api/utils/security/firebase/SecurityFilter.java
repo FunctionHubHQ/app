@@ -10,6 +10,7 @@ import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.DecodedJwt;
+import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.user.UserService.AuthMode;
 import net.functionhub.api.utils.firebase.FirebaseService;
@@ -71,6 +72,7 @@ public class SecurityFilter extends OncePerRequestFilter {
     private final UserRepo userRepo;
     private final ApiKeyRepo apiKeyRepo;
 
+
   @Override
   protected void doFilterInternal(HttpServletRequest httpServletRequest,
       @NotNull HttpServletResponse httpServletResponse,
@@ -92,24 +94,17 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private void verifyToken(HttpServletRequest httpServletRequest) throws IOException {
       String bearerToken = getBearerToken(httpServletRequest);
-      UserProfile user = null;
+      SessionUser user = null;
       Credentials credentials = new Credentials();
       if (bearerToken.startsWith(UserService.apiKeyPrefix)) {
-        UserProjection userProjection = userRepo.findByApiKey(bearerToken);
-        user = new UserProfile();
-        user.setEmail(userProjection.getEmail());
-        user.setName(userProjection.getName());
-        user.setUid(userProjection.getUid());
-        user.setRoles(new HashMap<>());
-        user.setPicture(userProjection.getAvatar());
-        user.setApiKey(userProjection.getApikey());
-        user.setAuthMode(AuthMode.AK.name());
-        user.setUsername(userProjection.getUsername());
+        user = new SessionUser();
+        populateSessionUser(userRepo.findByApiKey(bearerToken), user);
+        user.setAuthMode(AuthMode.AK);
       } else {
         try {
           DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);
           user = jwtTokenToUser(decodedToken);
-          user.setAuthMode(AuthMode.JWT.name());
+          user.setAuthMode(AuthMode.JWT);
           credentials.setDecodedJwtToken(decodedToken);
           credentials.setAuthToken(bearerToken);
         } catch (Exception e) {
@@ -120,24 +115,20 @@ public class SecurityFilter extends OncePerRequestFilter {
             throw new RuntimeException(ex.getMessage());
           }
           user = firebaseTokenToUser(decodedToken);
-          user.setAuthMode(AuthMode.FB.name());
-
-          UserEntity userEntity = userRepo.findByUid(user.getUid());
-          if (userEntity != null) {
-            // Entity will be null during registration
-            user.setUsername(userEntity.getUsername());
-          }
-
-          credentials.setAuthToken(bearerToken);
-          credentials.setDecodedFirebaseToken(decodedToken);
+          populateSessionUser(userRepo.findProjectionByUid(user.getUid()), user);
+          user.setAuthMode(AuthMode.FB);
           // TODO 2 db calls with the one above so not very efficient for production use. This is why
           //    prod should use api key instead of firebase tokens
-          String uri = httpServletRequest.getRequestURI();
+
+          // Arbitrarily set an api key since we're using a non-api key auth method
           ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(user.getUid());
           if (apiKeyEntity != null) {
             // userEntity could be null if this is the registration flow
             user.setApiKey(apiKeyEntity.getApiKey());
           }
+
+          credentials.setAuthToken(bearerToken);
+          credentials.setDecodedFirebaseToken(decodedToken);
         }
       }
     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, credentials,
@@ -146,19 +137,38 @@ public class SecurityFilter extends OncePerRequestFilter {
       SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
-  private UserProfile jwtTokenToUser(DecodedJwt decodedToken) {
-    return new UserProfile()
-        .uid(decodedToken.getUserId())
-        .roles(new HashMap<>());
+  private void populateSessionUser(UserProjection projection, SessionUser user) {
+    if (projection != null) {
+      user.setEmail(projection.getEmail());
+      user.setName(projection.getName());
+      user.setUid(projection.getUid());
+      user.setAvatar(projection.getAvatar());
+      user.setApiKey(projection.getApikey());
+      user.setUsername(projection.getUsername());
+      user.setMaxExecutionTime(projection.getMaxexecutiontime());
+      user.setMaxCpuTime(projection.getMaxcputtime());
+      user.setMaxMemoryUsage(projection.getMaxmemoryusage());
+      user.setMaxBandwidth(projection.getMaxbandwidth());
+      user.setNumHttpCalls(projection.getNumhttpcalls());
+      user.setNumInvocations(projection.getNuminvocations());
+      user.setNumFunctions(projection.getNumfunctions());
+      user.setNumProjects(projection.getNumprojects());
+    }
   }
 
-  private UserProfile firebaseTokenToUser(FirebaseToken decodedToken) {
-    UserProfile user = new UserProfile();
+  private SessionUser jwtTokenToUser(DecodedJwt decodedToken) {
+    SessionUser user = new SessionUser();
+    user.setUid(decodedToken.getUserId());
+    return user;
+  }
+
+  private SessionUser firebaseTokenToUser(FirebaseToken decodedToken) {
+    SessionUser user = new SessionUser();
       if (decodedToken != null) {
           user.setUid(decodedToken.getUid());
           user.setName(decodedToken.getName());
           user.setEmail(decodedToken.getEmail());
-          user.setPicture(decodedToken.getPicture());
+          user.setAvatar(decodedToken.getPicture());
           Map<String, Boolean> parsedClaims = new HashMap<>();
           final Map<String, Object> claimsToParse = decodedToken.getClaims();
           for (Map.Entry<String, Object> entry : claimsToParse.entrySet()) {
@@ -206,19 +216,4 @@ public class SecurityFilter extends OncePerRequestFilter {
       }
       return authorities;
   }
-
-  public UserProfile getUser() {
-      UserProfile userProfile = null;
-      SecurityContext securityContext = SecurityContextHolder.getContext();
-      Object principal = securityContext.getAuthentication().getPrincipal();
-      if (principal instanceof UserProfile) {
-        userProfile = (UserProfile) principal;
-      }
-      return userProfile;
-  }
-
-  public Credentials getCredentials() {
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        return (Credentials) securityContext.getAuthentication().getCredentials();
-    }
 }

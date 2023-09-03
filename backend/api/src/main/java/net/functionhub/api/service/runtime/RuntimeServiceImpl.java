@@ -25,6 +25,7 @@ import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.dto.ExecRequestInternal;
 import net.functionhub.api.dto.GenerateSpecRequest;
+import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.DenoProps;
 import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.user.UserService.AuthMode;
@@ -118,8 +119,8 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public String runProdFunction(String functionSlug, String body) {
-    UserProfile user = FHUtils.getSessionUser();
-    if (!user.getAuthMode().equals(AuthMode.AK.name())) {
+    SessionUser user = FHUtils.getSessionUser();
+    if (!user.getAuthMode().name().equals(AuthMode.AK.name())) {
       throw new RuntimeException("Unsupported authentication mechanism");
     }
     return runFunctionHelper(functionSlug, body, true, false);
@@ -127,8 +128,8 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public String runDevFunction(String functionSlug, String body) {
-    UserProfile user = FHUtils.getSessionUser();
-    if (!user.getAuthMode().equals(AuthMode.FB.name())) {
+    SessionUser user = FHUtils.getSessionUser();
+    if (!user.getAuthMode().name().equals(AuthMode.FB.name())) {
       throw new RuntimeException("Unsupported authentication mechanism");
     }
     return runFunctionHelper(functionSlug, body, false, true);
@@ -435,8 +436,8 @@ public class RuntimeServiceImpl implements RuntimeService {
           commitHistoryRepo.save(commitHistory);
         });
 
-        final UserProfile userProfile = FHUtils.getSessionUser();
-        Thread.startVirtualThread(() -> generateJsonSchema(userProfile,
+        final SessionUser user = FHUtils.getSessionUser();;
+        Thread.startVirtualThread(() -> generateJsonSchema(user,
             new String(Base64.getDecoder()
                 .decode(finalCell.getCode()
                     .getBytes())), finalCell.getUid()
@@ -527,14 +528,14 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public void generateJsonSchema(UserProfile userProfile, String code, String uid) {
+  public void generateJsonSchema(SessionUser sessionUser, String code, String uid) {
     GenerateSpecRequest request = new GenerateSpecRequest();
     request.setFile(code);
     request.setEnv(sourceProps.getProfile());
     request.setUid(uid);
     request.setFrom("ts");
     request.setTo("jsc");
-    request.setApiKey(userProfile.getApiKey());
+    request.setApiKey(sessionUser.getApiKey());
     submitExecutionTask(request, getCodeGenUrl());
   }
 

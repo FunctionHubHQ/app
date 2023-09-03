@@ -25,11 +25,22 @@ public interface UserRepo extends JpaRepository<UserEntity, Long> {
         + "u.full_name as name, "
         + "u.avatar_url as avatar, "
         + "u.username as username, "
-        + "a.api_key as apikey " +
-        "FROM public.user u JOIN public.api_key a ON u.uid = a.user_id "
+        + "a.api_key as apikey, "
+        + "e.max_execution_time as maxexecutiontime, "
+        + "e.max_cpu_time as maxcputime, "
+        + "e.max_memory_usage as maxmemoryusage, "
+        + "e.max_bandwidth as maxbandwidth, "
+        + "e.num_http_calls as numhttpcalls,"
+        + " e.num_invocations as numinvocations, "
+        + "e.num_functions as numfunctions, "
+        + "e.num_projects as numprojects  " +
+        "FROM public.user u "
+        + "JOIN public.api_key a ON u.uid = a.user_id "
+        + "JOIN public.entitlement e ON u.uid = e.user_id "
         + "WHERE a.api_key = ?1",
         nativeQuery = true)
     UserProjection findByApiKey(String apiKey);
+
 
     @Query(value = "SELECT "
         + "u.uid as uid, "
@@ -37,8 +48,16 @@ public interface UserRepo extends JpaRepository<UserEntity, Long> {
         + "u.full_name as name, "
         + "u.avatar_url as avatar, "
         + "u.username as username, "
-        + "a.api_key as api_key " +
-        "FROM public.user u JOIN public.api_key a ON u.uid = a.user_id "
+        + "e.max_execution_time as maxexecutiontime, "
+        + "e.max_cpu_time as maxcputime, "
+        + "e.max_memory_usage as maxmemoryusage, "
+        + "e.max_bandwidth as maxbandwidth, "
+        + "e.num_http_calls as numhttpcalls,"
+        + " e.num_invocations as numinvocations, "
+        + "e.num_functions as numfunctions, "
+        + "e.num_projects as numprojects  " +
+        "FROM public.user u "
+        + "JOIN public.entitlement e ON u.uid = e.user_id "
         + "WHERE u.uid = ?1",
         nativeQuery = true)
     UserProjection findProjectionByUid(String uid);

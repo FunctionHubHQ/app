@@ -9,6 +9,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
 import net.functionhub.api.UserProfile;
+import net.functionhub.api.dto.SessionUser;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.ResourceUtils;
 
@@ -62,12 +63,22 @@ public class FHUtils {
     return LocalDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
   }
 
-  public static UserProfile getSessionUser() {
+  public static SessionUser getSessionUser() {
     try {
-      return (UserProfile) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+      return (SessionUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     } catch (Exception e) {
-      return new UserProfile();
+      return new SessionUser();
     }
+  }
 
+  public static UserProfile getUserProfile() {
+    SessionUser sessionUser = getSessionUser();
+    return new UserProfile()
+        .name(sessionUser.getName())
+        .email(sessionUser.getEmail())
+        .uid(sessionUser.getUid())
+        .apiKey(sessionUser.getApiKey())
+        .picture(sessionUser.getAvatar())
+        .username(sessionUser.getUsername());
   }
 }
