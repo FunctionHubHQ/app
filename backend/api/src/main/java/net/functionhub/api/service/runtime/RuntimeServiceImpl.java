@@ -202,6 +202,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         request.setPayload(parseExecRequestPayload(execRequest.getPayload()));
         request.setEnv(sourceProps.getProfile());
         request.setUid(uid);
+        request.setMaxExecutionTime(entitlements.getMaxExecutionTime());
         request.setMaxCpuTime(entitlements.getMaxCpuTime());
         request.setMaxMemoryUsage(entitlements.getMaxMemoryUsage());
         request.setValidate(execRequest.getValidate());

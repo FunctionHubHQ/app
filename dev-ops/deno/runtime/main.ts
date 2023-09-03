@@ -44,15 +44,17 @@ function executeUserScript(ctx, userScriptUrl, body) {
         name: body.uid
       }
   );
+  console.log("Body: ", body)
   workersPendingId.enqueue(body.uid)
   const _threadStat: ThreadStatus = {
     updatedAt: -1,
     cpuTime: -1,
     memoryUsage: -1,
-    cpuThreshold: 10,
-    memoryThreshold: 99999999999999,
+    cpuThreshold: body.maxCpuTime ? body.maxCpuTime : 10,
+    memoryThreshold: body.maxMemoryUsage ? body.maxMemoryUsage : 134217728,
     cpuBaseLine: -1
   }
+  console.log("_threadStat: ", _threadStat)
   threadStatus.set(body.uid, _threadStat)
 
   let timeoutId, interval;
@@ -112,12 +114,12 @@ function executeUserScript(ctx, userScriptUrl, body) {
     // Terminate the Web Worker when the timeout occurs
     worker.terminate();
     sendResult(ctx, null,
-        [...stdout[body.uid]],
+        stdout[body.uid] ? [...stdout[body.uid]] : [],
         "Execution timed out")
     .catch(e => console.log(e));
     delete stdout[body.uid];
     console.log(stdout);
-  }, body.timeout);
+  }, body.maxExecutionTime ? body.maxExecutionTime : 30000);
 
   interval = setInterval(() => {
     // Terminate the Web Worker if it has exceeded its cpu or memory thresholds
