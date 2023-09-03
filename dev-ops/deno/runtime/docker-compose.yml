@@ -30,3 +30,10 @@ services:
       - NO_PROXY=host.docker.internal,registry.npmjs.org
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    stdin_open: true
+    tty: true
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_PTRACE
