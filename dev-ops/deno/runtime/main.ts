@@ -203,8 +203,11 @@ async function handleThreadAlarm(ctx) {
     // It takes about 2 seconds to teardown a worker. That is too expensive of an operation.
     // Need to improve that!
     const newUpdatedAt = body.updated_at
-    // WorkerStartTime could be undefined until the worker has fully initializing. There is a 300-400
-    // millisecond latency due to 'cold' starting a worker. This should be dealt with later.
+    // WorkerStartTime could be undefined until the worker has fully initialized. There is a 300-400
+    // millisecond latency due to setting up the environment with npm imports, etc.
+    // This should be dealt with later. The simplest function with just a console log takes
+    // 60 milliseconds end-to-end (security validation, entitlement check from the db, and others).
+    // It's worth investigating what the baseline time is without any of those overheads.
     const workerStartTime = workerStartTimes.get(workerUid)
     if (workerStartTime && newUpdatedAt >= workerStartTime) {
       const prevStatus: ThreadStatus = threadStatus.get(workerUid);
