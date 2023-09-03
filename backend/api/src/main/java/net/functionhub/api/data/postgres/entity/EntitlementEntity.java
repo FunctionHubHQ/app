@@ -33,29 +33,44 @@ public class EntitlementEntity {
     private String userId;
 
     @Basic
-    @JsonProperty("timeout")
-    @Column(name = "timeout")
-    private Long timeout;
+    @JsonProperty("max_execution_time")
+    @Column(name = "max_execution_time")
+    private Long maxExecutionTime = 0L;
 
     @Basic
-    @JsonProperty("tokens")
-    @Column(name = "tokens")
-    private Long tokens;
+    @JsonProperty("max_cpu_time")
+    @Column(name = "max_cpu_time")
+    private Long maxCpuTime = 0L;
 
     @Basic
-    @JsonProperty("http_egress")
-    @Column(name = "http_egress")
-    private Long httpEgress;
+    @JsonProperty("max_memory_usage")
+    @Column(name = "max_memory_usage")
+    private Long maxMemoryUsage = 0L;
 
     @Basic
-    @JsonProperty("daily_invocations")
-    @Column(name = "daily_invocations")
-    private Long dailyInvocations;
+    @JsonProperty("max_bandwidth")
+    @Column(name = "max_bandwidth")
+    private Long maxBandwidth = 0L;
 
     @Basic
-    @JsonProperty("functions")
-    @Column(name = "functions")
-    private Long functions;
+    @JsonProperty("num_http_calls")
+    @Column(name = "num_http_calls")
+    private Long numHttpCalls = 0L;
+
+    @Basic
+    @JsonProperty("num_invocations")
+    @Column(name = "num_invocations")
+    private Long numInvocations = 0L;
+
+    @Basic
+    @JsonProperty("num_functions")
+    @Column(name = "num_functions")
+    private Long numFunctions = 0L;
+
+    @Basic
+    @JsonProperty("num_projects")
+    @Column(name = "num_projects")
+    private Long numProjects = 0L;
 
     @Basic
     @Column(name = "updated_at")

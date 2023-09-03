@@ -103,14 +103,33 @@ $$ LANGUAGE SQL;
 CREATE TABLE IF NOT EXISTS public.entitlement (
     uid uuid NOT NULL primary key,
     user_id varchar(255) NOT NULL,
-    timeout bigint NOT NULL,
-    tokens bigint NOT NULL,
-    http_egress bigint NOT NULL,
-    daily_invocations bigint NOT NULL,
-    functions bigint NOT NULL,
+
+--     Max wall clock time
+    max_execution_time bigint NOT NULL,
+
+--     Max cpu time in milliseconds per execution
+    max_cpu_time bigint NOT NULL,
+
+--     Max memory usage in bytes per execution
+    max_memory_usage bigint NOT NULL,
+
+--     Max data transfer in bytes per month
+    max_bandwidth bigint NOT NULL,
+
+--     Max number of http calls per execution
+    num_http_calls bigint NOT NULL,
+
+--     Max invocations per minute
+    num_invocations bigint NOT NULL,
+
+--     Max number of functions per project
+    num_functions bigint NOT NULL,
+
+--     Max number of projects per account
+    num_projects bigint NOT NULL,
+
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(uid, user_id)
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE public.entitlement OWNER TO root;
 
@@ -157,3 +176,31 @@ CREATE TABLE IF NOT EXISTS public.commit_history (
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE public.commit_history OWNER TO root;
+
+CREATE TABLE IF NOT EXISTS public.request_history (
+    id uuid NOT NULL primary key,
+    user_id varchar(255),
+    http_method varchar(255),
+    url text NOT NULL,
+    content_length bigint NOT NULL DEFAULT 0,
+    request_started_at bigint NOT NULL,
+    request_ended_at bigint NOT NULL,
+    request_duration bigint NOT NULL,
+    http_status_code bigint NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.request_history OWNER TO root;
+
+CREATE TABLE IF NOT EXISTS public.request_history (
+    id uuid NOT NULL primary key,
+    user_id varchar(255),
+    http_method varchar(255),
+    url text NOT NULL,
+    content_length bigint NOT NULL DEFAULT 0,
+    request_started_at bigint NOT NULL,
+    request_ended_at bigint NOT NULL,
+    request_duration bigint NOT NULL,
+    http_status_code bignint NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.request_history OWNER TO root;

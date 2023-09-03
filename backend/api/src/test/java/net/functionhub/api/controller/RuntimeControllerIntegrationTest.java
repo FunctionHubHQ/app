@@ -246,7 +246,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         int _port = port + 1;
         String fullUrl = String.format("http://%s:%s%s", host, _port, path);
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + user.getApiKey());
+        headers.add("Authorization", "Bearer " + user.getApikey());
         headers.setContentType(MediaType.APPLICATION_JSON);
         if (Objects.equals(httpMethod, "POST")) {
             HttpEntity<Object> request = new HttpEntity<>(payload, headers);

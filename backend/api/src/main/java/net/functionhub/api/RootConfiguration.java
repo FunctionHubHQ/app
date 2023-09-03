@@ -41,7 +41,7 @@ public class RootConfiguration {
 
   @PostConstruct
   public void onStart() {
-    flywayMigration.migrate(false);
+//    flywayMigration.migrate(false);
     userService.createAnonymousUser();
     if (!sourceProps.getProfile().equals("prod")) {
 //      seedData.generateSeedData();

@@ -69,11 +69,14 @@ public class UserServiceImpl implements UserService {
         EntitlementEntity entitlements = new EntitlementEntity();
         entitlements.setUid(UUID.randomUUID());
         entitlements.setUserId(userProfile.getUid());
-        entitlements.setTimeout(entitlementProps.getWallTime());
-        entitlements.setFunctions(entitlementProps.getFunctions());
-        entitlements.setTokens(entitlementProps.getTokens());
-        entitlements.setHttpEgress(entitlementProps.getHttpEgress());
-        entitlements.setDailyInvocations(entitlementProps.getDailyInvocations());
+        entitlements.setMaxExecutionTime(entitlementProps.getFree().getMaxExecutionTime());
+        entitlements.setMaxCpuTime(entitlementProps.getFree().getMaxCpuTime());
+        entitlements.setMaxMemoryUsage(entitlementProps.getFree().getMaxMemoryUsage());
+        entitlements.setMaxBandwidth(entitlementProps.getFree().getMaxBandwidth());
+        entitlements.setNumHttpCalls(entitlementProps.getFree().getNumHttpCalls());
+        entitlements.setNumInvocations(entitlementProps.getFree().getNumInvocations());
+        entitlements.setNumFunctions(entitlementProps.getFree().getNumFunctions());
+        entitlements.setNumProjects(entitlementProps.getFree().getNumProjects());
         entitlementRepo.save(entitlements);
       }
     }
@@ -192,11 +195,6 @@ public class UserServiceImpl implements UserService {
       EntitlementEntity entitlements = new EntitlementEntity();
       entitlements.setUid(UUID.randomUUID());
       entitlements.setUserId(userEntity.getUid());
-      entitlements.setTimeout(0L);
-      entitlements.setFunctions(0L);
-      entitlements.setTokens(0L);
-      entitlements.setHttpEgress(0L);
-      entitlements.setDailyInvocations(0L);
       entitlementRepo.save(entitlements);
     }
   }

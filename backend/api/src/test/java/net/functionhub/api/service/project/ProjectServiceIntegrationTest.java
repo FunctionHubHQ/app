@@ -281,7 +281,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
         response = projectService.getAllPublicFunctions(new PageableRequest()
             .pageNum(4)
-            .query("untitled")
+            .query("custom_greeter")
             .limit(4));
         assertNotNull(response);
         assertEquals(5, (int) response.getNumPages());
@@ -291,7 +291,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
         response = projectService.getAllPublicFunctions(new PageableRequest()
             .pageNum(4)
-            .query("UNTITLED")
+            .query("CUSTOM_GREETER")
             .limit(4));
         assertNotNull(response);
         assertEquals(5, (int) response.getNumPages());

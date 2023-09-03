@@ -91,7 +91,14 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
 
         EntitlementEntity entitlements = entitlementRepo.findByUserId(user.getUid());
         assertThat(entitlements, is(notNullValue()));
-        assertThat(entitlements.getTimeout(), greaterThan(1000L));
+        assertThat(entitlements.getMaxCpuTime(), is(equalTo(10L)));
+        assertThat(entitlements.getMaxExecutionTime(), is(equalTo(30000L)));
+        assertThat(entitlements.getMaxMemoryUsage(), is(equalTo(134217728L)));
+        assertThat(entitlements.getMaxBandwidth(), is(equalTo(104857600L)));
+        assertThat(entitlements.getNumFunctions(), is(equalTo(10L)));
+        assertThat(entitlements.getNumFunctions(), is(equalTo(10L)));
+        assertThat(entitlements.getNumHttpCalls(), is(equalTo(10L)));
+        assertThat(entitlements.getNumProjects(), is(equalTo(1L)));
     }
 
     @Test
