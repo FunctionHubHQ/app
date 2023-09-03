@@ -13,6 +13,7 @@ public class ExecRequestInternal {
   private String env;
   private String uid;
   private Long maxCpuTime;
+  private Long maxExecutionTime;
   private Long maxMemoryUsage;
   private String execId;
   private Boolean validate;

@@ -2,7 +2,6 @@ package net.functionhub.api.service.user;
 
 
 import java.util.UUID;
-import java.util.stream.Collectors;
 import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
@@ -11,7 +10,7 @@ import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.service.ServiceTestConfiguration;
 import net.functionhub.api.utils.ServiceTestHelper;
-import net.functionhub.api.utils.migration.FlywayMigration;
+import net.functionhub.api.utils.migration.FlywayPostgresMigration;
 import net.functionhub.api.UserProfileResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +40,7 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
     private UserService userService;
 
     @Autowired
-    private FlywayMigration flywayMigration;
+    private FlywayPostgresMigration flywayPostgresMigration;
 
     @Autowired
     private UserRepo userRepo;
@@ -63,7 +62,7 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
 
     @BeforeMethod
     public void beforeEachTest(Method method) {
-        flywayMigration.migrate(true);
+        flywayPostgresMigration.migrate(true);
         log.info("  Testcase: " + method.getName() + " has started");
     }
 

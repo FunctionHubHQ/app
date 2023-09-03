@@ -17,7 +17,6 @@ import net.functionhub.api.FHFunctions;
 import net.functionhub.api.ForkRequest;
 import net.functionhub.api.PageableRequest;
 import net.functionhub.api.PageableResponse;
-import net.functionhub.api.Project;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
@@ -33,7 +32,7 @@ import net.functionhub.api.service.runtime.RuntimeService;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.ServiceTestHelper;
-import net.functionhub.api.utils.migration.FlywayMigration;
+import net.functionhub.api.utils.migration.FlywayPostgresMigration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
@@ -73,7 +72,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
     private ProjectRepo projectRepo;
 
     @Autowired
-    private FlywayMigration flywayMigration;
+    private FlywayPostgresMigration flywayPostgresMigration;
 
     @Autowired
     private RuntimeService runtimeService;
@@ -92,7 +91,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
     @BeforeMethod
     public void beforeEachTest(Method method) {
         log.info("  Testcase: " + method.getName() + " has started");
-        flywayMigration.migrate(true);
+        flywayPostgresMigration.migrate(true);
         String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
         testHelper.prepareSecurity(userId);
         userService.getOrCreateUserprofile();

@@ -1,6 +1,6 @@
 package net.functionhub.api.utils.migration;
 
-import net.functionhub.api.props.FlywayProps;
+import net.functionhub.api.props.FlywayPostgresProps;
 import net.functionhub.api.props.PostgresDataSourceProps;
 import net.functionhub.api.props.SourceProps;
 import lombok.RequiredArgsConstructor;
@@ -25,10 +25,10 @@ import java.util.List;
 @Transactional
 @Component
 @RequiredArgsConstructor
-public class FlywayMigration {
+public class FlywayPostgresMigration {
     private final PostgresDataSourceProps dataSourceProps;
     private final SourceProps sourceProps;
-    private final FlywayProps flywayProps;
+    private final FlywayPostgresProps flywayPostgresProps;
     private final List<String> devProfiles = Arrays.asList("dev", "test");
 
     /**
@@ -40,8 +40,8 @@ public class FlywayMigration {
      */
     public void migrate(boolean dropSchema) {
         FluentConfiguration flyway = Flyway.configure()
-                .schemas(flywayProps.getSchemas().split(","))
-                .cleanDisabled(flywayProps.getCleanDisabled())
+                .schemas(flywayPostgresProps.getSchemas().split(","))
+                .cleanDisabled(flywayPostgresProps.getCleanDisabled())
                 .validateOnMigrate(true)
                 .baselineOnMigrate(true)
                 .dataSource(dataSourceProps.getUrl(),
@@ -69,7 +69,7 @@ public class FlywayMigration {
                         "'IntegrationTest'");
             }
         }
-        flyway.locations(flywayProps.getLocations()).load().migrate();
+        flyway.locations(flywayPostgresProps.getLocations()).load().migrate();
     }
 }
 

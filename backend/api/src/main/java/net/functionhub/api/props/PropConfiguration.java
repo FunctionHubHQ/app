@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan
 @EnableConfigurationProperties(value = {
     FirebaseProps.class,
-    FlywayProps.class,
+    FlywayPostgresProps.class,
     PostgresDataSourceProps.class,
     SourceProps.class,
     DefaultUserProps.class,

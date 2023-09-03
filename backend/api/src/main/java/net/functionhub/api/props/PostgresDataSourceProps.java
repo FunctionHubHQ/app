@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Primary;
 @Primary
 @Getter @Setter
 @Configuration
-@ConfigurationProperties("spring.datasource")
+@ConfigurationProperties("spring.datasource.postgres")
 public class PostgresDataSourceProps {
     private String driverClassName;
     private String url;

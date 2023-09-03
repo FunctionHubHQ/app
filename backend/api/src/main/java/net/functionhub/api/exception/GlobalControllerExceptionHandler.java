@@ -4,11 +4,11 @@ import net.functionhub.api.service.utils.FHUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.client.HttpClientErrorException.BadRequest;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 /**
  * @author Biz Melesse created on 8/9/23
@@ -16,7 +16,8 @@ import org.springframework.web.context.request.WebRequest;
 @ControllerAdvice
 public class GlobalControllerExceptionHandler {
 
-  @ExceptionHandler(ResourceNotFoundException.class)
+  @ExceptionHandler(NoHandlerFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
   public ResponseEntity<FHErrorMessage> resourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
     FHErrorMessage message = new FHErrorMessage(
         obfuscateMessage(ex.getMessage()),

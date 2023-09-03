@@ -22,7 +22,7 @@ import net.functionhub.api.service.token.TokenService;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.ServiceTestHelper;
-import net.functionhub.api.utils.migration.FlywayMigration;
+import net.functionhub.api.utils.migration.FlywayPostgresMigration;
 import java.lang.reflect.Method;
 import java.util.Base64;
 import java.util.HashMap;
@@ -70,7 +70,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     private TestRestTemplate testRestTemplate;
 
     @Autowired
-    private FlywayMigration flywayMigration;
+    private FlywayPostgresMigration flywayPostgresMigration;
 
     @Autowired
     private ServiceTestHelper testHelper;
@@ -136,7 +136,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @BeforeClass
     public void setup() {
-        flywayMigration.migrate(true);
+        flywayPostgresMigration.migrate(true);
         String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
         testHelper.prepareSecurity(userId);
         userService.getOrCreateUserprofile();

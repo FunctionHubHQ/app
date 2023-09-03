@@ -47,7 +47,7 @@ public class PostgresDBDataConfiguration {
             Environment env, @Qualifier("postgresDbSource") DataSource dataSource) {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
-        em.setPackagesToScan(new String[]{"net.functionhub.api.data.postgres.entity"});
+        em.setPackagesToScan("net.functionhub.api.data.postgres.entity");
         em.setPersistenceUnitName("functionHubDb");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
