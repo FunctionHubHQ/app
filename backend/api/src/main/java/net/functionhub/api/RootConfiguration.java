@@ -1,19 +1,13 @@
 package net.functionhub.api;
 
-import java.util.UUID;
 import net.functionhub.api.controller.ControllerConfiguration;
 import net.functionhub.api.data.DataConfiguration;
-import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
-import net.functionhub.api.data.postgres.entity.UserEntity;
-import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
-import net.functionhub.api.data.postgres.repo.UserRepo;
-import net.functionhub.api.props.DefaultConfigsProps;
 import net.functionhub.api.props.PropConfiguration;
 import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.ServiceConfiguration;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.utils.SeedData;
-import net.functionhub.api.utils.migration.FlywayMigration;
+import net.functionhub.api.utils.migration.FlywayPostgresMigration;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,14 +28,14 @@ import org.springframework.context.annotation.Import;
 })
 @RequiredArgsConstructor
 public class RootConfiguration {
-  private final FlywayMigration flywayMigration;
+  private final FlywayPostgresMigration flywayPostgresMigration;
   private final SeedData seedData;
   private final SourceProps sourceProps;
   private final UserService userService;
 
   @PostConstruct
   public void onStart() {
-//    flywayMigration.migrate(false);
+    flywayPostgresMigration.migrate(false);
     userService.createAnonymousUser();
     if (!sourceProps.getProfile().equals("prod")) {
 //      seedData.generateSeedData();

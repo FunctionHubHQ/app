@@ -105,27 +105,35 @@ CREATE TABLE IF NOT EXISTS public.entitlement (
     user_id varchar(255) NOT NULL,
 
 --     Max wall clock time
+--     ✅ Enforced in runtime
     max_execution_time bigint NOT NULL,
 
 --     Max cpu time in milliseconds per execution
+--     ✅ Enforced in runtime
     max_cpu_time bigint NOT NULL,
 
 --     Max memory usage in bytes per execution
+--     ✅ Enforced in runtime
     max_memory_usage bigint NOT NULL,
 
 --     Max data transfer in bytes per month
+--     Enforced in Proxy
     max_bandwidth bigint NOT NULL,
 
 --     Max number of http calls per execution
+--     Enforced in Proxy
     num_http_calls bigint NOT NULL,
 
 --     Max invocations per minute
+--     Enforced in API
     num_invocations bigint NOT NULL,
 
 --     Max number of functions per project
+--     Enforced in API
     num_functions bigint NOT NULL,
 
 --     Max number of projects per account
+--     Enforced in API
     num_projects bigint NOT NULL,
 
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -191,16 +199,14 @@ CREATE TABLE IF NOT EXISTS public.request_history (
 );
 ALTER TABLE public.request_history OWNER TO root;
 
-CREATE TABLE IF NOT EXISTS public.request_history (
+CREATE TABLE IF NOT EXISTS public.usage (
     id uuid NOT NULL primary key,
     user_id varchar(255),
-    http_method varchar(255),
-    url text NOT NULL,
-    content_length bigint NOT NULL DEFAULT 0,
-    request_started_at bigint NOT NULL,
-    request_ended_at bigint NOT NULL,
-    request_duration bigint NOT NULL,
-    http_status_code bignint NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+    bandwidh bigint NOT NULL,
+    num_functions bigint NOT NULL,
+    num_projects bigint NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    period_start timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-ALTER TABLE public.request_history OWNER TO root;
+ALTER TABLE public.usage OWNER TO root;
