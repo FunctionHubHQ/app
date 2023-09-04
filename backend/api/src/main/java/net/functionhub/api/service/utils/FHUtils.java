@@ -1,5 +1,7 @@
 package net.functionhub.api.service.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -7,9 +9,13 @@ import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import net.functionhub.api.UserProfile;
 import net.functionhub.api.dto.SessionUser;
+import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.ResourceUtils;
 
@@ -80,5 +86,17 @@ public class FHUtils {
         .apiKey(sessionUser.getApiKey())
         .picture(sessionUser.getAvatar())
         .username(sessionUser.getUsername());
+  }
+
+  public static void unAuthorizedAuthMechanism(HttpServletResponse httpServletResponse, ObjectMapper objectMapper) {
+    httpServletResponse.setStatus(HttpStatus.FORBIDDEN_403);
+    httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    Map<String, String> message = new HashMap<>();
+    message.put("error", "Unsupported authentication mechanism");
+    try {
+      objectMapper.writeValue(httpServletResponse.getWriter(), message);
+    } catch (IOException e) {
+      httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
   }
 }

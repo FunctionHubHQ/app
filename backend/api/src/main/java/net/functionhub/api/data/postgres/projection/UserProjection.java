@@ -10,12 +10,12 @@ public interface UserProjection {
   String getAvatar();
   String getApikey();
   String getUsername();
-  String getMaxexecutiontime();
-  String getMaxcputtime();
-  String getMaxmemoryusage();
-  String getMaxbandwidth();
-  String getNumhttpcalls();
-  String getNuminvocations();
-  String getNumfunctions();
-  String getNumprojects();
+  Long getMaxexecutiontime();
+  Long getMaxcputtime();
+  Long getMaxmemoryusage();
+  Long getMaxbandwidth();
+  Long getNumhttpcalls();
+  Long getNuminvocations();
+  Long getNumfunctions();
+  Long getNumprojects();
 }

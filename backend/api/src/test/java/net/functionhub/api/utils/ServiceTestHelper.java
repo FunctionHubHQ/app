@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import net.functionhub.api.dto.SessionUser;
+import net.functionhub.api.service.utils.FHUtils;
 import org.mockito.Mockito;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.Authentication;
@@ -34,9 +35,18 @@ public class ServiceTestHelper {
         SessionUser user = new SessionUser();
         user.setName("TestNG User");
         user.setEmail("testuser@exampe.com");
+        user.setApiKey("fh-" + FHUtils.generateUid(FHUtils.API_KEY_LENGTH));
         user.setUid(userId == null ? UUID.randomUUID().toString() : userId);
         Mockito.when(authentication.getPrincipal()).thenReturn(user);
 
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+    }
+
+    public void setSessionUser(SessionUser sessionUser) {
+        Authentication authentication = Mockito.mock(Authentication.class);
+        Mockito.when(authentication.getPrincipal()).thenReturn(sessionUser);
         SecurityContext securityContext = Mockito.mock(SecurityContext.class);
         Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);

@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
     EntitlementProps.class,
     JwtProps.class,
     DefaultConfigsProps.class,
-    MessagesProp.class
+    MessagesProps.class
 })
 public class PropConfiguration {
 }

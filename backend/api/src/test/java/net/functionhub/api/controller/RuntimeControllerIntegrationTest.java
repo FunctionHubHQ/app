@@ -13,10 +13,15 @@ import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.FHCompletionRequest;
 import net.functionhub.api.GenericResponse;
+import net.functionhub.api.UserProfile;
+import net.functionhub.api.UserProfileResponse;
+import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
+import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
+import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.service.runtime.RuntimeService;
 import net.functionhub.api.service.token.TokenService;
 import net.functionhub.api.service.user.UserService;
@@ -82,11 +87,13 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     private UserRepo userRepo;
 
     @Autowired
+    private ApiKeyRepo apiKeyRepo;
+
+    @Autowired
     private RuntimeService runtimeService;
 
     private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};;
 
-    private UserProjection user;
     private final String code = "import moment from \"npm:moment\";\n"
         + "\n"
         + "type TempUnit = \"CELCIUS\" | \"FAHRENHEIT\";\n"
@@ -133,6 +140,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         + "  };\n"
         + "}";
 
+    private SessionUser sessionUser;
 
     @BeforeClass
     public void setup() {
@@ -140,10 +148,20 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
         testHelper.prepareSecurity(userId);
         userService.getOrCreateUserprofile();
-        String authToken = tokenService.generateJwtToken();
         try {
+            sessionUser = new SessionUser();
             Thread.sleep(5000L);
-            user = userRepo.findProjectionByUid(userId);
+            UserProjection userProjection = userRepo.findProjectionByUid(userId);
+            sessionUser.setName(userProjection.getName());
+            sessionUser.setUid(userProjection.getUid());
+            sessionUser.setEmail(userProjection.getEmail());
+            sessionUser.setUsername(userProjection.getUsername());
+            ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(userProjection.getUid());
+            if (apiKeyEntity != null) {
+                // userEntity could be null if this is the registration flow
+                sessionUser.setApiKey(apiKeyEntity.getApiKey());
+            }
+            testHelper.setSessionUser(sessionUser);
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
         }
@@ -165,7 +183,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     }
 
     @Test
-    public void fullFlowTest() throws InterruptedException, JsonProcessingException {
+    public void fullFlowTest() throws JsonProcessingException {
         String codeEncoded = Base64.getEncoder().encodeToString(code.getBytes());
 
         // 1. Create code cell
@@ -185,15 +203,9 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
             .execId(UUID.randomUUID().toString())
             .validate(true)
             .payload(new Gson().toJson(payload));
-        request("/run", "POST", execRequest);
+        String execResultStr = request("/run", "POST", execRequest);
 
         // 3. Fetch the result
-        Thread.sleep(5000L);
-        String execResultStr = request("/e-result?exec_id=" + execRequest.getExecId(),
-            "GET", new ExecRequest()
-            .uid(updateResult.getUid())
-            .payload(new Gson().toJson(payload)));
-
         ExecResultAsync execResult = objectMapper.readValue(execResultStr, ExecResultAsync.class);
         assertNotNull(execResult);
         assertTrue(execResult.getStdOutStr().contains("child"));
@@ -206,17 +218,16 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
         assertNotNull(deployResponse.getStatus());
 
-        Thread.sleep(5000L);
         CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResult.getUid()));
         assertTrue(codeCell.getDeployed());
         String schema = runtimeService.getJsonSchema(updateResult.getUid());
         assertNotNull(schema);
 
-        // 5. Make test GPT function call
+        // 5. Make dev GPT function call
         FHCompletionRequest devCompletionRequest = new FHCompletionRequest();
-        devCompletionRequest.setPrompt("What is the current time and weather in Boston in degrees celcius?");
+        devCompletionRequest.setPrompt("What is the current time and weather in Boston in degrees Celsius?");
 
-        String completionResponseDevResponseStr = request("/gpt-completion/" + updateResult.getSlug(),
+        String completionResponseDevResponseStr = request("/completion/" + updateResult.getSlug(),
             "POST", devCompletionRequest);
 
         Map<String, Object> completionResponseDevResponse = objectMapper
@@ -226,13 +237,13 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         assertTrue(completionResponseDevResponse.get("content").toString().contains("rainy"));
 
 
-        // 6. Make deployed GPT function call
+        // 6. Make prod GPT function call
         FHCompletionRequest prodCompletionRequest = new FHCompletionRequest();
         prodCompletionRequest.setPrompt("What is the current time and weather in Chicago?");
 
-        String completionResponseProdResponseStr = request("/gpt-completion/",
+        String completionResponseProdResponseStr = request("/completion",
             "POST", prodCompletionRequest);
-
+// TODO: prod requests require user's own OpenAI key
         assertNotNull(completionResponseProdResponseStr);
         Map<String, Object> deployedCompletionResponse = objectMapper.readValue(
             completionResponseProdResponseStr, typeRef);
@@ -243,10 +254,10 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     private String request(String path, String httpMethod, Object payload) {
         String host = "localhost";
-        int _port = port + 1;
+        int _port = port;
         String fullUrl = String.format("http://%s:%s%s", host, _port, path);
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + user.getApikey());
+        headers.add("Authorization", "Bearer " + sessionUser.getApiKey());
         headers.setContentType(MediaType.APPLICATION_JSON);
         if (Objects.equals(httpMethod, "POST")) {
             HttpEntity<Object> request = new HttpEntity<>(payload, headers);

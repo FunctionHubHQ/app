@@ -53,7 +53,7 @@ public interface UserRepo extends JpaRepository<UserEntity, Long> {
         + "e.max_memory_usage as maxmemoryusage, "
         + "e.max_bandwidth as maxbandwidth, "
         + "e.num_http_calls as numhttpcalls,"
-        + " e.num_invocations as numinvocations, "
+        + "e.num_invocations as numinvocations, "
         + "e.num_functions as numfunctions, "
         + "e.num_projects as numprojects  " +
         "FROM public.user u "

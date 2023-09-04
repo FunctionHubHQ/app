@@ -1,5 +1,6 @@
 package net.functionhub.api.controller;
 
+import java.io.IOException;
 import java.util.Map;
 import net.functionhub.api.ChatApi;
 import net.functionhub.api.FHCompletionRequest;
@@ -22,12 +23,20 @@ public class ChatController implements ChatApi {
   @Override
   public ResponseEntity<Map<String, Object>> devGptCompletion(String functionSlug,
       FHCompletionRequest fhCompletionRequest) {
-    return ResponseEntity.ok(chatService.devGptCompletion(functionSlug, fhCompletionRequest));
+    try {
+      return ResponseEntity.ok(chatService.devGptCompletion(functionSlug, fhCompletionRequest));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public ResponseEntity<Map<String, Object>> prodCompletionRequest(
       FHCompletionRequest fhCompletionRequest) {
-    return ResponseEntity.ok(chatService.prodGptCompletion(fhCompletionRequest));
+    try {
+      return ResponseEntity.ok(chatService.prodGptCompletion(fhCompletionRequest));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

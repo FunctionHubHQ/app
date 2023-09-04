@@ -1,6 +1,7 @@
 package net.functionhub.api.service.chat;
 
 
+import java.io.IOException;
 import net.functionhub.api.FHCompletionRequest;
 import net.functionhub.api.dto.GPTFunction;
 import net.functionhub.api.service.openai.completion.CompletionRequest;
@@ -43,8 +44,8 @@ public interface ChatService {
    * @return
    */
   Map<String, Object> devGptCompletion(String functionSlug,
-      FHCompletionRequest fhCompletionRequest);
+      FHCompletionRequest fhCompletionRequest) throws IOException;
 
-  Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest);
+  Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest) throws IOException;
 
 }

@@ -1,5 +1,6 @@
 package net.functionhub.api.dto;
 
+import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,14 +17,14 @@ public class SessionUser {
   private String avatar;
   private String apiKey;
   private String username;
-  private String maxExecutionTime;
-  private String maxCpuTime;
-  private String maxMemoryUsage;
-  private String maxBandwidth;
-  private String numHttpCalls;
-  private String numInvocations;
-  private String numFunctions;
-  private String numProjects;
+  private Long maxExecutionTime;
+  private Long maxCpuTime;
+  private Long maxMemoryUsage;
+  private Long maxBandwidth;
+  private Long numHttpCalls;
+  private Long numInvocations;
+  private Long numFunctions;
+  private Long numProjects;
   private AuthMode authMode;
-  private Map<String, Boolean> roles;
+  private Map<String, Boolean> roles = new HashMap<>();
 }

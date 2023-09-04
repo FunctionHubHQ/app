@@ -15,7 +15,6 @@ import net.functionhub.api.GenericResponse;
 import net.functionhub.api.SpecResult;
 import net.functionhub.api.StatusRequest;
 import net.functionhub.api.StatusResponse;
-import net.functionhub.api.UserProfile;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.CommitHistoryEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
@@ -27,7 +26,9 @@ import net.functionhub.api.dto.ExecRequestInternal;
 import net.functionhub.api.dto.GenerateSpecRequest;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.DenoProps;
+import net.functionhub.api.props.MessagesProps;
 import net.functionhub.api.props.SourceProps;
+import net.functionhub.api.service.entitlement.EntitlementService;
 import net.functionhub.api.service.user.UserService.AuthMode;
 import net.functionhub.api.service.utils.FHUtils;
 import java.io.File;
@@ -75,8 +76,10 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final EntitlementRepo entitlementRepo;
   private final CommitHistoryRepo commitHistoryRepo;
   private final DenoProps denoProps;
+  private final MessagesProps messagesProps;
   private final WordList wordList;
   private final SpecTemplate specTemplate;
+  private final EntitlementService entitlementService;
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
@@ -183,6 +186,9 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   private ExecResultAsync execHelper(ExecRequest execRequest, CodeCellEntity codeCell) {
+    verifyEntitlements();
+    entitlementService.recordFunctionInvocation();
+
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
       String execId = execRequest.getExecId();
       if (ObjectUtils.isEmpty(execId)) {
@@ -249,6 +255,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         List<CommitHistoryEntity> commitHistoryEntities = commitHistoryRepo
             .findByCodeCellIdAndVersion(UUID.fromString(uid), version);
         code = commitHistoryEntities.get(0).getCode();
+        userId = commitHistoryEntities.get(0).getUserId();
       } else {
         CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
         code = entity.getCode();
@@ -398,20 +405,21 @@ public class RuntimeServiceImpl implements RuntimeService {
       CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(code.getUid()));
       if (codeCell != null && !ObjectUtils.isEmpty(code.getFieldsToUpdate())) {
         for (String field : code.getFieldsToUpdate()) {
-          if (field.equals("code")) {
-            codeCell.setCode(code.getCode());
-            codeCell.setVersion(generateCodeVersion());
-            rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
-            codeCell.setDescription(parseCodeComment(rawCode, "@description"));
-            codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
-            codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
-          }
-          else if (field.equals("is_active")) {
-            if (isBelowActiveLimit(FHUtils.getSessionUser().getUid()) || !code.getIsActive()) {
-              codeCell.setIsActive(code.getIsActive());
+          switch (field) {
+            case "code" -> {
+              codeCell.setCode(code.getCode());
+              codeCell.setVersion(generateCodeVersion());
+              rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
+              codeCell.setDescription(parseCodeComment(rawCode, "@description"));
+              codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
+              codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
             }
-          } else if (field.equals("is_public")) {
-            codeCell.setIsPublic(code.getIsPublic());
+            case "is_active" -> {
+              if (isBelowActiveLimit(FHUtils.getSessionUser().getUid()) || !code.getIsActive()) {
+                codeCell.setIsActive(code.getIsActive());
+              }
+            }
+            case "is_public" -> codeCell.setIsPublic(code.getIsPublic());
           }
         }
         codeCell.setDeployed(false);
@@ -859,6 +867,14 @@ public class RuntimeServiceImpl implements RuntimeService {
       log.error("{}.submitExecutionTask: {}",
           getClass().getSimpleName(),
           e.getMessage());
+    }
+  }
+
+  private void verifyEntitlements() {
+    SessionUser sessionUser = FHUtils.getSessionUser();
+    long numInvocationsLastOneMinute = entitlementService.getNumFunctionInvocations(1);
+    if (numInvocationsLastOneMinute >= sessionUser.getNumInvocations()) {
+      throw new RuntimeException(messagesProps.getInvocationLimitReached());
     }
   }
 

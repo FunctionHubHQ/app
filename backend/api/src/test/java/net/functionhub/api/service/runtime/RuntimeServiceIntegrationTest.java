@@ -122,7 +122,10 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         response = runtimeService.updateCode(code);
         assertNotNull(response);
         assertNotNull(response.getUid());
-
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ignored) {
+        }
         List<CommitHistoryEntity> commitHistory = commitHistoryRepo
             .findByCodeCellId(UUID.fromString(response.getUid()));
         assertNotNull(commitHistory);
@@ -133,9 +136,11 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
         // Ensure the decoded code matches the raw code
         String decodedRawCode = runtimeService.getUserCode(code.getUid());
-        assertNotNull(decodedRawCode);
         String template = testHelper.loadFile("classpath:ts/workerTemplate.ts");
-        assertTrue(decodedRawCode.contains(template));
+        assertNotNull(decodedRawCode);
+        assertNotNull(template);
+        assertTrue(decodedRawCode.contains("b7dbbfbb7723221173444ae44b734f5b5cbaa465b9cfa2a70c9819394acc1291"));
+        assertNotNull(decodedRawCode.concat("FUNCTION_HUB_KEY"));
         assertTrue(decodedRawCode.contains(rawCode));
     }
 

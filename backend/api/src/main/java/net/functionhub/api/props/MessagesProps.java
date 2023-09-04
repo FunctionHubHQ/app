@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Primary;
 @Getter @Setter
 @Configuration
 @ConfigurationProperties(prefix = "messages")
-public class MessagesProp {
+public class MessagesProps {
     private String invocationLimitReached;
 
 }

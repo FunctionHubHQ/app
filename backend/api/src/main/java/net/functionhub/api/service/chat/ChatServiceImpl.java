@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import jakarta.servlet.http.HttpServletResponse;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.FHCompletionRequest;
@@ -20,6 +21,7 @@ import net.functionhub.api.dto.GPTFunctionCall;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.OpenAiProps;
 import net.functionhub.api.dto.RequestHeaders;
+import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.openai.completion.CompletionRequest;
 import net.functionhub.api.service.openai.completion.CompletionRequestFunctionalCall;
 import net.functionhub.api.service.openai.completion.CompletionResult;
@@ -58,7 +60,9 @@ public class ChatServiceImpl implements ChatService {
   private final RuntimeService runtimeService;
   private final RequestHeaders requestHeaders;
   private final UserRepo userRepo;
+  private final SourceProps sourceProps;
   private final CommitHistoryRepo commitHistoryRepo;
+  private final HttpServletResponse httpServletResponse;
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
   @Override
@@ -150,7 +154,7 @@ public class ChatServiceImpl implements ChatService {
               .payload(new Gson().toJson(functionCall.getRequestPayload(objectMapper)))
               .execId(UUID.randomUUID().toString())
               .deployed(deployed)
-              .version(version) // The version must be specified so that a specific version of deployment can run
+              .version(version) // The version must be specified so that a specific version of a deployment can run
               .validate(false);
           ExecResultAsync execResultAsync = runtimeService.exec(execRequest);
 
@@ -272,10 +276,9 @@ public class ChatServiceImpl implements ChatService {
   public Map<String, Object> devGptCompletion(String functionSlug,
       FHCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
-    if (!user.getAuthMode().name().equals(AuthMode.FB.name())) {
-      throw new RuntimeException("Unsupported authentication mechanism");
+    if (!user.getAuthMode().name().equals(AuthMode.FB.name()) && !sourceProps.getProfile().equals("test")) {
+      FHUtils.unAuthorizedAuthMechanism(httpServletResponse, objectMapper);
     }
-
     return gptCompletionDevRequest(functionSlug, fhCompletionRequest);
   }
 
@@ -283,7 +286,7 @@ public class ChatServiceImpl implements ChatService {
   public Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
     if (!user.getAuthMode().name().equals(AuthMode.AK.name())) {
-      throw new RuntimeException("Unsupported authentication mechanism");
+      FHUtils.unAuthorizedAuthMechanism(httpServletResponse, objectMapper);
     }
     return gptCompletionDeployedRequest(fhCompletionRequest);
   }
