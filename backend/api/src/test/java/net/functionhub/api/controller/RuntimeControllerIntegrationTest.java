@@ -1,5 +1,6 @@
 package net.functionhub.api.controller;
 
+import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
@@ -7,6 +8,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
@@ -94,52 +103,6 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};;
 
-    private final String code = "import moment from \"npm:moment\";\n"
-        + "\n"
-        + "type TempUnit = \"CELCIUS\" | \"FAHRENHEIT\";\n"
-        + "\n"
-        + "export interface RequestEntity {\n"
-        + "  /**\n"
-        + "   * The city and state, e.g. San Francisco, CA\n"
-        + "   */\n"
-        + "  location: string,\n"
-        + "\n"
-        + "  /**\n"
-        + "   * Unit of temperature\n"
-        + "   */\n"
-        + "  unit?: TempUnit\n"
-        + "}\n"
-        + "\n"
-        + "export interface ResponseEntity {\n"
-        + "    location?: string,\n"
-        + "    temperature?: string,\n"
-        + "    unit?: TempUnit,\n"
-        + "    forecast: string[],\n"
-        + "    current_time: string\n"
-        + "}\n"
-        + "\n"
-        + "async function getForecast(): string[] {\n"
-        + "  return [\"rainy\", \"windy\"];\n"
-        + "}\n"
-        + "\n"
-        + "/**\n"
-        + " * @name get_city_time_and_weather\n"
-        + " * @summary Get the current time and weather of any given city. The city must\n"
-        + " *              be valid for us to be able to parse and lookup. Temperature unit is\n"
-        + " *              optional and will default to celcius.\n"
-        + " * @return A valid time and temp\n"
-        + " */\n"
-        + "export async function handler(request: RequestEntity): Promise<ResponseEntity> {\n"
-        + "  console.log(\"Inside child worker\")\n"
-        + "  return {\n"
-        + "  location: request.location,\n"
-        + "   temperature: \"35\",\n"
-        + "   unit: request.unit,\n"
-        + "   forecast: await getForecast(),\n"
-        + "   current_time: moment().format('MMMM Do YYYY, h:mm:ss a')\n"
-        + "  };\n"
-        + "}";
-
     private SessionUser sessionUser;
 
     @BeforeClass
@@ -182,17 +145,102 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         log.info("  Testcase: " + method.getName() + " has ended");
     }
 
-    @Test
-    public void stressTest() {
-        // Stress test concurrency and properly applying cpu and memory limits correctly
+    @Test(enabled = true)
+    public void stressTestNonBlockingCalls() throws JsonProcessingException {
+        final CodeUpdateResult nonBlockingCodeCell = createCodeCell(nonBlockingCode);
+
+        // We are submitting 250 concurrent requests at the same millisecond. That's
+        // extremely unlikely even in the worst possible case for our use case.
+        int numRequests = 250; // Can't go beyond this due to Tomcat default limits. Should
+        // consider using Tomcat's NIO in the future.
+        // Average time per execution: 30ms
+
+        ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+        List<Future<Map<String, Object>>> tasks = new ArrayList<>();
+        for (int i = 0; i < numRequests; i++) {
+            tasks.add(
+                executorService.submit(() -> runDevAndGetResult(nonBlockingCodeCell)));
+        }
+        long start = System.currentTimeMillis();
+        List<Map<String, Object>>  results = tasks.stream()
+            .map(it -> {
+                try {
+                    return it.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            })
+            .toList();
+        long end = System.currentTimeMillis();
+        long totalTime = end - start;
+        log.info("Total time to process {} requests: {} ms. Average time per request: {}", numRequests, totalTime, totalTime/(numRequests * 1.0));
+        assertNotNull(results);
+        assertEquals(numRequests, results.size());
+        for (Map<String, Object> result : results) {
+            assertNotNull(result.get("greeting"));
+        }
     }
 
-    @Test
+    @Test(enabled = false)
+    public void stressTestBlockingCalls() throws JsonProcessingException {
+        // Stress test concurrency and applying cpu and memory limits correctly
+        final CodeUpdateResult nonBlockingCodeCell = createCodeCell(nonBlockingCode);
+        final CodeUpdateResult blockingCodeCell = createCodeCell(blockingCode);
+
+        // We are submitting 250 concurrent requests at the same millisecond. That's
+        // extremely unlikely even in the worst possible case for our use case.
+        int numNonBlockingRequests = 0;
+        int numBlockingRequests = 1;
+
+        ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+        List<Future<Map<String, Object>>> tasks = new ArrayList<>();
+        for (int i = 0; i < numNonBlockingRequests; i++) {
+            tasks.add(
+                executorService.submit(() -> runDevAndGetResult(nonBlockingCodeCell)));
+        }
+        for (int i = 0; i < numBlockingRequests; i++) {
+            tasks.add(
+                executorService.submit(() -> runDevAndGetResult(blockingCodeCell)));
+        }
+        Collections.shuffle(tasks);
+
+        long start = System.currentTimeMillis();
+        List<Map<String, Object>>  results = tasks.stream()
+            .map(it -> {
+                try {
+                    return it.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            })
+            .toList();
+        long end = System.currentTimeMillis();
+        long totalTime = end - start;
+        int totalRequest = numBlockingRequests + numNonBlockingRequests;
+        log.info("Total time to process {} requests: {} ms. Average time per request: {}", totalRequest, totalTime, totalTime/(totalRequest * 1.0));
+
+        int blockingResults = 0;
+        int nonBlockingResults = 0;
+
+        for (Map<String, Object> result : results) {
+            Object error = result.get("error");
+            Object greeting = result.get("greeting");
+            if (error != null && error.toString().contains("CPU timeout")) {
+                blockingResults++;
+            } else if (greeting != null && greeting.toString().startsWith("Hello, world!")) {
+                nonBlockingResults++;
+            }
+        }
+        assertEquals(numNonBlockingRequests, nonBlockingResults);
+        assertEquals(numBlockingRequests, blockingResults);
+    }
+
+    @Test(enabled = false)
     public void invocationLimitTest() throws JsonProcessingException  {
         EntitlementEntity entity = entitlementRepo.findByUserId(sessionUser.getUid());
         entity.setNumInvocations(2L);
         entitlementRepo.save(entity);
-        CodeUpdateResult updateResult = createCodeCell();
+        CodeUpdateResult updateResult = createCodeCell(code);
 
         // No limits on dev
         for (int i = 0; i < 10; i++) {
@@ -218,7 +266,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     @Test(enabled = false)
     public void fullFlowTest() throws JsonProcessingException {
         // 1. Create code cell
-        CodeUpdateResult updateResult = createCodeCell();
+        CodeUpdateResult updateResult = createCodeCell(code);
 
         // 2. Run it
         runDevCodeCell(updateResult);
@@ -255,8 +303,8 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         assertTrue(deployedCompletionResponse.get("content").toString().contains("rainy"));
     }
 
-    private CodeUpdateResult createCodeCell() throws JsonProcessingException {
-        String codeEncoded = Base64.getEncoder().encodeToString(code.getBytes());
+    private CodeUpdateResult createCodeCell(String rawCode) throws JsonProcessingException {
+        String codeEncoded = Base64.getEncoder().encodeToString(rawCode.getBytes());
 
         String updateResultStr = request("/update-code", "POST", new Code()
             .code(codeEncoded));
@@ -278,6 +326,16 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
             .readValue(execResultStr, typeRef);
         assertNotNull(execResult);
         assertNotNull(execResult.get("temperature"));
+    }
+
+    private Map<String, Object> runDevAndGetResult(CodeUpdateResult updateResult) throws JsonProcessingException {
+        String city = "Chicago, IL";
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("location", city);
+        String execResultStr = request("/d/" + updateResult.getSlug(), "POST",
+            new Gson().toJson(payload));
+        return objectMapper
+            .readValue(execResultStr, typeRef);
     }
 
     private Map<String, Object> runProdCodeCell(CodeUpdateResult updateResult) throws JsonProcessingException {
@@ -321,5 +379,90 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         return testRestTemplate.exchange(fullUrl, HttpMethod.GET, requestEntity, String.class)
             .getBody();
     }
+
+    private final String code = "import moment from \"npm:moment\";\n"
+        + "\n"
+        + "type TempUnit = \"CELCIUS\" | \"FAHRENHEIT\";\n"
+        + "\n"
+        + "export interface Request {\n"
+        + "  /**\n"
+        + "   * The city and state, e.g. San Francisco, CA\n"
+        + "   */\n"
+        + "  location: string,\n"
+        + "\n"
+        + "  /**\n"
+        + "   * Unit of temperature\n"
+        + "   */\n"
+        + "  unit?: TempUnit\n"
+        + "}\n"
+        + "\n"
+        + "export interface Response {\n"
+        + "    location?: string,\n"
+        + "    temperature?: string,\n"
+        + "    unit?: TempUnit,\n"
+        + "    forecast: string[],\n"
+        + "    current_time: string\n"
+        + "}\n"
+        + "\n"
+        + "async function getForecast(): string[] {\n"
+        + "  return [\"rainy\", \"windy\"];\n"
+        + "}\n"
+        + "\n"
+        + "/**\n"
+        + " * @name get_city_time_and_weather\n"
+        + " * @summary Get the current time and weather of any given city. The city must\n"
+        + " *              be valid for us to be able to parse and lookup. Temperature unit is\n"
+        + " *              optional and will default to celcius.\n"
+        + " * @return A valid time and temp\n"
+        + " */\n"
+        + "export async function handler(request: Request): Promise<Response> {\n"
+        + "  console.log(\"Inside child worker\")\n"
+        + "  return {\n"
+        + "  location: request.location,\n"
+        + "   temperature: \"35\",\n"
+        + "   unit: request.unit,\n"
+        + "   forecast: await getForecast(),\n"
+        + "   current_time: moment().format('MMMM Do YYYY, h:mm:ss a')\n"
+        + "  };\n"
+        + "}";
+
+    private final String nonBlockingCode = "export interface Request {\n"
+        + "}\n"
+        + "\n"
+        + "export interface Response {\n"
+        + "}\n"
+        + "\n"
+        + "\n"
+        + "/**\n"
+        + " * @name custom_greeter\n"
+        + " * @summary A brief summary of what my function does\n"
+        + " * @description An extended descripiton of what my function does. This is shown\n"
+        + " *              to others if you make the function public.\n"
+        + " */\n"
+        + "export async function handler(request: Request): Promise<Response> {\n"
+        + "  return {\n"
+        + "    greeting: `Hello, world!`\n"
+        + "  }\n"
+        + "}";
+
+    private final String blockingCode = "export interface Request {\n"
+        + "}\n"
+        + "\n"
+        + "export interface Response {\n"
+        + "}\n"
+        + "\n"
+        + "\n"
+        + "/**\n"
+        + " * @name custom_greeter\n"
+        + " * @summary A brief summary of what my function does\n"
+        + " * @description An extended descripiton of what my function does. This is shown\n"
+        + " *              to others if you make the function public.\n"
+        + " */\n"
+        + "export async function handler(request: Request): Promise<Response> {\n"
+        + "  while (true) {}\n"
+        + "  return {\n"
+        + "    greeting: `Hello, world!`\n"
+        + "  }\n"
+        + "}";
 }
 

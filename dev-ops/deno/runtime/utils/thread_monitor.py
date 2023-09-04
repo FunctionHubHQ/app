@@ -70,29 +70,37 @@ def get_thread_usage_metrics(ppid, tid) -> DenoWorkerThread:
   memory_usage = 0
   cpu_time = 0
   name = ""
-  with open(status_path, "r") as status_file:
-    lines = status_file.readlines()
-    for line in lines:
-      if line.startswith("VmRSS:"):
-        tokens = [t for t in line.split("VmRSS:")[-1].split(" ")]
-        for t in tokens:
-          try:
-            memory_usage = int(t) * 1000  # Normalize memory to bytes
-            break
-          except ValueError:
-            pass
+  try:
+    with open(status_path, "r") as status_file:
+      lines = status_file.readlines()
+      for line in lines:
+        if line.startswith("VmRSS:"):
+          tokens = [t for t in line.split("VmRSS:")[-1].split(" ")]
+          for t in tokens:
+            try:
+              memory_usage = int(t) * 1000  # Normalize memory to bytes
+              break
+            except ValueError:
+              pass
 
-      elif line.startswith("Name:"):
-        tokens = [t for t in line.split("Name:") if t]
-        name = tokens[0]
+        elif line.startswith("Name:"):
+          tokens = [t for t in line.split("Name:") if t]
+          name = tokens[0]
+  except Exception as e:
+    now = time.time_ns() // 1000000
+    print(f"Status error on TID {tid}: {now}")
 
-  with open(stat_path, "r") as stat_file:
-    data = stat_file.read().split()
-    utime_ticks = int(
-        data[13])  # 14th field: utime (user mode time in clock ticks)
-    clock_ticks_per_second = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
-    utime_mseconds = (utime_ticks / clock_ticks_per_second) * 1000
-    cpu_time = utime_mseconds
+  try:
+    with open(stat_path, "r") as stat_file:
+      data = stat_file.read().split()
+      utime_ticks = int(
+          data[13])  # 14th field: utime (user mode time in clock ticks)
+      clock_ticks_per_second = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
+      utime_mseconds = (utime_ticks / clock_ticks_per_second) * 1000
+      cpu_time = utime_mseconds
+  except Exception as e:
+    now = time.time_ns() // 1000000
+    print(f"Stat error on TID {tid}: {now}")
 
   thread.tid = tid
   thread.ppid = ppid
@@ -116,6 +124,7 @@ def alert_on_metric_change(thread):
   if thread.curr_memory_usage > thread.prev_memory_usage:
     request("/thread-alarm", {
       "thread_id": thread.id,
+      "tid": thread.tid,
       "memory_usage": thread.curr_memory_usage,
       "updated_at": thread.updated_at
     })
@@ -142,6 +151,7 @@ def start_monitor(sampling_rate=0.005):
   print(f"Thread monitor up: sampling_rate={sampling_rate}")
   active_worker_threads = {}
   while True:
+    # try:
     # Fetch the pid every time since deno could have died and restarted
     deno_pid = get_pids("deno run --allow-net")[0]
     worker_pids = get_pids("{worker-")
@@ -169,6 +179,8 @@ def start_monitor(sampling_rate=0.005):
     updated_threads = {key: value for key, value in
                        active_worker_threads.items() if key in worker_pids}
     active_worker_threads = updated_threads
+  # except Exception as e:
+  #   print(e)
 
     # Sample every 5 milliseconds even though the default Kernel clock tick
     # rate is 100hz, i.e. 1 tick every 10 milliseconds
