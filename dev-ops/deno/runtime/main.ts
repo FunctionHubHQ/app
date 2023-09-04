@@ -10,6 +10,22 @@ interface ThreadStatus {
   cpuBaseLine?: number
 }
 
+interface IntervalIds {
+  intervalId?: number,
+  timeoutId?: number
+}
+
+interface SynchronizationTimer {
+  started_at?: number,
+  updated_at?: number
+}
+
+const syncTimer: SynchronizationTimer = {
+  started_at: 0,
+  updated_at: 0
+}
+
+const MAX_SYNCHRONIZATION_WAIT_TIME = 1000
 const devHost = 'http://host.docker.internal:9090';
 const prodHost = 'http://api:9090';
 
@@ -23,6 +39,15 @@ const threadStatus = new Map(); // inverted mapping of activeWorkersByThreadId
 const workerStartTimes = new Map();
 const activeWorkersByWorkerId = new Map();
 const exitedWorkersByWorkerId = new Map(); // Workers that have exited
+const workerIntervalIds = new Map<string, IntervalIds>();
+
+function setCleanupInterval() {
+  setInterval(() => {
+    if (activeWorkersByWorkerId.size === 0 && activeWorkersByThreadId.size === 0) {
+      exitedWorkersByWorkerId.clear()
+    }
+  }, 1000)
+}
 
 function getHost(env) {
   return env === "prod" ? prodHost : devHost
@@ -46,30 +71,27 @@ function getWorkerId(body?: any, uid?: string, execId?: string) {
   return `${uid}:${execId}`
 }
 
-function clearIds(timeoutId, intervalId) {
-  if (timeoutId) clearTimeout(timeoutId);
-  if (intervalId) clearInterval(intervalId)
+function clearTimeouts(workerId) {
+  const ids: IntervalIds = workerIntervalIds.get(workerId)
+  workerIntervalIds.delete(workerId)
+  if (ids?.timeoutId) clearTimeout(ids.timeoutId);
+  if (ids?.intervalId) clearInterval(ids.intervalId)
 }
 
 function clearWorkerId(workerId) {
-  console.log((new Date()).getTime(), ": ", "clearWorkerId: ", workerId)
   workerStartTimes.delete(workerId)
   threadStatus.delete(workerId)
   const threadId = activeWorkersByWorkerId.get(workerId)
   activeWorkersByWorkerId.delete(workerId)
   if (threadId) {
     activeWorkersByThreadId.delete(threadId)
-  } else {
-    console.log((new Date()).getTime(), ": ", "ThreadId not found for workerId: ", workerId)
   }
 }
 
-function registerEventListener(worker, ctx, timeoutId, intervalId) {
-
+function registerEventListener(worker, ctx) {
   // Listen for messages from the Web Worker
   worker.onmessage = (event) => {
     const workerId = getWorkerId(null, event.data.uid, event.data.execId)
-    // const uid = event.data.uid;
     if (event.data.stdout) {
       let prevStdout = stdout[workerId];
       if (!prevStdout) {
@@ -78,49 +100,37 @@ function registerEventListener(worker, ctx, timeoutId, intervalId) {
       prevStdout.push(event.data.stdout);
       stdout[workerId] = prevStdout;
     } else if (event.data.result) {
-      clearIds(timeoutId, intervalId);
-      // if (timeoutId) clearTimeout(timeoutId);
-      // if (interval) clearInterval(interval)
-      // workerStartTimes.delete(workerId)
-      // console.log((new Date()).getTime(), ": ", "DEBUG 0: sendExecutionResult")
+      clearTimeouts(workerId);
       sendExecutionResult(ctx,
           event.data.result,
           [...stdout[workerId]],
           null)
-      .catch(e => console.log((new Date()).getTime(), ": ", e))
+      .catch(e => console.error((new Date()).getTime(), ": ", e))
       stdout[workerId] = [];
     } else if (event.data.error) {
       worker.terminate();
-      clearIds(timeoutId, intervalId);
-      // if (timeoutId) clearTimeout(timeoutId);
-      // if (interval) clearInterval(interval)
-      // workerStartTimes.delete(workerId)
-      // console.log((new Date()).getTime(), ": ", "DEBUG 1: sendExecutionResult")
+      clearTimeouts(workerId);
       sendExecutionResult(ctx,
           null,
           [...stdout[workerId]],
           event.data.error)
-      .catch(e => console.log((new Date()).getTime(), ": ", e))
+      .catch(e => console.error((new Date()).getTime(), ": ", e))
       stdout[workerId] = [];
     } else if (event.data.startedAt) {
-      console.log((new Date()).getTime(), ": ", "Setting start time: ", workerId, event.data.startedAt)
       workerStartTimes.set(workerId, event.data.startedAt)
     }
   };
 }
 
-function registerErrorListener(worker, ctx, body, timeoutId, intervalId) {
+function registerErrorListener(worker, ctx, body) {
   const workerId = getWorkerId(body, null, null)
   worker.onerror = (error) => {
     error.preventDefault();
-    // if (timeoutId) clearTimeout(timeoutId);
-    // if (interval) clearInterval(interval)
-    clearIds(timeoutId, intervalId);
-    // console.log((new Date()).getTime(), ": ", "DEBUG 2: sendExecutionResult")
+    clearTimeouts(workerId);
     sendExecutionResult(ctx, null,
         [...stdout[workerId]],
         error.message)
-    .catch(e => console.log((new Date()).getTime(), ": ", e));
+    .catch(e => console.error((new Date()).getTime(), ": ", e));
     stdout[workerId] = [];
   };
 }
@@ -130,13 +140,11 @@ function setTimeoutHandler(worker, ctx, body) {
   return setTimeout(() => {
     // Terminate the Web Worker when the timeout occurs
     worker.terminate();
-    // console.log((new Date()).getTime(), ": ", "DEBUG 3: sendExecutionResult")
     sendExecutionResult(ctx, null,
         stdout[workerId] ? [...stdout[workerId]] : [],
         "Execution timed out")
-    .catch(e => console.log((new Date()).getTime(), ": ", e));
+    .catch(e => console.error((new Date()).getTime(), ": ", e));
     delete stdout[workerId];
-    console.log((new Date()).getTime(), ": ", stdout);
   }, body.maxExecutionTime ? body.maxExecutionTime : 30000);
 }
 
@@ -159,7 +167,6 @@ function setIntervalHandler(worker, ctx, body) {
       }
       if (errorMessage) {
         worker.terminate();
-        // console.log((new Date()).getTime(), ": ", "DEBUG 4: sendExecutionResult")
         sendExecutionResult(ctx, null,
             [...stdout[workerId]],
             errorMessage)
@@ -189,121 +196,25 @@ function spawnNewIsolate(ctx, userScriptUrl, body) {
   }
   const timeoutId = setTimeoutHandler(worker, ctx, body)
   const intervalId = setIntervalHandler(worker, ctx, body)
+  workerIntervalIds.set(workerId, {
+    intervalId: intervalId,
+    timeoutId: timeoutId
+  })
   threadStatus.set(workerId, _threadStat)
-  registerEventListener(worker, ctx, timeoutId, intervalId);
-
-  // let timeoutId, interval;
-  // // Listen for messages from the Web Worker
-  // worker.onmessage = (event) => {
-  //   const uid = event.data.uid;
-  //   if (event.data.stdout) {
-  //     let prevStdout = stdout[uid];
-  //     if (!prevStdout) {
-  //       prevStdout = []
-  //     }
-  //     prevStdout.push(event.data.stdout);
-  //     stdout[uid] = prevStdout;
-  //   } else if (event.data.result) {
-  //     if (timeoutId) clearTimeout(timeoutId);
-  //     if (interval) clearInterval(interval)
-  //     workerStartTimes.delete(event.data.uid)
-  //     console.log((new Date()).getTime(), ": ", "DEBUG 0: sendExecutionResult")
-  //     sendExecutionResult(ctx,
-  //         event.data.result,
-  //         [...stdout[uid]],
-  //         null)
-  //     .catch(e => console.log((new Date()).getTime(), ": ", e))
-  //     stdout[uid] = [];
-  //   } else if (event.data.error) {
-  //     worker.terminate();
-  //     if (timeoutId) clearTimeout(timeoutId);
-  //     if (interval) clearInterval(interval)
-  //     workerStartTimes.delete(event.data.uid)
-  //     console.log((new Date()).getTime(), ": ", "DEBUG 1: sendExecutionResult")
-  //     sendExecutionResult(ctx,
-  //         null,
-  //         [...stdout[uid]],
-  //         event.data.error)
-  //     .catch(e => console.log((new Date()).getTime(), ": ", e))
-  //     stdout[uid] = [];
-  //   } else if (event.data.startedAt) {
-  //     console.log((new Date()).getTime(), ": ", "Setting start time: ", event.data.uid, event.data.startedAt)
-  //     workerStartTimes.set(event.data.uid, event.data.startedAt)
-  //   }
-  // };
-
-  // Handle errors from the Web Worker
-  registerErrorListener(worker, ctx, body, timeoutId, intervalId);
-  // worker.onerror = (error) => {
-  //   error.preventDefault();
-  //   if (timeoutId) clearTimeout(timeoutId);
-  //   if (interval) clearInterval(interval)
-  //   console.log((new Date()).getTime(), ": ", "DEBUG 2: sendExecutionResult")
-  //   sendExecutionResult(ctx, null,
-  //       [...stdout[body.uid]],
-  //       error.message)
-  //   .catch(e => console.log((new Date()).getTime(), ": ", e));
-  //   stdout[body.uid] = [];
-  // };
+  registerEventListener(worker, ctx);
+  registerErrorListener(worker, ctx, body);
 
   stdout[workerId] = [];
   worker.postMessage({uid: body.uid, payload: body.payload, execId: body.execId});
-  console.log((new Date()).getTime(), ": ", "workerId: ", workerId, " Request received at: ", (new Date()).getTime());
-
-  // setTimeoutHandler(worker, ctx, body)
-  // timeoutId = setTimeout(() => {
-  //   // Terminate the Web Worker when the timeout occurs
-  //   worker.terminate();
-  //   console.log((new Date()).getTime(), ": ", "DEBUG 3: sendExecutionResult")
-  //   sendExecutionResult(ctx, null,
-  //       stdout[body.uid] ? [...stdout[body.uid]] : [],
-  //       "Execution timed out")
-  //   .catch(e => console.log((new Date()).getTime(), ": ", e));
-  //   delete stdout[body.uid];
-  //   console.log((new Date()).getTime(), ": ", stdout);
-  // }, body.maxExecutionTime ? body.maxExecutionTime : 30000);
-
-  // interval = setInterval(() => {
-  //   // Terminate the Web Worker if it has exceeded its cpu or memory thresholds
-  //   if (threadStatus.has(body.uid)) {
-  //     const status: ThreadStatus = threadStatus.get(body.uid)
-  //     let errorMessage = undefined
-  //     if (status?.cpuTime > status?.cpuBaseLine) {
-  //       const delta = status.cpuTime - status.cpuBaseLine
-  //       if (delta > status.cpuThreshold) {
-  //         errorMessage = "CPU timeout"
-  //       }
-  //     } else if (status?.memoryUsage > status?.memoryThreshold) {
-  //       // TODO: consider setting a memory threshold, e.g. what if the initial usage ends up
-  //       //  being greater than the threshold even before the user code could run?
-  //       errorMessage = "Out of memory"
-  //     }
-  //     if (errorMessage) {
-  //       worker.terminate();
-  //       console.log((new Date()).getTime(), ": ", "DEBUG 4: sendExecutionResult")
-  //       sendExecutionResult(ctx, null,
-  //           [...stdout[body.uid]],
-  //           errorMessage)
-  //       .catch(e => console.log((new Date()).getTime(), ": ", e));
-  //       workerStartTimes.delete(body.uid)
-  //       threadStatus.delete(body.uid)
-  //     }
-  //   }
-  // }, 10);
 }
-
 
 async function sendExecutionResult(ctx, result, stdout, error) {
   const body = await getBody(ctx);
   if (body.uid && body.execId) {
     const workerId = getWorkerId(body, null, null)
     clearWorkerId(workerId)
+    clearTimeouts(workerId)
     exitedWorkersByWorkerId.set(workerId, true)
-    console.log((new Date()).getTime(), ": ", "exitedWorkersByWorkerId size: ", exitedWorkersByWorkerId.size);
-    console.log((new Date()).getTime(), ": ", "EXITING for: ", workerId)
-    console.log((new Date()).getTime(), ": ", "sendExecutionResult - activeWorkersByThreadId size: ", activeWorkersByThreadId.size)
-    console.log((new Date()).getTime(), ": ", "sendExecutionResult - activeWorkersByWorkerId size: ", activeWorkersByWorkerId.size)
-    console.log((new Date()).getTime(), ": ", "sendExecutionResult - threadStatus size: ", threadStatus.size)
     const data = {
       uid: body.uid,
       exec_id: body.execId,
@@ -314,8 +225,6 @@ async function sendExecutionResult(ctx, result, stdout, error) {
       std_out: stdout,
     }
     const url = getHost(body.env) + "/e-result";
-    console.log((new Date()).getTime(), ": ", "SendingResult: body ", body)
-    console.log((new Date()).getTime(), ": ", "SendingResult data: ", data)
     const sendStatus = await fetch(url, {
       method: "POST",
       headers: {
@@ -339,16 +248,31 @@ async function executeUserCode(ctx) {
   // we can schedule another task.
   let synchronizationInterval = undefined
   synchronizationInterval = setInterval(() => {
-    if (workersPendingId.size() === 0) {
-      console.log((new Date()).getTime(), ": ", "Spawning new worker: ", getWorkerId(body))
+    const elapsed = syncTimer.updated_at - syncTimer.started_at
+    if (workersPendingId.size() === 0 || elapsed > MAX_SYNCHRONIZATION_WAIT_TIME) {
+      // If synchronization attempt fails after 1 second, then go ahead and spawn the next
+      // isolate. If we can't synchronize, then something must have happened to the thread
+      // corresponding to the workerId at the head of the queue. This could mean the thread got
+      // killed and so the thread monitor can no longer locate it.
+
+      if (workersPendingId.size() > 0) {
+      //   // We've exceeded MAX_SYNCHRONIZATION_WAIT_TIME so we won't be able to monitor this
+      //   // dequeued worker. In all likelihood, the worker is also dead so this would be
+      //   // removing the deadlock.
+        workersPendingId.dequeue();
+      }
+      syncTimer.started_at = 0
+      syncTimer.updated_at = 0
       if (synchronizationInterval) {
         clearInterval(synchronizationInterval)
       }
       spawnNewIsolate(ctx, url, body);
     } else {
-      console.log((new Date()).getTime(), ": ", "Waiting to synchronize: ", workersPendingId.peek())
+      const now = (new Date()).getTime()
+      syncTimer.started_at = syncTimer.started_at === 0 ? now :syncTimer.started_at
+      syncTimer.updated_at = now
     }
-  }, 5)
+  }, 10)
 }
 
 async function handleNewThreadSignal(ctx) {
@@ -366,29 +290,17 @@ async function handleNewThreadSignal(ctx) {
   // receive a new thread signal. This is a side effect of scanning for new threads at
   // a 5-millisecond interval and the actual execution of user code being faster than
   // the interval for non-blocking code.
-  console.log((new Date()).getTime(), ": ", "handleNewThreadSignal exitedWorkersByWorkerId size: ", exitedWorkersByWorkerId.size)
-  console.log((new Date()).getTime(), ": ", "handleNewThreadSignal TID: ", body.tid)
   if (!exitedWorkersByWorkerId.has(workerId)) {
-    console.log((new Date()).getTime(), ": ", "Setting thread id: ", body.thread_id, "  workerId: ", workerId)
     activeWorkersByThreadId.set(body.thread_id, workerId);
     activeWorkersByWorkerId.set(workerId, body.thread_id)
-    console.log((new Date()).getTime(), ": ", "Added new worker to activeWorkersByThreadId");
-    console.log((new Date()).getTime(), ": ", "pending worker size: ", workersPendingId.size());
-    console.log((new Date()).getTime(), ": ", "active worker size: ", activeWorkersByThreadId.size)
-  } else {
-    console.log((new Date()).getTime(), ": ", "EXITED handleNewThreadSignal workerId, TID: ", workerId, body.tid)
   }
   ctx.response.body = {status: "ok"} ;
 }
 
 async function handleThreadAlarm(ctx) {
   const body = await getBody(ctx);
-  // TODO: Remove thread_id from activeWorkersByThreadId if the worker has finished
-  console.log((new Date()).getTime(), ": ", "activeWorkersByThreadId: ", activeWorkersByThreadId.size);
   const workerId = activeWorkersByThreadId.get(body.thread_id)
   if (workerId) {
-    console.log((new Date()).getTime(), ": ", "handleThreadAlarm workerId, TID: ", workerId, body.tid)
-    console.log((new Date()).getTime(), ": ", "Worker found...")
     // It takes about 2 seconds to teardown a worker. That is too expensive of an operation.
     // Need to improve that!
     const newUpdatedAt = body.updated_at
@@ -398,10 +310,7 @@ async function handleThreadAlarm(ctx) {
     // 60 milliseconds end-to-end (security validation, entitlement check from the db, and others).
     // It's worth investigating what the baseline time is without any of those overheads.
     const workerStartTime = workerStartTimes.get(workerId)
-    console.log((new Date()).getTime(), ": ", "workerStartTime: ", workerStartTime)
-    console.log((new Date()).getTime(), ": ", "newUpdatedAt: ", newUpdatedAt)
     if (workerStartTime && newUpdatedAt >= workerStartTime) {
-      console.log((new Date()).getTime(), ": ", "Updating status for: ", workerId)
       const prevStatus: ThreadStatus = threadStatus.get(workerId);
       const updatedStatus: ThreadStatus = {
         // The time at which the thread was sampled at
@@ -437,7 +346,10 @@ const app = new Application();
 app.use(async (ctx, next) => {
     await next();
     const rt = ctx.response.headers.get("X-Response-Time");
-    console.log((new Date()).getTime(), ": ", `${ctx.request.method} - Ingress - ${ctx.request.url} - ${rt}`);
+    const url: string = ctx.request.url.pathname
+    if (!url.includes("thread-alarm")) {
+      console.log((new Date()).getTime(), ": ", `${ctx.request.method} - Ingress - ${ctx.request.url} - ${rt}`);
+    }
 });
   
   // Timing
@@ -447,7 +359,6 @@ app.use(async (ctx, next) => {
     const ms = Date.now() - start;
     ctx.response.headers.set("X-Response-Time", `${ms}ms`);
 });
-
 
 // Error handling middleware
 app.use(async (context, next) => {
@@ -461,8 +372,6 @@ app.use(async (context, next) => {
       } else {
         context.response.status = 500;
       }
-      console.log((new Date()).getTime(), ": ", "DEBUG 5 error: ", error.message)
-      console.log((new Date()).getTime(), ": ", "DEBUG 5: sendExecutionResult")
       await sendExecutionResult(context, null, null, error.message);
       context.response.body = { error: error.message }
       context.response.type = "application/json";
@@ -487,4 +396,5 @@ app.use(async (context, next) => {
   });
 
 console.log((new Date()).getTime(), ": ", "Server listening on port 8000");
+setCleanupInterval()
 await app.listen({ port: 8000 });

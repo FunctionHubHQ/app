@@ -117,6 +117,7 @@ def alert_on_metric_change(thread):
   if thread.curr_cpu_time > thread.prev_cpu_time:
     request("/thread-alarm", {
       "thread_id": thread.id,
+      "tid": thread.tid,
       "cpu_time": thread.curr_cpu_time,
       "updated_at": thread.updated_at
     })
