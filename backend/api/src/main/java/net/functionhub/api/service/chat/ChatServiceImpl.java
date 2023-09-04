@@ -8,9 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.FHCompletionRequest;
-import net.functionhub.api.UserProfile;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
-import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.projection.Deployment;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
@@ -19,6 +17,7 @@ import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.GPTFunction;
 import net.functionhub.api.dto.GPTFunctionCall;
 import net.functionhub.api.dto.SessionUser;
+import net.functionhub.api.props.MessagesProps;
 import net.functionhub.api.props.OpenAiProps;
 import net.functionhub.api.dto.RequestHeaders;
 import net.functionhub.api.props.SourceProps;
@@ -44,6 +43,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
@@ -61,6 +61,7 @@ public class ChatServiceImpl implements ChatService {
   private final RequestHeaders requestHeaders;
   private final UserRepo userRepo;
   private final SourceProps sourceProps;
+  private final MessagesProps messagesProps;
   private final CommitHistoryRepo commitHistoryRepo;
   private final HttpServletResponse httpServletResponse;
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
@@ -113,10 +114,10 @@ public class ChatServiceImpl implements ChatService {
   }
 
   private Map<String, Object> gptRequestWithFunctionCall(String userId, String prompt, List<GPTFunction> functions,
-      CodeCellEntity codeCell, boolean deployed, String functionCallMode) {
+      CodeCellEntity codeCell, boolean deployed) {
     Map<String, Object> response = new HashMap<>();
     CompletionRequest request = buildCompletionRequest(prompt,
-        functions, userId, functionCallMode);
+        functions, userId, "auto");
     String json = null;
     try {
       json = objectMapper.writeValueAsString(request);
@@ -156,7 +157,7 @@ public class ChatServiceImpl implements ChatService {
               .deployed(deployed)
               .version(version) // The version must be specified so that a specific version of a deployment can run
               .validate(false);
-          ExecResultAsync execResultAsync = runtimeService.exec(execRequest);
+          ExecResultAsync execResultAsync = runtimeService.exec(execRequest, deployed);
 
           // Call GPT with the function response
           CompletionRequestFunctionalCall requestFunctionalCall = buildGptRequestFunctionalCall(
@@ -225,8 +226,7 @@ public class ChatServiceImpl implements ChatService {
            codeCell.getUserId(),
            fhCompletionRequest.getPrompt(),
            List.of(function), codeCell,
-           false,
-           "auto"));
+           false));
        if (ObjectUtils.isEmpty(response)) {
          Map<String, String> error = new HashMap<>();
          error.put("message", "Unknown error");
@@ -267,8 +267,7 @@ public class ChatServiceImpl implements ChatService {
         prompt,
         functions,
         null,
-        true,
-        "auto"));
+        true));
     return response;
   }
 
@@ -277,7 +276,10 @@ public class ChatServiceImpl implements ChatService {
       FHCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
     if (!user.getAuthMode().name().equals(AuthMode.FB.name()) && !sourceProps.getProfile().equals("test")) {
-      FHUtils.unAuthorizedAuthMechanism(httpServletResponse, objectMapper);
+      FHUtils.raiseHttpError(httpServletResponse,
+          objectMapper,
+          messagesProps.getUnauthorized(),
+          HttpStatus.FORBIDDEN_403);
     }
     return gptCompletionDevRequest(functionSlug, fhCompletionRequest);
   }
@@ -286,7 +288,10 @@ public class ChatServiceImpl implements ChatService {
   public Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
     if (!user.getAuthMode().name().equals(AuthMode.AK.name())) {
-      FHUtils.unAuthorizedAuthMechanism(httpServletResponse, objectMapper);
+      FHUtils.raiseHttpError(httpServletResponse,
+          objectMapper,
+          messagesProps.getUnauthorized(),
+          HttpStatus.FORBIDDEN_403);
     }
     return gptCompletionDeployedRequest(fhCompletionRequest);
   }

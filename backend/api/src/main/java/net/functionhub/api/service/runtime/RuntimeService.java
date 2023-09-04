@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import net.functionhub.api.StatusRequest;
 import net.functionhub.api.StatusResponse;
-import net.functionhub.api.UserProfile;
 import net.functionhub.api.dto.SessionUser;
 
 /**
@@ -35,9 +34,10 @@ public interface RuntimeService {
   /**
    * Execute user function. Mainly used internally for testing purposes.
    * @param execRequest
+   * @param applyEntitlementLimits whether entitlement limits should be applied
    * @return
    */
-  ExecResultAsync exec(ExecRequest execRequest);
+  ExecResultAsync exec(ExecRequest execRequest, boolean applyEntitlementLimits);
 
   /**
    * Execute deployed user function. Apply any prod entitlements and

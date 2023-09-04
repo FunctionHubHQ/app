@@ -88,11 +88,13 @@ public class FHUtils {
         .username(sessionUser.getUsername());
   }
 
-  public static void unAuthorizedAuthMechanism(HttpServletResponse httpServletResponse, ObjectMapper objectMapper) {
-    httpServletResponse.setStatus(HttpStatus.FORBIDDEN_403);
+  public static void raiseHttpError(HttpServletResponse httpServletResponse,
+      ObjectMapper objectMapper,
+      String msg, int errorCode) {
+    httpServletResponse.setStatus(errorCode);
     httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
     Map<String, String> message = new HashMap<>();
-    message.put("error", "Unsupported authentication mechanism");
+    message.put("error", msg);
     try {
       objectMapper.writeValue(httpServletResponse.getWriter(), message);
     } catch (IOException e) {

@@ -29,7 +29,8 @@ public class RuntimeController implements RuntimeApi, SpecApi {
 
   @Override
   public ResponseEntity<ExecResultAsync> exec(ExecRequest execRequest) {
-    return ResponseEntity.ok(runtimeService.exec(execRequest));
+//    return ResponseEntity.ok(runtimeService.exec(execRequest, true));
+    throw new RuntimeException("Deprecated");
   }
 
   @Override

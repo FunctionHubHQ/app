@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import jakarta.servlet.http.HttpServletResponse;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
@@ -59,6 +60,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ResourceUtils;
@@ -82,6 +84,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final EntitlementService entitlementService;
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
+  private final HttpServletResponse httpServletResponse;
 
   // Define a unique version key to avoid conflicts
   public final static String versionKey = "version_" + FHUtils.generateUid(6);
@@ -113,9 +116,10 @@ public class RuntimeServiceImpl implements RuntimeService {
 
 
   @Override
-  public ExecResultAsync exec(ExecRequest execRequest) {
+  public ExecResultAsync exec(ExecRequest execRequest, boolean applyEntitlementLimits) {
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
-      return execHelper(execRequest, codeCellRepo.findByUid(UUID.fromString(execRequest.getUid())));
+      return execHelper(execRequest, codeCellRepo.findByUid(UUID.fromString(execRequest.getUid())),
+          applyEntitlementLimits);
     }
     return new ExecResultAsync().error("Unknown error");
   }
@@ -124,21 +128,28 @@ public class RuntimeServiceImpl implements RuntimeService {
   public String runProdFunction(String functionSlug, String body) {
     SessionUser user = FHUtils.getSessionUser();
     if (!user.getAuthMode().name().equals(AuthMode.AK.name())) {
-      throw new RuntimeException("Unsupported authentication mechanism");
+      FHUtils.raiseHttpError(httpServletResponse,
+          objectMapper,
+          messagesProps.getUnauthorized(),
+          HttpStatus.FORBIDDEN_403);
     }
-    return runFunctionHelper(functionSlug, body, true, false);
+    return runFunctionHelper(functionSlug, body, true, false, true);
   }
 
   @Override
   public String runDevFunction(String functionSlug, String body) {
     SessionUser user = FHUtils.getSessionUser();
-    if (!user.getAuthMode().name().equals(AuthMode.FB.name())) {
-      throw new RuntimeException("Unsupported authentication mechanism");
+    if (!user.getAuthMode().name().equals(AuthMode.FB.name()) && !sourceProps.getProfile().equals("test")) {
+      FHUtils.raiseHttpError(httpServletResponse,
+          objectMapper,
+          messagesProps.getUnauthorized(),
+          HttpStatus.FORBIDDEN_403);
     }
-    return runFunctionHelper(functionSlug, body, false, true);
+    return runFunctionHelper(functionSlug, body, false, true, false);
   }
 
-  private String runFunctionHelper(String functionSlug, String body, boolean deployed, boolean validate) {
+  private String runFunctionHelper(String functionSlug, String body, boolean deployed, boolean validate,
+      boolean applyEntitlementLimits) {
     // For development run, the latest version of the code is the one that should run
     // as that is the one the user is testing. For prod, it's the latest deployed version that runs.
     // Although there may be previous deployments in the commit history, only the deployment version
@@ -153,7 +164,7 @@ public class RuntimeServiceImpl implements RuntimeService {
           .payload(body)
           .version(codeCell.getVersion())
           .uid(codeCell.getUid().toString());
-      ExecResultAsync result = execHelper(request, codeCell);
+      ExecResultAsync result = execHelper(request, codeCell, applyEntitlementLimits);
       if (!ObjectUtils.isEmpty(result.getError())) {
         if (result.getError().equals("Execution timed out") &&
             !ObjectUtils.isEmpty(result.getStdOutStr())) {
@@ -185,9 +196,14 @@ public class RuntimeServiceImpl implements RuntimeService {
     return JsonParser.parseString(result.getResult()).getAsString();
   }
 
-  private ExecResultAsync execHelper(ExecRequest execRequest, CodeCellEntity codeCell) {
-    verifyEntitlements();
-    entitlementService.recordFunctionInvocation();
+  private ExecResultAsync execHelper(ExecRequest execRequest, CodeCellEntity codeCell,
+      boolean applyEntitlementLimits) {
+    if (applyEntitlementLimits) {
+      // Entitlement limits don't apply for internal calls from GPT. GPT
+      // calls are part of the original invocation that called the function.
+      verifyEntitlements();
+      entitlementService.recordFunctionInvocation();
+    }
 
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
       String execId = execRequest.getExecId();
@@ -874,7 +890,9 @@ public class RuntimeServiceImpl implements RuntimeService {
     SessionUser sessionUser = FHUtils.getSessionUser();
     long numInvocationsLastOneMinute = entitlementService.getNumFunctionInvocations(1);
     if (numInvocationsLastOneMinute >= sessionUser.getNumInvocations()) {
-      throw new RuntimeException(messagesProps.getInvocationLimitReached());
+      FHUtils.raiseHttpError(httpServletResponse, objectMapper,
+          messagesProps.getInvocationLimitReached(),
+          HttpStatus.FORBIDDEN_403);
     }
   }
 

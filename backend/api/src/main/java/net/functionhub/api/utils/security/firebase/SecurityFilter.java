@@ -8,6 +8,7 @@ import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
+import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.DecodedJwt;
 import net.functionhub.api.dto.SessionUser;
@@ -71,6 +72,7 @@ public class SecurityFilter extends OncePerRequestFilter {
     private final JwtValidationService jwtValidationService;
     private final UserRepo userRepo;
     private final ApiKeyRepo apiKeyRepo;
+    private final EntitlementRepo entitlementRepo;
 
 
   @Override

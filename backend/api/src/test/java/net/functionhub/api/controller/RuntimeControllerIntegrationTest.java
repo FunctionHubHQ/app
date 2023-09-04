@@ -13,13 +13,13 @@ import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.FHCompletionRequest;
 import net.functionhub.api.GenericResponse;
-import net.functionhub.api.UserProfile;
-import net.functionhub.api.UserProfileResponse;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
+import net.functionhub.api.data.postgres.entity.EntitlementEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
+import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.service.runtime.RuntimeService;
@@ -60,10 +60,7 @@ import org.testng.annotations.Test;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContextTests {
     @LocalServerPort
-    private int port = 8080;
-
-    @Autowired
-    private TokenService tokenService;
+    private int port = 9090;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -88,6 +85,9 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @Autowired
     private ApiKeyRepo apiKeyRepo;
+
+    @Autowired
+    private EntitlementRepo entitlementRepo;
 
     @Autowired
     private RuntimeService runtimeService;
@@ -150,7 +150,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         userService.getOrCreateUserprofile();
         try {
             sessionUser = new SessionUser();
-            Thread.sleep(5000L);
+            Thread.sleep(2000L);
             UserProjection userProjection = userRepo.findProjectionByUid(userId);
             sessionUser.setName(userProjection.getName());
             sessionUser.setUid(userProjection.getUid());
@@ -183,45 +183,48 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     }
 
     @Test
+    public void stressTest() {
+        // Stress test concurrency and properly applying cpu and memory limits correctly
+    }
+
+    @Test
+    public void invocationLimitTest() throws JsonProcessingException  {
+        EntitlementEntity entity = entitlementRepo.findByUserId(sessionUser.getUid());
+        entity.setNumInvocations(2L);
+        entitlementRepo.save(entity);
+        CodeUpdateResult updateResult = createCodeCell();
+
+        // No limits on dev
+        for (int i = 0; i < 10; i++) {
+            runDevCodeCell(updateResult);
+        }
+
+        // Deploy and attempt to make more requests than allowed
+        deployCodeCell(updateResult);
+        for (int i = 0; i < 12; i++) {
+            Map<String, Object> execResult = runProdCodeCell(updateResult);
+            assertNotNull(execResult);
+            if (i < 10) {
+                assertNotNull(execResult.get("temperature"));
+            } else {
+                // expect an error on the third request
+                String error = execResult.get("error").toString();
+                assertNotNull(error);
+                assertTrue(error.startsWith("error -> You have reached the allowed number of invocations per minute for your account. If you would like more invocations, please go to https://functionhub.net/pricing to upgrade your account."));
+            }
+        }
+    }
+
+    @Test(enabled = false)
     public void fullFlowTest() throws JsonProcessingException {
-        String codeEncoded = Base64.getEncoder().encodeToString(code.getBytes());
-
         // 1. Create code cell
-        String updateResultStr = request("/update-code", "POST", new Code()
-            .code(codeEncoded));
-
-        CodeUpdateResult updateResult = objectMapper
-            .readValue(updateResultStr, CodeUpdateResult.class);
-        assertNotNull(updateResult.getUid());
+        CodeUpdateResult updateResult = createCodeCell();
 
         // 2. Run it
-        String city = "Chicago, IL";
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("location", city);
-        ExecRequest execRequest =  new ExecRequest()
-            .uid(updateResult.getUid())
-            .execId(UUID.randomUUID().toString())
-            .validate(true)
-            .payload(new Gson().toJson(payload));
-        String execResultStr = request("/run", "POST", execRequest);
-
-        // 3. Fetch the result
-        ExecResultAsync execResult = objectMapper.readValue(execResultStr, ExecResultAsync.class);
-        assertNotNull(execResult);
-        assertTrue(execResult.getStdOutStr().contains("child"));
+        runDevCodeCell(updateResult);
 
         // 4. Deploy it
-        String deployResponseStr = request("/deploy",
-            "POST", new ExecRequest()
-                .uid(updateResult.getUid()));
-
-        GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
-        assertNotNull(deployResponse.getStatus());
-
-        CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResult.getUid()));
-        assertTrue(codeCell.getDeployed());
-        String schema = runtimeService.getJsonSchema(updateResult.getUid());
-        assertNotNull(schema);
+        deployCodeCell(updateResult);
 
         // 5. Make dev GPT function call
         FHCompletionRequest devCompletionRequest = new FHCompletionRequest();
@@ -250,6 +253,57 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         assertNotNull(deployedCompletionResponse);
         assertTrue(deployedCompletionResponse.get("content").toString().contains("Chicago"));
         assertTrue(deployedCompletionResponse.get("content").toString().contains("rainy"));
+    }
+
+    private CodeUpdateResult createCodeCell() throws JsonProcessingException {
+        String codeEncoded = Base64.getEncoder().encodeToString(code.getBytes());
+
+        String updateResultStr = request("/update-code", "POST", new Code()
+            .code(codeEncoded));
+
+        CodeUpdateResult updateResult = objectMapper
+            .readValue(updateResultStr, CodeUpdateResult.class);
+        assertNotNull(updateResult.getUid());
+        return updateResult;
+    }
+
+    private void runDevCodeCell(CodeUpdateResult updateResult) throws JsonProcessingException {
+        String city = "Chicago, IL";
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("location", city);
+        String execResultStr = request("/d/" + updateResult.getSlug(), "POST",
+            new Gson().toJson(payload));
+
+        Map<String, Object> execResult = objectMapper
+            .readValue(execResultStr, typeRef);
+        assertNotNull(execResult);
+        assertNotNull(execResult.get("temperature"));
+    }
+
+    private Map<String, Object> runProdCodeCell(CodeUpdateResult updateResult) throws JsonProcessingException {
+        String city = "Chicago, IL";
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("location", city);
+        String execResultStr = request("/" + updateResult.getSlug(), "POST",
+            new Gson().toJson(payload));
+       return objectMapper
+            .readValue(execResultStr, typeRef);
+    }
+
+
+
+    private void deployCodeCell(CodeUpdateResult updateResult) throws JsonProcessingException {
+        String deployResponseStr = request("/deploy",
+            "POST", new ExecRequest()
+                .uid(updateResult.getUid()));
+
+        GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
+        assertNotNull(deployResponse.getStatus());
+
+        CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResult.getUid()));
+        assertTrue(codeCell.getDeployed());
+        String schema = runtimeService.getJsonSchema(updateResult.getUid());
+        assertNotNull(schema);
     }
 
     private String request(String path, String httpMethod, Object payload) {

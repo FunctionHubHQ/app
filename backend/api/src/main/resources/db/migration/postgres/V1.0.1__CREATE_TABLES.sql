@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS public.entitlement (
     num_http_calls bigint NOT NULL,
 
 --     Max invocations per minute
---     Enforced in API
+--     ✅ Enforced in API
     num_invocations bigint NOT NULL,
 
 --     Max number of functions per project
