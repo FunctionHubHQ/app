@@ -165,17 +165,25 @@ public class RuntimeServiceImpl implements RuntimeService {
           .version(codeCell.getVersion())
           .uid(codeCell.getUid().toString());
       ExecResultAsync result = execHelper(request, codeCell, applyEntitlementLimits);
+      if (ObjectUtils.isEmpty(result)) {
+        return FHUtils.raiseHttpError(httpServletResponse, objectMapper,
+            "Unknown error",
+            HttpStatus.INTERNAL_SERVER_ERROR_500);
+      }
       if (!ObjectUtils.isEmpty(result.getError())) {
-        if (result.getError().equals("Execution timed out") &&
+        if (result.getError().equals(messagesProps.getExecutionTimeout()) &&
             !ObjectUtils.isEmpty(result.getStdOutStr())) {
-          throw new RuntimeException("Execution timed out: Your function must return a value of ResponseEntity type");
+          return FHUtils.raiseHttpError(httpServletResponse, objectMapper,
+              messagesProps.getNoReturnValue(),
+              HttpStatus.INTERNAL_SERVER_ERROR_500);
         }
-        throw new RuntimeException(result.getError());
+        return FHUtils.raiseHttpError(httpServletResponse, objectMapper,
+            result.getError(), HttpStatus.INTERNAL_SERVER_ERROR_500);
       }
       return mergeResult(result, deployed);
     }
-    throw new RuntimeException("Requested service not found");
-
+    return FHUtils.raiseHttpError(httpServletResponse, objectMapper,
+        messagesProps.getServiceNotFound(), HttpStatus.NOT_FOUND_404);
   }
 
   private String mergeResult(ExecResultAsync result, boolean deployed) {
@@ -190,7 +198,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         merged.put("console.log", result.getStdOutStr().replace("\"", ""));
         return objectMapper.writeValueAsString(merged);
       } catch (JsonProcessingException e) {
-        throw new RuntimeException("Error processing result");
+        throw new RuntimeException(messagesProps.getResultProcessingError());
       }
     }
     return JsonParser.parseString(result.getResult()).getAsString();
@@ -201,7 +209,10 @@ public class RuntimeServiceImpl implements RuntimeService {
     if (applyEntitlementLimits) {
       // Entitlement limits don't apply for internal calls from GPT. GPT
       // calls are part of the original invocation that called the function.
-      verifyEntitlements();
+      boolean exit = verifyEntitlements();
+      if (exit) {
+        return null;
+      }
       entitlementService.recordFunctionInvocation();
     }
 
@@ -649,7 +660,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     TypeReference<List<String>> listTypeRef = new TypeReference<>() {};
     try {
       Map<String, Object> modifiedDto = objectMapper.readValue(
-          new Gson().toJson(requestDto.get("RequestEntity")),
+          new Gson().toJson(requestDto.get("Request")),
           typeRef);
       if (modifiedDto != null) {
         List<String> required = objectMapper.readValue(
@@ -886,14 +897,16 @@ public class RuntimeServiceImpl implements RuntimeService {
     }
   }
 
-  private void verifyEntitlements() {
+  private boolean verifyEntitlements() {
     SessionUser sessionUser = FHUtils.getSessionUser();
     long numInvocationsLastOneMinute = entitlementService.getNumFunctionInvocations(1);
     if (numInvocationsLastOneMinute >= sessionUser.getNumInvocations()) {
       FHUtils.raiseHttpError(httpServletResponse, objectMapper,
           messagesProps.getInvocationLimitReached(),
           HttpStatus.FORBIDDEN_403);
+      return true;
     }
+    return false;
   }
 
   private StringEntity getEntityBody(Object body) {

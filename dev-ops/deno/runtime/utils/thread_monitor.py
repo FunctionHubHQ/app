@@ -140,7 +140,7 @@ def signal_on_new_thread(thread):
     "ppid": thread.ppid,
     "tid": thread.tid
   })
-  print("Signaled for new thread detection: ", thread.tid, thread.id)
+  print("New thread detected: ", thread.tid)
 
 
 def start_monitor(sampling_rate=0.005):
@@ -161,7 +161,7 @@ def start_monitor(sampling_rate=0.005):
         thread = get_thread_usage_metrics(deno_pid, worker_pid)
         if thread.tid not in active_worker_threads:
           print(
-              f"ID: {thread.id}, Name: {thread.name}, CPU Time: {thread.curr_cpu_time}, Memory Usage: {thread.curr_memory_usage}, PPID: {thread.ppid}, TID: {thread.tid}")
+              f"PPID: {thread.ppid}, TID: {thread.tid}, CPU Time: {thread.curr_cpu_time}, Memory Usage: {thread.curr_memory_usage}")
           active_worker_threads[thread.tid] = thread
           signal_on_new_thread(thread)
         else:

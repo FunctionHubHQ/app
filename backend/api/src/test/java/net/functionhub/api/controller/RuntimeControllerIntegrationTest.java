@@ -31,6 +31,7 @@ import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.SessionUser;
+import net.functionhub.api.props.MessagesProps;
 import net.functionhub.api.service.runtime.RuntimeService;
 import net.functionhub.api.service.token.TokenService;
 import net.functionhub.api.service.user.UserService;
@@ -99,6 +100,9 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     private EntitlementRepo entitlementRepo;
 
     @Autowired
+    private MessagesProps messagesProps;
+
+    @Autowired
     private RuntimeService runtimeService;
 
     private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};;
@@ -145,7 +149,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         log.info("  Testcase: " + method.getName() + " has ended");
     }
 
-    @Test(enabled = true)
+    @Test
     public void stressTestNonBlockingCalls() throws JsonProcessingException {
         final CodeUpdateResult nonBlockingCodeCell = createCodeCell(nonBlockingCode);
 
@@ -181,7 +185,8 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         }
     }
 
-    @Test(enabled = false)
+    @Test(enabled = false) // The behavior of blocking + non-blocking tests is \
+    // unpredictable so should be enabled for local testing only
     public void stressTestBlockingCalls() throws JsonProcessingException {
         // Stress test concurrency and applying cpu and memory limits correctly
         final CodeUpdateResult nonBlockingCodeCell = createCodeCell(nonBlockingCode);
@@ -189,19 +194,24 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
         // We are submitting 250 concurrent requests at the same millisecond. That's
         // extremely unlikely even in the worst possible case for our use case.
-        int numNonBlockingRequests = 0;
-        int numBlockingRequests = 1;
+        int numNonBlockingRequests = 20;
+        int numBlockingRequests = 20;
+        log.info("Non-blocking: {}", nonBlockingCodeCell.getUid());
+        log.info("Blocking: {}", blockingCodeCell.getUid());
 
         ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
         List<Future<Map<String, Object>>> tasks = new ArrayList<>();
+
         for (int i = 0; i < numNonBlockingRequests; i++) {
             tasks.add(
                 executorService.submit(() -> runDevAndGetResult(nonBlockingCodeCell)));
         }
+
         for (int i = 0; i < numBlockingRequests; i++) {
             tasks.add(
                 executorService.submit(() -> runDevAndGetResult(blockingCodeCell)));
         }
+
         Collections.shuffle(tasks);
 
         long start = System.currentTimeMillis();
@@ -222,20 +232,28 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         int blockingResults = 0;
         int nonBlockingResults = 0;
 
+        assertEquals(totalRequest, results.size());
         for (Map<String, Object> result : results) {
             Object error = result.get("error");
             Object greeting = result.get("greeting");
-            if (error != null && error.toString().contains("CPU timeout")) {
-                blockingResults++;
+            if (error != null) {
+                if ( error.toString().contains("Out of memory") ||
+                    error.toString().contains("CPU timeout")) {
+                    blockingResults++;
+                } else {
+                    int x = 1;
+                }
             } else if (greeting != null && greeting.toString().startsWith("Hello, world!")) {
                 nonBlockingResults++;
             }
         }
-        assertEquals(numNonBlockingRequests, nonBlockingResults);
+        log.info("Num blocking results: {}", blockingResults);
+        log.info("Num non-blocking results: {}", nonBlockingResults);
         assertEquals(numBlockingRequests, blockingResults);
+        assertEquals(numNonBlockingRequests, nonBlockingResults);
     }
 
-    @Test(enabled = false)
+    @Test
     public void invocationLimitTest() throws JsonProcessingException  {
         EntitlementEntity entity = entitlementRepo.findByUserId(sessionUser.getUid());
         entity.setNumInvocations(2L);
@@ -258,7 +276,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
                 // expect an error on the third request
                 String error = execResult.get("error").toString();
                 assertNotNull(error);
-                assertTrue(error.startsWith("error -> You have reached the allowed number of invocations per minute for your account. If you would like more invocations, please go to https://functionhub.net/pricing to upgrade your account."));
+                assertTrue(error.startsWith(messagesProps.getInvocationLimitReached()));
             }
         }
     }
@@ -328,7 +346,9 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         assertNotNull(execResult.get("temperature"));
     }
 
-    private Map<String, Object> runDevAndGetResult(CodeUpdateResult updateResult) throws JsonProcessingException {
+    private Map<String, Object> runDevAndGetResult(CodeUpdateResult updateResult)
+        throws JsonProcessingException, InterruptedException {
+        Thread.sleep(30);
         String city = "Chicago, IL";
         Map<String, Object> payload = new HashMap<>();
         payload.put("location", city);
@@ -347,8 +367,6 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
        return objectMapper
             .readValue(execResultStr, typeRef);
     }
-
-
 
     private void deployCodeCell(CodeUpdateResult updateResult) throws JsonProcessingException {
         String deployResponseStr = request("/deploy",
