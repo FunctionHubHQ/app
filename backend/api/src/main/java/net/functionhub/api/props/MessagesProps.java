@@ -17,5 +17,9 @@ import org.springframework.context.annotation.Primary;
 public class MessagesProps {
     private String invocationLimitReached;
     private String unauthorized;
+    private String noReturnValue;
+    private String executionTimeout;
+    private String serviceNotFound;
+    private String resultProcessingError;
 
 }

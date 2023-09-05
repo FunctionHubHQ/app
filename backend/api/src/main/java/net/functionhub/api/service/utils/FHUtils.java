@@ -88,7 +88,14 @@ public class FHUtils {
         .username(sessionUser.getUsername());
   }
 
-  public static void raiseHttpError(HttpServletResponse httpServletResponse,
+  public static String raiseHttpError(HttpServletResponse httpServletResponse,
+      ObjectMapper objectMapper,
+      String msg, int errorCode) {
+    raiseHttpErrorHelper(httpServletResponse, objectMapper, msg, errorCode);
+    return null;
+  }
+
+  public static void raiseHttpErrorHelper(HttpServletResponse httpServletResponse,
       ObjectMapper objectMapper,
       String msg, int errorCode) {
     httpServletResponse.setStatus(errorCode);

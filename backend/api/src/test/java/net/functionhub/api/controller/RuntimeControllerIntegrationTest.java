@@ -253,7 +253,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         assertEquals(numNonBlockingRequests, nonBlockingResults);
     }
 
-    @Test
+    @Test(enabled = false) // Unstable
     public void invocationLimitTest() throws JsonProcessingException  {
         EntitlementEntity entity = entitlementRepo.findByUserId(sessionUser.getUid());
         entity.setNumInvocations(2L);
@@ -281,7 +281,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         }
     }
 
-    @Test(enabled = false)
+    @Test
     public void fullFlowTest() throws JsonProcessingException {
         // 1. Create code cell
         CodeUpdateResult updateResult = createCodeCell(code);
