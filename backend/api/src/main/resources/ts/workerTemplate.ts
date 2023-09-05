@@ -2,6 +2,7 @@
 self.onmessage = async (event) => {
   const uid = event.data.uid;
   const execId = event.data.execId
+  const accessToken = event.data.accessToken
   try {
     // Re-direct console.log statements
     // TODO: may need to handle other console calls
@@ -15,6 +16,7 @@ self.onmessage = async (event) => {
     console.log("Started at: ", startedAt)
     // Log the time the user code has started running for accurate cpu usage
     // measurement attribution
+    self.process.env["FH_ACCESS_TOKEN"] = accessToken;
     self.postMessage({startedAt: startedAt, uid: uid, execId: execId})
     const result = await handler(event.data.payload);
     self.postMessage({ result: result, uid: uid });

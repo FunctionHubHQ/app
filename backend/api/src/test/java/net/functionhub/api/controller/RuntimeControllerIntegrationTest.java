@@ -15,11 +15,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
-import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.FHCompletionRequest;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
@@ -33,7 +31,6 @@ import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.MessagesProps;
 import net.functionhub.api.service.runtime.RuntimeService;
-import net.functionhub.api.service.token.TokenService;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.ServiceTestHelper;
@@ -256,7 +253,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     @Test(enabled = false) // Unstable
     public void invocationLimitTest() throws JsonProcessingException  {
         EntitlementEntity entity = entitlementRepo.findByUserId(sessionUser.getUid());
-        entity.setNumInvocations(2L);
+        entity.setMaxInvocations(2L);
         entitlementRepo.save(entity);
         CodeUpdateResult updateResult = createCodeCell(code);
 

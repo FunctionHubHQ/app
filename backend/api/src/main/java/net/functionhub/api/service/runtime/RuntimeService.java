@@ -83,4 +83,11 @@ public interface RuntimeService {
    * @return
    */
   StatusResponse getSpecStatus(StatusRequest statusRequest);
+
+  /**
+   * Generate an access token for authorizing and tracking user invocations.
+   *
+   * @return
+   */
+  String generateProxyAccessToken(String executionId);
 }

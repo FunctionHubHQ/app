@@ -20,11 +20,11 @@ public class SessionUser {
   private Long maxExecutionTime;
   private Long maxCpuTime;
   private Long maxMemoryUsage;
-  private Long maxBandwidth;
-  private Long numHttpCalls;
-  private Long numInvocations;
-  private Long numFunctions;
-  private Long numProjects;
+  private Long maxDataTransfer;
+  private Long maxHttpCalls;
+  private Long maxInvocations;
+  private Long maxFunctions;
+  private Long maxProjects;
   private AuthMode authMode;
   private Map<String, Boolean> roles = new HashMap<>();
 }

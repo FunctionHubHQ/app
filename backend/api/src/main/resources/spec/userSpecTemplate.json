@@ -23,7 +23,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/definitions/RequestEntity"
+                "$ref": "#/components/definitions/Request"
               }
             }
           }
@@ -34,7 +34,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/definitions/ResponseEntity"
+                  "$ref": "#/components/definitions/Response"
                 }
               }
             }

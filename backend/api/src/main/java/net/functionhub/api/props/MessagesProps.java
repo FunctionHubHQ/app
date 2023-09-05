@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Primary;
 @ConfigurationProperties(prefix = "messages")
 public class MessagesProps {
     private String invocationLimitReached;
+    private String dataTransferLimitReached;
     private String unauthorized;
     private String noReturnValue;
     private String executionTimeout;

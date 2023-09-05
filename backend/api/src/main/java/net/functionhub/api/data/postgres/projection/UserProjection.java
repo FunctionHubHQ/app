@@ -13,9 +13,9 @@ public interface UserProjection {
   Long getMaxexecutiontime();
   Long getMaxcputtime();
   Long getMaxmemoryusage();
-  Long getMaxbandwidth();
-  Long getNumhttpcalls();
-  Long getNuminvocations();
-  Long getNumfunctions();
-  Long getNumprojects();
+  Long getMaxdatatransfer();
+  Long getMaxhttpcalls();
+  Long getMaxinvocations();
+  Long getMaxfunctions();
+  Long getMaxprojects();
 }

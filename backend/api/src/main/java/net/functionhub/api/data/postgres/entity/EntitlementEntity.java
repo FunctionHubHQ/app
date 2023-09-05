@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -48,29 +45,29 @@ public class EntitlementEntity {
     private Long maxMemoryUsage = 0L;
 
     @Basic
-    @JsonProperty("max_bandwidth")
-    @Column(name = "max_bandwidth")
-    private Long maxBandwidth = 0L;
+    @JsonProperty("max_data_transfer")
+    @Column(name = "max_data_transfer")
+    private Long maxDataTransfer = 0L;
 
     @Basic
-    @JsonProperty("num_http_calls")
-    @Column(name = "num_http_calls")
-    private Long numHttpCalls = 0L;
+    @JsonProperty("max_http_calls")
+    @Column(name = "max_http_calls")
+    private Long maxHttpCalls = 0L;
 
     @Basic
-    @JsonProperty("num_invocations")
-    @Column(name = "num_invocations")
-    private Long numInvocations = 0L;
+    @JsonProperty("max_invocations")
+    @Column(name = "max_invocations")
+    private Long maxInvocations = 0L;
 
     @Basic
-    @JsonProperty("num_functions")
-    @Column(name = "num_functions")
-    private Long numFunctions = 0L;
+    @JsonProperty("max_functions")
+    @Column(name = "max_functions")
+    private Long maxFunctions = 0L;
 
     @Basic
-    @JsonProperty("num_projects")
-    @Column(name = "num_projects")
-    private Long numProjects = 0L;
+    @JsonProperty("max_projects")
+    @Column(name = "max_projects")
+    private Long maxProjects = 0L;
 
     @Basic
     @Column(name = "updated_at")

@@ -73,11 +73,11 @@ public class UserServiceImpl implements UserService {
         entitlements.setMaxExecutionTime(entitlementProps.getFree().getMaxExecutionTime());
         entitlements.setMaxCpuTime(entitlementProps.getFree().getMaxCpuTime());
         entitlements.setMaxMemoryUsage(entitlementProps.getFree().getMaxMemoryUsage());
-        entitlements.setMaxBandwidth(entitlementProps.getFree().getMaxBandwidth());
-        entitlements.setNumHttpCalls(entitlementProps.getFree().getNumHttpCalls());
-        entitlements.setNumInvocations(entitlementProps.getFree().getNumInvocations());
-        entitlements.setNumFunctions(entitlementProps.getFree().getNumFunctions());
-        entitlements.setNumProjects(entitlementProps.getFree().getNumProjects());
+        entitlements.setMaxDataTransfer(entitlementProps.getFree().getMaxBandwidth());
+        entitlements.setMaxHttpCalls(entitlementProps.getFree().getNumHttpCalls());
+        entitlements.setMaxInvocations(entitlementProps.getFree().getNumInvocations());
+        entitlements.setMaxFunctions(entitlementProps.getFree().getNumFunctions());
+        entitlements.setMaxProjects(entitlementProps.getFree().getNumProjects());
         entitlementRepo.save(entitlements);
       }
     }

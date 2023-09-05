@@ -150,11 +150,11 @@ public class SecurityFilter extends OncePerRequestFilter {
       user.setMaxExecutionTime(projection.getMaxexecutiontime());
       user.setMaxCpuTime(projection.getMaxcputtime());
       user.setMaxMemoryUsage(projection.getMaxmemoryusage());
-      user.setMaxBandwidth(projection.getMaxbandwidth());
-      user.setNumHttpCalls(projection.getNumhttpcalls());
-      user.setNumInvocations(projection.getNuminvocations());
-      user.setNumFunctions(projection.getNumfunctions());
-      user.setNumProjects(projection.getNumprojects());
+      user.setMaxDataTransfer(projection.getMaxdatatransfer());
+      user.setMaxHttpCalls(projection.getMaxhttpcalls());
+      user.setMaxInvocations(projection.getMaxinvocations());
+      user.setMaxFunctions(projection.getMaxfunctions());
+      user.setMaxProjects(projection.getMaxprojects());
     }
   }
 

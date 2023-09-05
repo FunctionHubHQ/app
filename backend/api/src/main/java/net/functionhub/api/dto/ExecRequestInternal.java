@@ -20,4 +20,5 @@ public class ExecRequestInternal {
   private Boolean deployed;
   private String version;
   private String apiKey;
+  private String accessToken;
 }

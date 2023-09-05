@@ -93,11 +93,11 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
         assertThat(entitlements.getMaxCpuTime(), is(equalTo(10L)));
         assertThat(entitlements.getMaxExecutionTime(), is(equalTo(30000L)));
         assertThat(entitlements.getMaxMemoryUsage(), is(equalTo(134217728L)));
-        assertThat(entitlements.getMaxBandwidth(), is(equalTo(104857600L)));
-        assertThat(entitlements.getNumFunctions(), is(equalTo(10L)));
-        assertThat(entitlements.getNumFunctions(), is(equalTo(10L)));
-        assertThat(entitlements.getNumHttpCalls(), is(equalTo(10L)));
-        assertThat(entitlements.getNumProjects(), is(equalTo(1L)));
+        assertThat(entitlements.getMaxDataTransfer(), is(equalTo(104857600L)));
+        assertThat(entitlements.getMaxFunctions(), is(equalTo(10L)));
+        assertThat(entitlements.getMaxFunctions(), is(equalTo(10L)));
+        assertThat(entitlements.getMaxHttpCalls(), is(equalTo(10L)));
+        assertThat(entitlements.getMaxProjects(), is(equalTo(1L)));
     }
 
     @Test

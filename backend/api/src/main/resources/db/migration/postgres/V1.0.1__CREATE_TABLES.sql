@@ -116,25 +116,26 @@ CREATE TABLE IF NOT EXISTS public.entitlement (
 --     ✅ Enforced in runtime
     max_memory_usage bigint NOT NULL,
 
---     Max data transfer in bytes per month
---     Enforced in Proxy
-    max_bandwidth bigint NOT NULL,
+--     Max data transfer in bytes per request (individual HTTP calls and
+--     GPT calls)
+--     Enforced in API and Proxy
+    max_data_transfer bigint NOT NULL,
 
 --     Max number of http calls per execution
 --     Enforced in Proxy
-    num_http_calls bigint NOT NULL,
+    max_http_calls bigint NOT NULL,
 
 --     Max invocations per minute
 --     ✅ Enforced in API
-    num_invocations bigint NOT NULL,
+    max_invocations bigint NOT NULL,
 
 --     Max number of functions per project
 --     Enforced in API
-    num_functions bigint NOT NULL,
+    max_functions bigint NOT NULL,
 
 --     Max number of projects per account
 --     Enforced in API
-    num_projects bigint NOT NULL,
+    max_projects bigint NOT NULL,
 
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -198,15 +199,3 @@ CREATE TABLE IF NOT EXISTS public.request_history (
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE public.request_history OWNER TO root;
-
-CREATE TABLE IF NOT EXISTS public.usage (
-    id uuid NOT NULL primary key,
-    user_id varchar(255),
-    bandwidh bigint NOT NULL,
-    num_functions bigint NOT NULL,
-    num_projects bigint NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    period_start timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-ALTER TABLE public.usage OWNER TO root;

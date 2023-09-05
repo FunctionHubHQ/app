@@ -24,6 +24,7 @@ import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.dto.ExecRequestInternal;
+import net.functionhub.api.dto.FHAccessToken;
 import net.functionhub.api.dto.GenerateSpecRequest;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.DenoProps;
@@ -206,11 +207,12 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   private ExecResultAsync execHelper(ExecRequest execRequest, CodeCellEntity codeCell,
       boolean applyEntitlementLimits) {
+    ExecResultAsync asyncResult = new ExecResultAsync().error("Unknown error");
+    String accessToken = null;
     if (applyEntitlementLimits) {
       // Entitlement limits don't apply for internal calls from GPT. GPT
       // calls are part of the original invocation that called the function.
-      boolean exit = verifyEntitlements();
-      if (exit) {
+      if (verifyInvocation() || verifyContentLength(asyncResult.getResult())) {
         return null;
       }
       entitlementService.recordFunctionInvocation();
@@ -221,6 +223,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (ObjectUtils.isEmpty(execId)) {
         execId = UUID.randomUUID().toString();
       }
+      accessToken = generateProxyAccessToken(execId);
       if (codeCell != null) {
         EntitlementEntity entitlements = entitlementRepo.findByUserId(codeCell.getUserId());
         String version = codeCell.getVersion();
@@ -233,6 +236,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         }
         uid += "apiKey=" + FHUtils.getSessionUser().getApiKey();
         ExecRequestInternal request = new ExecRequestInternal();
+        request.setAccessToken(accessToken);
         request.setPayload(parseExecRequestPayload(execRequest.getPayload()));
         request.setEnv(sourceProps.getProfile());
         request.setUid(uid);
@@ -244,11 +248,18 @@ public class RuntimeServiceImpl implements RuntimeService {
         request.setDeployed(execRequest.getDeployed());
         request.setVersion(version);
         request.setApiKey(FHUtils.getSessionUser().getApiKey());
+        entitlementService.createExecutionSession(accessToken);
         Thread.startVirtualThread(() -> submitExecutionTask(request, getRuntimeUrl()));
       }
-      return getExecutionResult(execId);
+      asyncResult =  getExecutionResult(execId);
+      if (asyncResult != null && asyncResult.getResult() != null) {
+        boolean exit = verifyContentLength(asyncResult.getResult());
+        if (exit) {
+          return null;
+        }
+      }
     }
-    return new ExecResultAsync().error("Unknown error");
+    return asyncResult;
   }
 
   private Map<String, Object> parseExecRequestPayload(String payload) {
@@ -875,6 +886,17 @@ public class RuntimeServiceImpl implements RuntimeService {
     throw new RuntimeException("Invalid request");
   }
 
+  @Override
+  public String generateProxyAccessToken(String executionId) {
+    FHAccessToken accessToken = new FHAccessToken();
+    SessionUser sessionUser = FHUtils.getSessionUser();
+    accessToken.setDtl(sessionUser.getMaxDataTransfer());
+    accessToken.setHce(sessionUser.getMaxHttpCalls());
+    accessToken.setUid(sessionUser.getUid());
+    accessToken.setRid(executionId);
+    return Base64.getEncoder().encodeToString((new Gson()).toJson(accessToken).getBytes());
+  }
+
   private boolean codeOwner(CodeCellEntity codeCell) {
     return codeCell == null || codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
   }
@@ -897,10 +919,22 @@ public class RuntimeServiceImpl implements RuntimeService {
     }
   }
 
-  private boolean verifyEntitlements() {
+  private boolean verifyContentLength(String payload) {
+    SessionUser sessionUser = FHUtils.getSessionUser();
+    long contentLength = payload.getBytes().length;
+    if (contentLength > sessionUser.getMaxDataTransfer()) {
+      FHUtils.raiseHttpError(httpServletResponse, objectMapper,
+          messagesProps.getDataTransferLimitReached(),
+          HttpStatus.FORBIDDEN_403);
+      return true;
+    }
+    return false;
+  }
+
+  private boolean verifyInvocation() {
     SessionUser sessionUser = FHUtils.getSessionUser();
     long numInvocationsLastOneMinute = entitlementService.getNumFunctionInvocations(1);
-    if (numInvocationsLastOneMinute >= sessionUser.getNumInvocations()) {
+    if (numInvocationsLastOneMinute >= sessionUser.getMaxInvocations()) {
       FHUtils.raiseHttpError(httpServletResponse, objectMapper,
           messagesProps.getInvocationLimitReached(),
           HttpStatus.FORBIDDEN_403);

@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.service.utils.FHUtils;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @author Biz Melesse created on 9/3/23
@@ -21,7 +23,6 @@ public class EntitlementServiceImpl implements EntitlementService {
   @Override
   public void recordFunctionInvocation() {
     long timestamp = System.currentTimeMillis();
-
     String key = getUserKey();
     ZSetOperations<String, Object> zSetOperations = redisTemplate.opsForZSet();
     zSetOperations.add(key, timestamp, timestamp);
@@ -38,6 +39,13 @@ public class EntitlementServiceImpl implements EntitlementService {
     ZSetOperations<String, Object> zSetOperations = redisTemplate.opsForZSet();
     Long value = zSetOperations.count(key, timeThreshold, currentTime);
     return value == null ? 0 : value;
+  }
+
+  @Override
+  public void createExecutionSession(String accessToken) {
+    SetOperations<String, Object> setOperations = redisTemplate.opsForSet();
+    setOperations.add(accessToken, System.currentTimeMillis());
+    redisTemplate.expire(accessToken, Duration.ofSeconds(300));
   }
 
   private String getUserKey() {
