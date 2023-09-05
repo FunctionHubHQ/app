@@ -205,7 +205,12 @@ function spawnNewIsolate(ctx, userScriptUrl, body) {
   registerErrorListener(worker, ctx, body);
 
   stdout[workerId] = [];
-  worker.postMessage({uid: body.uid, payload: body.payload, execId: body.execId});
+  worker.postMessage({
+    uid: body.uid,
+    payload: body.payload,
+    execId: body.execId,
+    accessToken: body.accessToken
+  });
 }
 
 async function sendExecutionResult(ctx, result, stdout, error) {
