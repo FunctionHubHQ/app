@@ -16,6 +16,38 @@
     }
   ],
   "paths": {
+    "/log": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "operationId": "logHttpRequests",
+        "description": "Log user HTTP requests",
+        "requestBody": {
+          "required": true,
+          "description": "Request log",
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generic response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/status": {
       "post": {
         "tags": [

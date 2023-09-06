@@ -2,6 +2,7 @@ package net.functionhub.proxy.service.proxy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -10,10 +11,13 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.proxy.dto.FHAccessToken;
+import net.functionhub.proxy.dto.HttpRequestHistory;
 import net.functionhub.proxy.dto.UserHeaders;
+import net.functionhub.proxy.props.ApiProps;
 import net.functionhub.proxy.service.proxy.ProxyService;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -33,10 +37,13 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.data.redis.core.BoundValueOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StopWatch;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * @author Biz Melesse created on 8/30/23
@@ -48,71 +55,130 @@ public class ProxyServiceImpl implements ProxyService {
   private final HttpServletRequest httpServletRequest;
   private final HttpServletResponse httpServletResponse;
   private final ObjectMapper objectMapper;
+  private final ApiProps apiProps;
   private final RedisTemplate<String, Object> redisTemplate;
   private final String X_FUNCTION_HUB_ACCESS_TOKEN = "X-Function-Hub-Access-Token";
   private final String X_FUNCTION_HUB_PROXY_TARGET = "X-Function-Hub-Proxy-Target";
 
   @Override
   public void handler()  {
-    UserHeaders userHeaders = getHeaders();
-    if (ObjectUtils.isEmpty(userHeaders) ||
-        ObjectUtils.isEmpty(userHeaders.getHeaders())) {
-      setError(HttpStatus.INTERNAL_SERVER_ERROR_500, "Encountered an unknown error");
-    } else {
-      if (ObjectUtils.isEmpty(userHeaders.getProxyTarget())) {
-        setError(HttpStatus.INTERNAL_SERVER_ERROR_500, "URL cannot be empty");
-      } else if (ObjectUtils.isEmpty(userHeaders.getAccessToken())) {
-        setError(HttpStatus.BAD_REQUEST_400, "Missing " + X_FUNCTION_HUB_ACCESS_TOKEN);
+    HttpRequestHistory requestHistory = new HttpRequestHistory();
+    try {
+      requestHistory.setRequestContentLength((long) httpServletRequest.getContentLength());
+      UserHeaders userHeaders = getHeaders();
+      FHAccessToken accessToken = decodeAccessToken(userHeaders.getAccessToken());
+      if (accessToken != null) {
+        requestHistory.setUserId(accessToken.getUid());
+        requestHistory.setHttpMethod(httpServletRequest.getMethod());
+        requestHistory.setUrl(userHeaders.getProxyTarget());
+        requestHistory.setExecutionId(accessToken.getRid());
       }
-      else {
-        try {
-          FHAccessToken accessToken = decodeAccessToken(userHeaders.getAccessToken());
-          if (accessToken == null) {
-            setError(HttpStatus.INTERNAL_SERVER_ERROR_500, "Error processing access token");
-            return;
-          }
-          if (!(contentLengthUnderLimit(accessToken, httpServletRequest.getContentLength()) &&
-              httpCallCountUnderLimit(accessToken, userHeaders.getAccessToken()))) {
-            return;
-          }
-          boolean set500 = false;
-          StopWatch stopWatch = new StopWatch();
-          HttpEntity responseEntity = null;
+      if (ObjectUtils.isEmpty(userHeaders) ||
+          ObjectUtils.isEmpty(userHeaders.getHeaders())) {
+        String errorMsg = "Encountered an unknown error";
+        requestHistory.setErrorMessage(errorMsg);
+        requestHistory.setHttpStatusCode(500);
+        logRequestHistory(requestHistory);
+        setError(HttpStatus.INTERNAL_SERVER_ERROR_500, errorMsg);
+      } else {
+        if (ObjectUtils.isEmpty(userHeaders.getProxyTarget())) {
+          String errorMsg = "URL cannot be empty";
+          requestHistory.setErrorMessage(errorMsg);
+          requestHistory.setHttpStatusCode(500);
+          logRequestHistory(requestHistory);
+          setError(HttpStatus.INTERNAL_SERVER_ERROR_500, errorMsg);
+        } else if (ObjectUtils.isEmpty(userHeaders.getAccessToken())) {
+          String errorMsg = "Missing " + X_FUNCTION_HUB_ACCESS_TOKEN;
+          requestHistory.setErrorMessage(errorMsg);
+          requestHistory.setHttpStatusCode(400);
+          logRequestHistory(requestHistory);
+          setError(HttpStatus.BAD_REQUEST_400, errorMsg);
+        } else {
           try {
-            stopWatch.start();
-            responseEntity = forwardRequest(userHeaders);
-          } catch (IOException e) {
-            set500 = true;
-          }
-          stopWatch.stop();
-          long elapsed = stopWatch.getLastTaskTimeMillis();
-
-          if (set500) {
-            httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-          }
-
-          // Write response body
-          if (responseEntity != null) {
-            // Enforce data transfer limit on responses as well
-            if (!contentLengthUnderLimit(accessToken, responseEntity.getContentLength())) {
+            if (accessToken == null) {
+              String errorMsg = "Error processing access token";
+              requestHistory.setErrorMessage(errorMsg);
+              requestHistory.setHttpStatusCode(500);
+              logRequestHistory(requestHistory);
+              setError(HttpStatus.INTERNAL_SERVER_ERROR_500, errorMsg);
               return;
             }
-            // TODO: make full request log here async
-            log.info("Request took {} ms", elapsed);
-
-            try {
-              responseEntity.writeTo(httpServletResponse.getOutputStream());
-            } catch (IOException e) {
-              httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            if (!(contentLengthUnderLimit(accessToken, httpServletRequest.getContentLength(),
+                requestHistory) &&
+                httpCallCountUnderLimit(accessToken, userHeaders.getAccessToken(),
+                    requestHistory))) {
+              logRequestHistory(requestHistory);
+              return;
             }
+            boolean set500 = false;
+            long start = System.currentTimeMillis();
+            HttpEntity responseEntity = null;
+            try {
+              responseEntity = forwardRequest(userHeaders);
+            } catch (IOException e) {
+              set500 = true;
+            }
+            long end = System.currentTimeMillis();
+            long elapsed = end - start;
+            requestHistory.setRequestStartedAt(start);
+            requestHistory.setRequestEndedAt(end);
+            requestHistory.setRequestDuration(elapsed);
+
+            if (set500) {
+              requestHistory.setHttpStatusCode(500);
+              httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            } else {
+              requestHistory.setHttpStatusCode(httpServletResponse.getStatus());
+            }
+
+            // Write response body
+            if (responseEntity != null) {
+              requestHistory.setResponseContentLength(responseEntity.getContentLength());
+              // Enforce data transfer limit on responses as well
+              if (!contentLengthUnderLimit(accessToken, responseEntity.getContentLength(),
+                  requestHistory)) {
+                logRequestHistory(requestHistory);
+                return;
+              }
+              try {
+                responseEntity.writeTo(httpServletResponse.getOutputStream());
+                logRequestHistory(requestHistory);
+              } catch (IOException e) {
+                requestHistory.setHttpStatusCode(500);
+                requestHistory.setErrorMessage("Error writing response to output stream");
+                logRequestHistory(requestHistory);
+                httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+              }
+            }
+          } catch (Exception e) {
+            String errorMessage = "Error processing HTTP request";
+            requestHistory.setErrorMessage(errorMessage);
+            requestHistory.setHttpStatusCode(500);
+            logRequestHistory(requestHistory);
+            setError(HttpStatus.INTERNAL_SERVER_ERROR_500, errorMessage);
           }
-        } catch (Exception e) {
-          setError(HttpStatus.INTERNAL_SERVER_ERROR_500, "Error processing HTTP request");
         }
       }
+    } catch (Exception e) {
+      String errorMsg = "Encountered internal error while processing request";
+      requestHistory.setErrorMessage(errorMsg);
+      requestHistory.setHttpStatusCode(500);
+      logRequestHistory(requestHistory);
+      setError(HttpStatus.INTERNAL_SERVER_ERROR_500, errorMsg);
     }
   }
 
+  private void logRequestHistory(HttpRequestHistory requestHistory) {
+    Thread.startVirtualThread(() -> {
+      RestTemplate restTemplate = new RestTemplate();
+      HttpHeaders headers = new HttpHeaders();
+      headers.add("Authorization", "Bearer " + apiProps.getApiKey());
+      headers.setContentType(MediaType.APPLICATION_JSON);
+      org.springframework.http.HttpEntity<Object> request =
+          new org.springframework.http.HttpEntity<>(new Gson().toJson(requestHistory), headers);
+      restTemplate.postForObject(apiProps.getLogUrl(), request, String.class);
+    });
+  }
 
   private void setError(int errorCode, String msg) {
     httpServletResponse.setStatus(errorCode);
@@ -177,19 +243,27 @@ public class ProxyServiceImpl implements ProxyService {
   }
 
   @Override
-  public boolean contentLengthUnderLimit(FHAccessToken accessToken, long contentLength) {
+  public boolean contentLengthUnderLimit(FHAccessToken accessToken, long contentLength,
+      HttpRequestHistory requestHistory) {
     if (contentLength > accessToken.getDtl()) {
-      setError(HttpStatus.FORBIDDEN_403, "Data transfer limit exceeded");
+      String errorMsg = "Data transfer limit exceeded";
+      requestHistory.setErrorMessage(errorMsg);
+      requestHistory.setHttpStatusCode(403);
+      setError(HttpStatus.FORBIDDEN_403, errorMsg);
       return false;
     }
     return true;
   }
 
   @Override
-  public boolean httpCallCountUnderLimit(FHAccessToken accessToken, String accessTokenStr) {
+  public boolean httpCallCountUnderLimit(FHAccessToken accessToken, String accessTokenStr,
+      HttpRequestHistory requestHistory) {
     long numHttpCalls = getHttpCallCount(accessTokenStr);
     if (numHttpCalls >= accessToken.getHce()) {
-      setError(HttpStatus.FORBIDDEN_403, "You've reached the number of allowed HTTP calls for this invocation");
+      String errorMsg = "You've reached the number of allowed HTTP calls for this invocation";
+      requestHistory.setErrorMessage(errorMsg);
+      requestHistory.setHttpStatusCode(403);
+      setError(HttpStatus.FORBIDDEN_403, errorMsg);
       return false;
     }
     setHttpCallCount(accessTokenStr, numHttpCalls);
@@ -199,10 +273,10 @@ public class ProxyServiceImpl implements ProxyService {
 
   @Override
   public FHAccessToken decodeAccessToken(String accessToken) {
-    String decodedAccessToken = new String(Base64.getDecoder().decode(accessToken.getBytes()));
     try {
+      String decodedAccessToken = new String(Base64.getDecoder().decode(accessToken.getBytes()));
       return objectMapper.readValue(decodedAccessToken, FHAccessToken.class);
-    } catch (JsonProcessingException e) {
+    } catch (JsonProcessingException | NullPointerException e) {
       return null;
     }
   }
@@ -250,6 +324,7 @@ public class ProxyServiceImpl implements ProxyService {
           throw new UnsupportedOperationException("HTTP method not supported: " + method);
       }
     } catch (IOException e) {
+
       httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
     return null;

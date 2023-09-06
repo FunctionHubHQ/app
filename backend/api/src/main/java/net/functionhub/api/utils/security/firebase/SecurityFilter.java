@@ -101,8 +101,15 @@ public class SecurityFilter extends OncePerRequestFilter {
       Credentials credentials = new Credentials();
       if (bearerToken.startsWith(UserService.apiKeyPrefix)) {
         user = new SessionUser();
-        FHUtils.populateSessionUser(userRepo.findByApiKey(bearerToken), user);
-        user.setAuthMode(AuthMode.AK);
+        if (bearerToken.contains("internal")) {
+          assert httpServletRequest.getRequestURI().equals("/log") &&
+              httpServletRequest.getRemoteHost().equals("127.0.0.1");
+          user.setApiKey(bearerToken);
+          user.setName("Internal");
+        } else {
+          FHUtils.populateSessionUser(userRepo.findByApiKey(bearerToken), user);
+          user.setAuthMode(AuthMode.AK);
+        }
       } else {
         try {
           DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);

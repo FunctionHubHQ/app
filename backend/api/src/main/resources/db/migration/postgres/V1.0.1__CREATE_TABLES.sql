@@ -190,12 +190,15 @@ CREATE TABLE IF NOT EXISTS public.request_history (
     id uuid NOT NULL primary key,
     user_id varchar(255),
     http_method varchar(255),
-    url text NOT NULL,
-    content_length bigint NOT NULL DEFAULT 0,
-    request_started_at bigint NOT NULL,
-    request_ended_at bigint NOT NULL,
-    request_duration bigint NOT NULL,
-    http_status_code bigint NOT NULL,
+    url text,
+    error_message text,
+    request_started_at bigint,
+    request_ended_at bigint,
+    request_duration bigint,
+    http_status_code bigint,
+    execution_id varchar(255),
+    request_content_length bigint,
+    response_content_length bigint,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE public.request_history OWNER TO root;
