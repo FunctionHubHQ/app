@@ -32,7 +32,7 @@ const prodHost = 'http://api:9090';
 /**
  * Keeps track of console logs from user scripts workers
  */
-const stdout = {}
+const stdout = new Map<string, []>()
 const workersPendingId = new Queue();
 const activeWorkersByThreadId = new Map();// The key is a unique thread id and the value is the uid from the request body
 const threadStatus = new Map(); // inverted mapping of activeWorkersByThreadId
@@ -88,34 +88,41 @@ function clearWorkerId(workerId) {
   }
 }
 
+function getWorkerStdout(workerId) {
+  let _workerStdOut = stdout.get(workerId)
+  if (_workerStdOut) {
+    stdout.delete(workerId)
+    return _workerStdOut
+  }
+  return []
+}
+
 function registerEventListener(worker, ctx) {
   // Listen for messages from the Web Worker
   worker.onmessage = (event) => {
     const workerId = getWorkerId(null, event.data.uid, event.data.execId)
     if (event.data.stdout) {
-      let prevStdout = stdout[workerId];
+      let prevStdout = stdout.get(workerId);
       if (!prevStdout) {
         prevStdout = []
       }
       prevStdout.push(event.data.stdout);
-      stdout[workerId] = prevStdout;
+      stdout.set(workerId, prevStdout);
     } else if (event.data.result) {
       clearTimeouts(workerId);
       sendExecutionResult(ctx,
           event.data.result,
-          [...stdout[workerId]],
+          getWorkerStdout(workerId),
           null)
       .catch(e => console.error((new Date()).getTime(), ": ", e))
-      stdout[workerId] = [];
     } else if (event.data.error) {
       worker.terminate();
       clearTimeouts(workerId);
       sendExecutionResult(ctx,
           null,
-          [...stdout[workerId]],
+          getWorkerStdout(workerId),
           event.data.error)
       .catch(e => console.error((new Date()).getTime(), ": ", e))
-      stdout[workerId] = [];
     } else if (event.data.startedAt) {
       workerStartTimes.set(workerId, event.data.startedAt)
     }
@@ -128,10 +135,9 @@ function registerErrorListener(worker, ctx, body) {
     error.preventDefault();
     clearTimeouts(workerId);
     sendExecutionResult(ctx, null,
-        [...stdout[workerId]],
+        getWorkerStdout(workerId),
         error.message)
     .catch(e => console.error((new Date()).getTime(), ": ", e));
-    stdout[workerId] = [];
   };
 }
 
@@ -141,10 +147,9 @@ function setTimeoutHandler(worker, ctx, body) {
     // Terminate the Web Worker when the timeout occurs
     worker.terminate();
     sendExecutionResult(ctx, null,
-        stdout[workerId] ? [...stdout[workerId]] : [],
+        getWorkerStdout(workerId),
         "Execution timed out")
     .catch(e => console.error((new Date()).getTime(), ": ", e));
-    delete stdout[workerId];
   }, body.maxExecutionTime ? body.maxExecutionTime : 30000);
 }
 
@@ -158,7 +163,7 @@ function setIntervalHandler(worker, ctx, body) {
       if (status?.cpuTime > status?.cpuBaseLine) {
         const delta = status.cpuTime - status.cpuBaseLine
         if (delta > status.cpuThreshold) {
-          errorMessage = `CPU timeout ${status.cpuTime}ms`
+          errorMessage = "CPU timeout"
         }
       } else if (status?.memoryUsage > status?.memoryThreshold) {
         // TODO: consider setting a memory threshold, e.g. what if the initial usage ends up
@@ -168,7 +173,7 @@ function setIntervalHandler(worker, ctx, body) {
       if (errorMessage) {
         worker.terminate();
         sendExecutionResult(ctx, null,
-            [...stdout[workerId]],
+            getWorkerStdout(workerId),
             errorMessage)
         .catch(e => console.log((new Date()).getTime(), ": ", e));
       }
@@ -204,7 +209,6 @@ function spawnNewIsolate(ctx, userScriptUrl, body) {
   registerEventListener(worker, ctx);
   registerErrorListener(worker, ctx, body);
 
-  stdout[workerId] = [];
   worker.postMessage({
     uid: body.uid,
     payload: body.payload,
@@ -213,7 +217,7 @@ function spawnNewIsolate(ctx, userScriptUrl, body) {
   });
 }
 
-async function sendExecutionResult(ctx, result, stdout, error) {
+async function sendExecutionResult(ctx, result, workerStdOut, error) {
   const body = await getBody(ctx);
   if (body.uid && body.execId) {
     const workerId = getWorkerId(body, null, null)
@@ -227,7 +231,7 @@ async function sendExecutionResult(ctx, result, stdout, error) {
       deployed: body.deployed,
       error: error,
       result: JSON.stringify(result),
-      std_out: stdout,
+      std_out: workerStdOut,
     }
     const url = getHost(body.env) + "/e-result";
     const sendStatus = await fetch(url, {
