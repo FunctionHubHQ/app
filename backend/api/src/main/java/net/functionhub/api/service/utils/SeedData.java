@@ -12,10 +12,15 @@ import net.functionhub.api.FHFunction;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.Projects;
 import net.functionhub.api.UserProfile;
+import net.functionhub.api.UserProfileResponse;
+import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
+import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
+import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.service.project.ProjectService;
 import net.functionhub.api.service.runtime.RuntimeService;
+import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.utils.security.Credentials;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,6 +38,8 @@ public class SeedData {
   private final RuntimeService runtimeService;
   private final WordList wordList;
   private final UserRepo userRepo;
+  private final ApiKeyRepo apiKeyRepo;
+  private final UserService userService;
   private final int numProjects = 12;
   private final int numPrivateFunctions = 12;
   private final int numPublicFunctions = 12;
@@ -88,23 +95,33 @@ public class SeedData {
     if (!ObjectUtils.isEmpty(email)) {
       userEntity = userRepo.findByEmail(email);
     } else {
-      userEntity.setEmail(wordList.getRandomPhrase(3, true) + "@gmail.com");
-      userEntity.setUid("u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH));
-      userEntity.setUsername(wordList.getRandomPhrase(3, true)
+      SessionUser sessionUser = new SessionUser();
+      String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
+      sessionUser.setUid(userId);
+      sessionUser.setAvatar("https://i.pravatar.cc/300?uniquifier=" + UUID.randomUUID());
+      sessionUser.setEmail(wordList.getRandomPhrase(3, true) + "@gmail.com");
+      sessionUser.setUsername(wordList.getRandomPhrase(3, true)
           .replace("-", "_"));
-      userEntity.setAvatarUrl("https://i.pravatar.cc/300?uniquifier=" + UUID.randomUUID());
-      userEntity.setFullName("Bob Lee");
-      userRepo.save(userEntity);
+      sessionUser.setName("Bob Lee");
+      setContext(sessionUser);
+      UserProfileResponse profileResponse = userService.getOrCreateUserprofile();
+      userEntity = userRepo.findByUid(profileResponse.getProfile().getUid());
     }
     if (userEntity != null) {
-      UserProfile userProfile = new UserProfile().uid(userEntity.getUid());
-      UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-          userProfile, new Credentials(),
-          new HashSet<>());
-      SecurityContextHolder.getContext().setAuthentication(authentication);
+      ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(userEntity.getUid());
+      SessionUser sessionUser = new SessionUser();
+      FHUtils.populateSessionUser(userRepo.findByApiKey(apiKeyEntity.getApiKey()), sessionUser);
+      setContext(sessionUser);
     } else {
-      log.error("SeedData failed to create a user");
+      throw new RuntimeException("SeedData failed to create a user");
     }
+  }
+
+  private void setContext(SessionUser sessionUser) {
+    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+        sessionUser, new Credentials(),
+        new HashSet<>());
+    SecurityContextHolder.getContext().setAuthentication(authentication);
   }
 
   private String generateTags() {

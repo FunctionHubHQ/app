@@ -14,6 +14,7 @@ import net.functionhub.api.dto.DecodedJwt;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.user.UserService.AuthMode;
+import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.firebase.FirebaseService;
 import net.functionhub.api.utils.security.Credentials;
 import net.functionhub.api.UserProfile;
@@ -100,7 +101,7 @@ public class SecurityFilter extends OncePerRequestFilter {
       Credentials credentials = new Credentials();
       if (bearerToken.startsWith(UserService.apiKeyPrefix)) {
         user = new SessionUser();
-        populateSessionUser(userRepo.findByApiKey(bearerToken), user);
+        FHUtils.populateSessionUser(userRepo.findByApiKey(bearerToken), user);
         user.setAuthMode(AuthMode.AK);
       } else {
         try {
@@ -117,7 +118,7 @@ public class SecurityFilter extends OncePerRequestFilter {
             throw new RuntimeException(ex.getMessage());
           }
           user = firebaseTokenToUser(decodedToken);
-          populateSessionUser(userRepo.findProjectionByUid(user.getUid()), user);
+          FHUtils.populateSessionUser(userRepo.findProjectionByUid(user.getUid()), user);
           user.setAuthMode(AuthMode.FB);
           // TODO 2 db calls with the one above so not very efficient for production use. This is why
           //    prod should use api key instead of firebase tokens
@@ -139,24 +140,6 @@ public class SecurityFilter extends OncePerRequestFilter {
       SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
-  private void populateSessionUser(UserProjection projection, SessionUser user) {
-    if (projection != null) {
-      user.setEmail(projection.getEmail());
-      user.setName(projection.getName());
-      user.setUid(projection.getUid());
-      user.setAvatar(projection.getAvatar());
-      user.setApiKey(projection.getApikey());
-      user.setUsername(projection.getUsername());
-      user.setMaxExecutionTime(projection.getMaxexecutiontime());
-      user.setMaxCpuTime(projection.getMaxcputtime());
-      user.setMaxMemoryUsage(projection.getMaxmemoryusage());
-      user.setMaxDataTransfer(projection.getMaxdatatransfer());
-      user.setMaxHttpCalls(projection.getMaxhttpcalls());
-      user.setMaxInvocations(projection.getMaxinvocations());
-      user.setMaxFunctions(projection.getMaxfunctions());
-      user.setMaxProjects(projection.getMaxprojects());
-    }
-  }
 
   private SessionUser jwtTokenToUser(DecodedJwt decodedToken) {
     SessionUser user = new SessionUser();

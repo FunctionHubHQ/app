@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import net.functionhub.api.UserProfile;
+import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.dto.SessionUser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -106,6 +107,25 @@ public class FHUtils {
       objectMapper.writeValue(httpServletResponse.getWriter(), message);
     } catch (IOException e) {
       httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  public static void populateSessionUser(UserProjection projection, SessionUser user) {
+    if (projection != null) {
+      user.setEmail(projection.getEmail());
+      user.setName(projection.getName());
+      user.setUid(projection.getUid());
+      user.setAvatar(projection.getAvatar());
+      user.setApiKey(projection.getApikey());
+      user.setUsername(projection.getUsername());
+      user.setMaxExecutionTime(projection.getMaxexecutiontime());
+      user.setMaxCpuTime(projection.getMaxcputtime());
+      user.setMaxMemoryUsage(projection.getMaxmemoryusage());
+      user.setMaxDataTransfer(projection.getMaxdatatransfer());
+      user.setMaxHttpCalls(projection.getMaxhttpcalls());
+      user.setMaxInvocations(projection.getMaxinvocations());
+      user.setMaxFunctions(projection.getMaxfunctions());
+      user.setMaxProjects(projection.getMaxprojects());
     }
   }
 }

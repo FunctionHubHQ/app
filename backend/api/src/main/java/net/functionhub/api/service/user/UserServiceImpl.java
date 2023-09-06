@@ -46,7 +46,7 @@ public class UserServiceImpl implements UserService {
   @Override
   public UserProfileResponse getOrCreateUserprofile() {
     UserProfile userProfile = FHUtils.getUserProfile();
-    Thread.startVirtualThread(() -> createDbUser(userProfile));
+    createDbUser(userProfile);
     return new UserProfileResponse().profile(userProfile);
   }
 
@@ -59,8 +59,8 @@ public class UserServiceImpl implements UserService {
         newUser.setEmail(userProfile.getEmail());
         newUser.setUid(userProfile.getUid());
         newUser.setFullName(userProfile.getName());
-        log.info("Creating new user with  uid = {}", newUser.getUid());
         userRepo.save(newUser);
+        log.info("Created new user with  uid = {}", newUser.getUid());
 
         ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
         apiKeyEntity.setApiKey(generateApiKey());
