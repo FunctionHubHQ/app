@@ -5,12 +5,10 @@ import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.service.utils.FHUtils;
+import org.springframework.data.redis.core.BoundValueOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
-
 /**
  * @author Biz Melesse created on 9/3/23
  */
@@ -43,8 +41,8 @@ public class EntitlementServiceImpl implements EntitlementService {
 
   @Override
   public void createExecutionSession(String accessToken) {
-    SetOperations<String, Object> setOperations = redisTemplate.opsForSet();
-    setOperations.add(accessToken, System.currentTimeMillis());
+    BoundValueOperations<String, Object> boundValueOperations = redisTemplate.boundValueOps(accessToken);
+    boundValueOperations.set(0L);
     redisTemplate.expire(accessToken, Duration.ofSeconds(300));
   }
 

@@ -212,7 +212,8 @@ public class RuntimeServiceImpl implements RuntimeService {
     if (applyEntitlementLimits) {
       // Entitlement limits don't apply for internal calls from GPT. GPT
       // calls are part of the original invocation that called the function.
-      if (verifyInvocation() || verifyContentLength(asyncResult.getResult())) {
+      if (!(invocationUnderLimit() &&
+          contentLengthUnderLimit(asyncResult.getResult()))) {
         return null;
       }
       entitlementService.recordFunctionInvocation();
@@ -253,9 +254,8 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
       asyncResult =  getExecutionResult(execId);
       if (asyncResult != null && asyncResult.getResult() != null) {
-        boolean exit = verifyContentLength(asyncResult.getResult());
-        if (exit) {
-          return null;
+        if (!contentLengthUnderLimit(asyncResult.getResult())) {
+          return new ExecResultAsync().error(messagesProps.getDataTransferLimitReached());
         }
       }
     }
@@ -367,9 +367,9 @@ public class RuntimeServiceImpl implements RuntimeService {
     return s
         .replace("deno", "...")
         .replace("Deno", "...")
-        .replace("http://host.docker.internal:8080", "node_modules")
-        .replace(getCodeGenUrl(), "node_modules")
-        .replace(getRuntimeUrl(), "node_modules");
+        .replace("http://host.docker.internal:9090", "modules")
+        .replace(getCodeGenUrl(), "modules")
+        .replace(getRuntimeUrl(), "modules");
   }
 
   private String parseUid(String uid) {
@@ -919,19 +919,19 @@ public class RuntimeServiceImpl implements RuntimeService {
     }
   }
 
-  private boolean verifyContentLength(String payload) {
+  private boolean contentLengthUnderLimit(String payload) {
     SessionUser sessionUser = FHUtils.getSessionUser();
     long contentLength = payload.getBytes().length;
     if (contentLength > sessionUser.getMaxDataTransfer()) {
       FHUtils.raiseHttpError(httpServletResponse, objectMapper,
           messagesProps.getDataTransferLimitReached(),
           HttpStatus.FORBIDDEN_403);
-      return true;
+      return false;
     }
-    return false;
+    return true;
   }
 
-  private boolean verifyInvocation() {
+  private boolean invocationUnderLimit() {
     SessionUser sessionUser = FHUtils.getSessionUser();
     long numInvocationsLastOneMinute = entitlementService.getNumFunctionInvocations(1);
     if (numInvocationsLastOneMinute >= sessionUser.getMaxInvocations()) {
