@@ -191,7 +191,7 @@ public class ProxyServiceImpl implements ProxyService {
     Map<String, String> message = new HashMap<>();
     message.put("error", msg);
     try {
-      objectMapper.writeValue(httpServletResponse.getWriter(), message);
+      objectMapper.writeValue(httpServletResponse.getOutputStream(), message);
     } catch (IOException e) {
       httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
