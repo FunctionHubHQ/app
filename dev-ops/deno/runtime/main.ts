@@ -158,7 +158,7 @@ function setIntervalHandler(worker, ctx, body) {
       if (status?.cpuTime > status?.cpuBaseLine) {
         const delta = status.cpuTime - status.cpuBaseLine
         if (delta > status.cpuThreshold) {
-          errorMessage = "CPU timeout"
+          errorMessage = `CPU timeout ${status.cpuTime}ms`
         }
       } else if (status?.memoryUsage > status?.memoryThreshold) {
         // TODO: consider setting a memory threshold, e.g. what if the initial usage ends up
