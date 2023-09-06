@@ -3,7 +3,7 @@ package net.functionhub.proxy.controller;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.functionhub.proxy.service.ProxyService;
+import net.functionhub.proxy.service.proxy.ProxyService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;

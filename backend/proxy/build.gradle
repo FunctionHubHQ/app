@@ -8,10 +8,8 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.hibernate:hibernate-core'
-    implementation 'org.postgresql:postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.cloud:spring-cloud-config-server' // Embed the config server in the main application
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 }
 sourceSets {

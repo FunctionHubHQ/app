@@ -1,16 +1,20 @@
-package net.functionhub.proxy.service;
+package net.functionhub.proxy.service.proxy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.functionhub.proxy.dto.FHAccessToken;
 import net.functionhub.proxy.dto.UserHeaders;
+import net.functionhub.proxy.service.proxy.ProxyService;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -26,6 +30,9 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.data.redis.core.BoundValueOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
@@ -41,76 +48,81 @@ public class ProxyServiceImpl implements ProxyService {
   private final HttpServletRequest httpServletRequest;
   private final HttpServletResponse httpServletResponse;
   private final ObjectMapper objectMapper;
+  private final RedisTemplate<String, Object> redisTemplate;
+  private final String X_FUNCTION_HUB_ACCESS_TOKEN = "X-Function-Hub-Access-Token";
+  private final String X_FUNCTION_HUB_PROXY_TARGET = "X-Function-Hub-Proxy-Target";
 
   @Override
   public void handler()  {
     UserHeaders userHeaders = getHeaders();
     if (ObjectUtils.isEmpty(userHeaders) ||
         ObjectUtils.isEmpty(userHeaders.getHeaders())) {
-      httpServletResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-      httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
-      Map<String, String> message = new HashMap<>();
-      message.put("error", "Encountered an unknown error");
-      try {
-        objectMapper.writeValue(httpServletResponse.getWriter(), message);
-      } catch (IOException e) {
-        httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      }
+      setError(HttpStatus.INTERNAL_SERVER_ERROR_500, "Encountered an unknown error");
     } else {
       if (ObjectUtils.isEmpty(userHeaders.getProxyTarget())) {
-        httpServletResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-        httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        Map<String, String> message = new HashMap<>();
-        message.put("error", "URL cannot be empty"); // This should really be handled by the http client
+        setError(HttpStatus.INTERNAL_SERVER_ERROR_500, "URL cannot be empty");
+      } else if (ObjectUtils.isEmpty(userHeaders.getAccessToken())) {
+        setError(HttpStatus.BAD_REQUEST_400, "Missing " + X_FUNCTION_HUB_ACCESS_TOKEN);
+      }
+      else {
         try {
-          objectMapper.writeValue(httpServletResponse.getWriter(), message);
-        } catch (IOException e) {
-          httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        }
-      } else if (ObjectUtils.isEmpty(userHeaders.getFhApiKey())) {
-        httpServletResponse.setStatus(HttpStatus.BAD_REQUEST_400);
-        httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        Map<String, String> message = new HashMap<>();
-        message.put("error", "Missing X-Function-Hub-Key header");
-        try {
-          objectMapper.writeValue(httpServletResponse.getWriter(), message);
-        } catch (IOException e) {
-          httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        }
-      } else {
-        // 1. Do authorization and return 403 on error
-        // 2. Check for entitlements, invocations, etc
-
-        boolean set500 = false;
-        StopWatch stopWatch = new StopWatch();
-        HttpEntity responseEntity = null;
-        int requestContentLength = httpServletRequest.getContentLength();
-        try {
-          stopWatch.start();
-          responseEntity = forwardRequest(userHeaders);
-        } catch (IOException e) {
-          set500 = true;
-        }
-        stopWatch.stop();
-        long elapsed = stopWatch.getLastTaskTimeMillis();
-
-        if (set500) {
-          httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        }
-
-        // Write response body
-        if (responseEntity != null) {
-          long responseContentLength = responseEntity.getContentLength();
-          // TODO: make full request log here async
-          log.info("Request took {} ms", elapsed);
-
+          FHAccessToken accessToken = decodeAccessToken(userHeaders.getAccessToken());
+          if (accessToken == null) {
+            setError(HttpStatus.INTERNAL_SERVER_ERROR_500, "Error processing access token");
+            return;
+          }
+          if (!(contentLengthUnderLimit(accessToken, httpServletRequest.getContentLength()) &&
+              httpCallCountUnderLimit(accessToken, userHeaders.getAccessToken()))) {
+            return;
+          }
+          boolean set500 = false;
+          StopWatch stopWatch = new StopWatch();
+          HttpEntity responseEntity = null;
           try {
-            responseEntity.writeTo(httpServletResponse.getOutputStream());
+            stopWatch.start();
+            responseEntity = forwardRequest(userHeaders);
           } catch (IOException e) {
+            set500 = true;
+          }
+          stopWatch.stop();
+          long elapsed = stopWatch.getLastTaskTimeMillis();
+
+          if (set500) {
             httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
           }
+
+          // Write response body
+          if (responseEntity != null) {
+            // Enforce data transfer limit on responses as well
+            if (!contentLengthUnderLimit(accessToken, responseEntity.getContentLength())) {
+              return;
+            }
+            // TODO: make full request log here async
+            log.info("Request took {} ms", elapsed);
+
+            try {
+              responseEntity.writeTo(httpServletResponse.getOutputStream());
+            } catch (IOException e) {
+              httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+          }
+        } catch (Exception e) {
+          setError(HttpStatus.INTERNAL_SERVER_ERROR_500, "Error processing HTTP request");
         }
       }
+    }
+  }
+
+
+  private void setError(int errorCode, String msg) {
+    httpServletResponse.setStatus(errorCode);
+    httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    Map<String, String> message = new HashMap<>();
+    message.put("error", msg);
+    try {
+      objectMapper.writeValue(httpServletResponse.getWriter(), message);
+    } catch (IOException e) {
+      httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -147,21 +159,69 @@ public class ProxyServiceImpl implements ProxyService {
     Enumeration<String> headers = httpServletRequest.getHeaderNames();
     Map<String, String> rawHeaders = new HashMap<>();
     String fhProxyTarget = null;
-    String fhApiKey = null;
+    String accessToken = null;
     while (headers.hasMoreElements()) {
       String header = headers.nextElement();
-      if (header.equalsIgnoreCase("X-Function-Hub-Proxy-Target")) {
+      if (header.equalsIgnoreCase(X_FUNCTION_HUB_PROXY_TARGET)) {
         fhProxyTarget = httpServletRequest.getHeader(header);
-      } else if (header.equalsIgnoreCase("X-Function-Hub-Key")) {
-        fhApiKey = httpServletRequest.getHeader(header);
+      } else if (header.equalsIgnoreCase(X_FUNCTION_HUB_ACCESS_TOKEN)) {
+        accessToken = httpServletRequest.getHeader(header);
       } else if (!header.equalsIgnoreCase("host")) {
         rawHeaders.put(header, httpServletRequest.getHeader(header));
       }
     }
     userHeaders.setHeaders(rawHeaders);
     userHeaders.setProxyTarget(fhProxyTarget);
-    userHeaders.setFhApiKey(fhApiKey);
+    userHeaders.setAccessToken(accessToken);
     return userHeaders;
+  }
+
+  @Override
+  public boolean contentLengthUnderLimit(FHAccessToken accessToken, long contentLength) {
+    if (contentLength > accessToken.getDtl()) {
+      setError(HttpStatus.FORBIDDEN_403, "Data transfer limit exceeded");
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public boolean httpCallCountUnderLimit(FHAccessToken accessToken, String accessTokenStr) {
+    long numHttpCalls = getHttpCallCount(accessTokenStr);
+    if (numHttpCalls >= accessToken.getHce()) {
+      setError(HttpStatus.FORBIDDEN_403, "You've reached the number of allowed HTTP calls for this invocation");
+      return false;
+    }
+    setHttpCallCount(accessTokenStr, numHttpCalls);
+    return true;
+  }
+
+
+  @Override
+  public FHAccessToken decodeAccessToken(String accessToken) {
+    String decodedAccessToken = new String(Base64.getDecoder().decode(accessToken.getBytes()));
+    try {
+      return objectMapper.readValue(decodedAccessToken, FHAccessToken.class);
+    } catch (JsonProcessingException e) {
+      return null;
+    }
+  }
+
+  @Override
+  public void setHttpCallCount(String accessTokenStr, long currNumHttpCalls) {
+    BoundValueOperations<String, Object> boundValueOperations = redisTemplate.boundValueOps(accessTokenStr);
+    // Increment throws an error. Look into that.
+    boundValueOperations.set(currNumHttpCalls + 1);
+  }
+
+  @Override
+  public long getHttpCallCount(String accessTokenStr) {
+    BoundValueOperations<String, Object> boundValueOperations = redisTemplate.boundValueOps(accessTokenStr);
+    Object value = boundValueOperations.get();
+    if (value != null) {
+      return (long) value;
+    }
+    return Long.MAX_VALUE;
   }
 
   private HttpUriRequest copyRequest(String uri) {

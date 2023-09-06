@@ -10,8 +10,8 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class UserHttpRequest {
+public class UserHeaders {
   private Map<String, String> headers = new HashMap<>();
   private String proxyTarget;
-  private String fhApiKey;
+  private String accessToken;
 }

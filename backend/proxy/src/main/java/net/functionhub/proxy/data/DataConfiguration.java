@@ -1,8 +1,6 @@
 package net.functionhub.proxy.data;
 
-
-import net.functionhub.proxy.data.postgres.PostgresDBDataConfiguration;
-import net.functionhub.proxy.props.PropConfiguration;
+import net.functionhub.proxy.data.redis.RedisConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -15,8 +13,7 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @ComponentScan
 @Import({
-        PostgresDBDataConfiguration.class,
-        PropConfiguration.class
+        RedisConfiguration.class
 })
 public class DataConfiguration {
 }

@@ -13,8 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ComponentScan
 @EnableConfigurationProperties(value = {
-    FlywayProps.class,
-    PostgresDataSourceProps.class,
+    RedisProps.class
 })
 public class PropConfiguration {
 }

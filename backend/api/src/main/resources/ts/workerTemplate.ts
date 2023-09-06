@@ -13,7 +13,6 @@ self.onmessage = async (event) => {
     self.process = {}
     self.process.env = {}
     const startedAt = (new Date()).getTime()
-    console.log("Started at: ", startedAt)
     // Log the time the user code has started running for accurate cpu usage
     // measurement attribution
     self.process.env["FH_ACCESS_TOKEN"] = accessToken;
