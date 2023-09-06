@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -111,14 +112,14 @@ public class ProxyServiceImpl implements ProxyService {
               return;
             }
             boolean set500 = false;
-            long start = System.currentTimeMillis();
+            long start = Instant.now().toEpochMilli();
             HttpEntity responseEntity = null;
             try {
               responseEntity = forwardRequest(userHeaders);
             } catch (IOException e) {
               set500 = true;
             }
-            long end = System.currentTimeMillis();
+            long end = Instant.now().toEpochMilli();
             long elapsed = end - start;
             requestHistory.setRequestStartedAt(start);
             requestHistory.setRequestEndedAt(end);
@@ -170,13 +171,17 @@ public class ProxyServiceImpl implements ProxyService {
 
   private void logRequestHistory(HttpRequestHistory requestHistory) {
     Thread.startVirtualThread(() -> {
-      RestTemplate restTemplate = new RestTemplate();
-      HttpHeaders headers = new HttpHeaders();
-      headers.add("Authorization", "Bearer " + apiProps.getApiKey());
-      headers.setContentType(MediaType.APPLICATION_JSON);
-      org.springframework.http.HttpEntity<Object> request =
-          new org.springframework.http.HttpEntity<>(new Gson().toJson(requestHistory), headers);
-      restTemplate.postForObject(apiProps.getLogUrl(), request, String.class);
+      try {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + apiProps.getApiKey());
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        org.springframework.http.HttpEntity<Object> request =
+            new org.springframework.http.HttpEntity<>(new Gson().toJson(requestHistory), headers);
+        restTemplate.postForObject(apiProps.getLogUrl(), request, String.class);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     });
   }
 
