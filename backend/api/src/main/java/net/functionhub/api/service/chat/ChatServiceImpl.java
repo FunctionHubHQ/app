@@ -16,6 +16,7 @@ import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.GPTFunction;
 import net.functionhub.api.dto.GPTFunctionCall;
+import net.functionhub.api.dto.GptUsage;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.MessagesProps;
 import net.functionhub.api.props.OpenAiProps;
@@ -136,6 +137,8 @@ public class ChatServiceImpl implements ChatService {
       }
       if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
           result.getChoices().get(0).getMessage() != null) {
+        GptUsage gptUsage = new GptUsage();
+        updateResponse(result, gptUsage, response);
         String content = result.getChoices().get(0).getMessage().getContent();
         GPTFunctionCall functionCall = result.getChoices().get(0).getMessage().getFunctionCall();
         if (ObjectUtils.isEmpty(content) && functionCall != null) {
@@ -170,22 +173,13 @@ public class ChatServiceImpl implements ChatService {
           resultStr = gptHttpRequest(json);
           result = objectMapper.readValue(resultStr, CompletionResult.class);
           if (ObjectUtils.isEmpty(result.getChoices()) && !ObjectUtils.isEmpty(resultStr)) {
+            response.clear();
             response.putAll(objectMapper.readValue(resultStr, typeRef));
             return response;
           }
-
-          if (!ObjectUtils.isEmpty(result.getChoices()) &&
-              result.getChoices().get(0).getMessage() != null) {
-            content = result.getChoices().get(0).getMessage().getContent();
-            log.info("Response: {}", content);
-            response.put("content", content);
-            return response;
-          }
+          updateResponse(result, gptUsage, response);
         }
-        else {
-          response.put("content", content);
-          return response;
-        }
+        return response;
       }
     } catch (JsonProcessingException e) {
       e.printStackTrace();
@@ -205,6 +199,42 @@ public class ChatServiceImpl implements ChatService {
     error.put("message", "Unknown Error");
     response.put("error", error);
     return response;
+  }
+
+  private void updateResponse(CompletionResult result, GptUsage gptUsage,
+      Map<String, Object> response) {
+    if (result != null && result.getUsage() != null) {
+      boolean hasPrevUsage = false;
+      long _prevPromptTokens = 0, _prevCompletionTokens = 0, _prevTotalTokens = 0;
+      Object prevPromptTokens = gptUsage.getAggregateUsage().get("prompt_tokens");
+      Object prevCompletionTokens = gptUsage.getAggregateUsage().get("completion_tokens");
+      Object prevTotalTokens = gptUsage.getAggregateUsage().get("total_tokens");
+      if (prevPromptTokens != null && prevCompletionTokens != null && prevTotalTokens != null) {
+        _prevPromptTokens = (long) prevPromptTokens;
+        _prevCompletionTokens = (long) prevCompletionTokens;
+        _prevTotalTokens = (long) prevTotalTokens;
+        hasPrevUsage = true;
+      }
+      long newPromptTokens = result.getUsage().getPromptTokens();
+      long newCompletionTokens = result.getUsage().getCompletionTokens();
+      long newTotalTokens = result.getUsage().getTotalTokens();
+      gptUsage.getAggregateUsage().put("prompt_tokens", _prevPromptTokens + newPromptTokens);
+      gptUsage.getAggregateUsage().put("completion_tokens", _prevCompletionTokens + newCompletionTokens);
+      gptUsage.getAggregateUsage().put("total_tokens", _prevTotalTokens + newTotalTokens);
+      if (hasPrevUsage) {
+        gptUsage.getAggregateUsage().put("aggregate", true);
+        gptUsage.getAggregateUsage().put("description",
+            "Aggregate usage includes token count for the initial function call and a subsequent call to GPT");
+      }
+    }
+    if (result != null) {
+      response.put("id", result.getId());
+      response.put("object", result.getObject());
+      response.put("created", result.getCreated());
+      response.put("model", result.getModel());
+      response.put("usage", gptUsage.getAggregateUsage());
+      response.put("choices", result.getChoices());
+    }
   }
 
   @Override
