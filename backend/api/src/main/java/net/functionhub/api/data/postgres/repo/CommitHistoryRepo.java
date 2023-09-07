@@ -21,15 +21,22 @@ public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, UU
   List<CommitHistoryEntity> findByCodeCellId(UUID codeCellId);
 
   @Query(value = "SELECT "
-      + "cc.uid as id, "
+      + "DISTINCT (cc.uid) as id, "
       + "cc.function_name as name, "
       + "cc.version as version, "
       + "cc.description as description, "
-      + "ch.json_schema as payload " +
-      "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
-      + "WHERE ch.user_id = ?1 AND ch.deployed = true",
+      + "ch.json_schema as payload, "
+      + "max(ch.created_at) as createdat " +
+      "FROM code_cell cc "
+      + "JOIN commit_history ch ON cc.uid = ch.code_cell_id "
+      + "JOIN project_item pi ON cc.uid = pi.code_id "
+      + "WHERE ch.user_id = ?1 "
+      + "   AND ch.deployed = true "
+      + "   AND pi.project_id = ?2 "
+      + "GROUP BY cc.uid, cc.function_name, cc.version, cc.description, ch.json_schema "
+      + "ORDER BY max(ch.created_at) DESC ",
       nativeQuery = true)
-  List<Deployment> findAllDeployedCommits(String userId);
+  List<Deployment> findAllDeployedCommits(String userId, UUID projectId);
 
   @Query(value = "SELECT "
       + "cc.uid as id, "
@@ -59,8 +66,4 @@ public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, UU
       "WHERE code_cell_id = ?1 AND version = ?2",
       nativeQuery = true)
   List<CommitHistoryEntity> findByCodeCellIdAndVersion(UUID codeCellId, String version);
-
-
-
-
 }
