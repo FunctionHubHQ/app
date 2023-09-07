@@ -2,7 +2,7 @@ package net.functionhub.api.service.chat;
 
 
 import java.io.IOException;
-import net.functionhub.api.FHCompletionRequest;
+import net.functionhub.api.GPTCompletionRequest;
 import net.functionhub.api.dto.GPTFunction;
 import net.functionhub.api.service.openai.completion.CompletionRequest;
 import net.functionhub.api.service.openai.completion.CompletionRequestFunctionalCall;
@@ -14,10 +14,10 @@ import java.util.Map;
  */
 public interface ChatService {
 
-  CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId,
-      String functionCallMode);
-  CompletionRequestFunctionalCall buildGptRequestFunctionalCall(String prompt,
-      String functionResponse, String functionName, String userId);
+  CompletionRequest buildCompletionRequest(GPTCompletionRequest completionRequest, List<GPTFunction> functions);
+  CompletionRequestFunctionalCall buildGptRequestFunctionalCall(
+      GPTCompletionRequest completionRequest,
+      String functionResponse, String functionName);
 
   /**
    * Run user GPT completion test request. In production, send the response back to the client
@@ -30,9 +30,9 @@ public interface ChatService {
    * @return
    */
   Map<String, Object> gptCompletionDevRequest(String functionSlug,
-      FHCompletionRequest fhCompletionRequest);
+      GPTCompletionRequest fhCompletionRequest);
 
-  Map<String, Object> gptCompletionDeployedRequest(FHCompletionRequest fhCompletionRequest);
+  Map<String, Object> gptCompletionDeployedRequest(GPTCompletionRequest fhCompletionRequest);
 
 
   /**
@@ -44,8 +44,8 @@ public interface ChatService {
    * @return
    */
   Map<String, Object> devGptCompletion(String functionSlug,
-      FHCompletionRequest fhCompletionRequest) throws IOException;
+      GPTCompletionRequest fhCompletionRequest) throws IOException;
 
-  Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest) throws IOException;
+  Map<String, Object> prodGptCompletion(GPTCompletionRequest fhCompletionRequest) throws IOException;
 
 }

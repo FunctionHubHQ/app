@@ -459,7 +459,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FHCompletionRequest"
+                "$ref": "#/components/schemas/GPTCompletionRequest"
               }
             }
           }
@@ -470,7 +470,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FHCompletionResponse"
+                  "$ref": "#/components/schemas/GPTCompletionResponse"
                 }
               }
             }
@@ -583,7 +583,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FHCompletionRequest"
+                "$ref": "#/components/schemas/GPTCompletionRequest"
               }
             }
           }
@@ -594,7 +594,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FHCompletionResponse"
+                  "$ref": "#/components/schemas/GPTCompletionResponse"
                 }
               }
             }
@@ -1036,18 +1036,54 @@
       }
     },
     "schemas": {
-      "FHCompletionRequest": {
+      "GPTCompletionRequest": {
         "type": "object",
         "required": [
-          "prompt"
+          "messages"
         ],
         "properties": {
-          "prompt": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GPTMessage"
+            }
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string",
+            "default": "gpt-3.5-turbo-0613"
+          },
+          "max_tokens": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1000
+          },
+          "temperature": {
+            "type": "number",
+            "format": "double",
+            "default": 0.7
+          },
+          "function_call": {
+            "type": "string",
+            "default": "auto"
+          }
+        }
+      },
+      "GPTMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "default": "user"
+          },
+          "content": {
             "type": "string"
           }
         }
       },
-      "FHCompletionResponse": {
+      "GPTCompletionResponse": {
         "type": "object",
         "additionalProperties": true
       },

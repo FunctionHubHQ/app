@@ -7,10 +7,10 @@ import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletResponse;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
-import net.functionhub.api.FHCompletionRequest;
+import net.functionhub.api.GPTCompletionRequest;
+import net.functionhub.api.GPTMessage;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.projection.Deployment;
-import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
@@ -68,33 +68,37 @@ public class ChatServiceImpl implements ChatService {
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
 
   @Override
-  public CompletionRequest buildCompletionRequest(String prompt, List<GPTFunction> functions, String userId,
-      String functionCallMode) {
-    String content = String.format("PROMPT: %s\n\nANSWER:", prompt);
-    log.info("Generated query: {}", content);
+  public CompletionRequest buildCompletionRequest(GPTCompletionRequest completionRequest,
+      List<GPTFunction> functions) {
     List<CompletionRequestMessage> messages = new ArrayList<>();
     messages.add(new CompletionRequestMessage("system", openAiProps.getSystemMessage()));
-    messages.add(new CompletionRequestMessage("user", content));
+    messages.addAll(completionRequest.getMessages().stream().map(it -> {
+      CompletionRequestMessage message = new CompletionRequestMessage();
+      message.setRole(it.getRole());
+      message.setContent(it.getContent());
+      return message;
+    }).toList());
     return CompletionRequest
         .builder()
-        .user(userId)
+        .user("functionhub")
         .functions(functions)
-        .functionCall(functionCallMode)
-        .model(openAiProps.getCompletionModel())
-        .maxTokens(openAiProps.getMaxTokens())
-        .temperature(openAiProps.getTemp())
+        .functionCall(completionRequest.getFunctionCall())
+        .model(completionRequest.getModel())
+        .maxTokens(completionRequest.getMaxTokens())
+        .temperature(completionRequest.getTemperature())
         .messages(messages)
         .build();
   }
 
   @Override
-  public CompletionRequestFunctionalCall buildGptRequestFunctionalCall(String prompt,
-      String functionResponse, String functionName, String userId) {
-    String content = String.format("PROMPT: %s\n\nANSWER:", prompt);
-    log.info("Generated query: {}", content);
+  public CompletionRequestFunctionalCall buildGptRequestFunctionalCall(
+      GPTCompletionRequest completionRequest,
+      String functionResponse, String functionName) {
+    // We expect the very first message to be the user prompt in an initial function call
+    GPTMessage gptMessage = completionRequest.getMessages().get(0);
     Map<String, Object> userContent = new HashMap<>();
-    userContent.put("role", "user");
-    userContent.put("content", content);
+    userContent.put("role", gptMessage.getRole());
+    userContent.put("content", gptMessage.getContent());
 
     Map<String, Object> functionContent = new HashMap<>();
     functionContent.put("role", "function");
@@ -106,24 +110,24 @@ public class ChatServiceImpl implements ChatService {
     ));
     return CompletionRequestFunctionalCall
         .builder()
-        .user(userId)
-        .model(openAiProps.getCompletionModel())
-        .maxTokens(openAiProps.getMaxTokens())
-        .temperature(openAiProps.getTemp())
+        .user("functionhub")
+        .model(completionRequest.getModel())
+        .maxTokens(completionRequest.getMaxTokens())
+        .temperature(completionRequest.getTemperature())
         .messages(messages)
         .build();
   }
 
-  private Map<String, Object> gptRequestWithFunctionCall(String userId, String prompt, List<GPTFunction> functions,
+  private Map<String, Object> gptRequestWithFunctionCall(GPTCompletionRequest completionRequest, List<GPTFunction> functions,
       CodeCellEntity codeCell, boolean deployed) {
     Map<String, Object> response = new HashMap<>();
-    CompletionRequest request = buildCompletionRequest(prompt,
-        functions, userId, "auto");
+    CompletionRequest request = buildCompletionRequest(completionRequest,
+        functions);
     String json = null;
     try {
       json = objectMapper.writeValueAsString(request);
-    log.info("Full request: {}", json);
-    CompletionResult result = null;
+      log.debug("GPT Request {}", objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
+      CompletionResult result = null;
     try {
       String resultStr = gptHttpRequest(json);
       try {
@@ -135,6 +139,7 @@ public class ChatServiceImpl implements ChatService {
       } catch (JsonProcessingException e) {
         log.error(e.getLocalizedMessage());
       }
+      log.debug("GPT Response {}", objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
       if (result != null && !ObjectUtils.isEmpty(result.getChoices()) &&
           result.getChoices().get(0).getMessage() != null) {
         GptUsage gptUsage = new GptUsage();
@@ -164,14 +169,15 @@ public class ChatServiceImpl implements ChatService {
 
           // Call GPT with the function response
           CompletionRequestFunctionalCall requestFunctionalCall = buildGptRequestFunctionalCall(
-              prompt, execResultAsync.getResult(),
-              functionName,
-              userId);
+              completionRequest, execResultAsync.getResult(),
+              functionName
+          );
 
           json = objectMapper.writeValueAsString(requestFunctionalCall);
-          log.info("Full functional request: {}", json);
+          log.debug("GPT function call request {}", objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestFunctionalCall));
           resultStr = gptHttpRequest(json);
           result = objectMapper.readValue(resultStr, CompletionResult.class);
+          log.debug("GPT function call response {}", objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
           if (ObjectUtils.isEmpty(result.getChoices()) && !ObjectUtils.isEmpty(resultStr)) {
             response.clear();
             response.putAll(objectMapper.readValue(resultStr, typeRef));
@@ -239,71 +245,97 @@ public class ChatServiceImpl implements ChatService {
 
   @Override
   public Map<String, Object> gptCompletionDevRequest(String functionSlug,
-      FHCompletionRequest fhCompletionRequest) {
+      GPTCompletionRequest fhCompletionRequest) {
     Map<String, Object> response = new HashMap<>();
-    if (!ObjectUtils.isEmpty(functionSlug) &&
-        !ObjectUtils.isEmpty(fhCompletionRequest) &&
-        !ObjectUtils.isEmpty(fhCompletionRequest.getPrompt())) {
-      CodeCellEntity codeCell = codeCellRepo.findBySlug(functionSlug);
-      if (codeCell == null) {
-        Map<String, String> error = new HashMap<>();
-        error.put("message", "Code not found");
-        response.put("error", error);
-        return response;
-      }
-       GPTFunction function = buildGptFunctionTestRequest(codeCell);
-       response.putAll(gptRequestWithFunctionCall(
-           codeCell.getUserId(),
-           fhCompletionRequest.getPrompt(),
-           List.of(function), codeCell,
-           false));
-       if (ObjectUtils.isEmpty(response)) {
-         Map<String, String> error = new HashMap<>();
-         error.put("message", "Unknown error");
-         response.put("error", error);
-         return response;
-       }
-       return response;
-    }
-    Map<String, String> error = new HashMap<>();
-    error.put("message", "Operation not supported");
-    response.put("error", error);
-    return response;
-  }
-
-  @Override
-  public Map<String, Object> gptCompletionDeployedRequest(FHCompletionRequest completionRequest) {
-    String prompt = completionRequest.getPrompt();
-    Map<String, Object> response = new HashMap<>();
-    if (ObjectUtils.isEmpty(prompt)) {
+    if (!isValidAndHydratedRequest(fhCompletionRequest)) {
       Map<String, Object> error = new HashMap<>();
-      error.put("message", "You must provide a prompt");
+      error.put("message", "Invalid GPT request");
       response.put("error", error);
       return response;
     }
-    // TODO: do not load all user functions for this user_id. Apply limits here
-    // TODO: Need to implement projects to group functions
-    UserProjection user = userRepo.findByApiKey(requestHeaders.getHeaders().get("api-key"));
-    //TODO: need to fetch only distinct functions because there could be several versions of the
-    // same function previously deployed
-    List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(user.getUid());
-    List<GPTFunction> functions = deployments
-        .stream()
-        .map(this::buildGptFunctionDeployedRequest)
-        .toList();
+    CodeCellEntity codeCell = codeCellRepo.findBySlug(functionSlug);
+    if (codeCell == null) {
+      Map<String, String> error = new HashMap<>();
+      error.put("message", "Code not found");
+      response.put("error", error);
+      return response;
+    }
+     GPTFunction function = buildGptFunctionTestRequest(codeCell);
+     response.putAll(gptRequestWithFunctionCall(
+         fhCompletionRequest,
+         List.of(function), codeCell,
+         false));
+     if (ObjectUtils.isEmpty(response)) {
+       Map<String, String> error = new HashMap<>();
+       error.put("message", "Unknown error");
+       response.put("error", error);
+       return response;
+     }
+     return response;
+  }
 
+  @Override
+  public Map<String, Object> gptCompletionDeployedRequest(GPTCompletionRequest completionRequest) {
+    Map<String, Object> response = new HashMap<>();
+    Map<String, Object> error = new HashMap<>();
+    if (!isValidAndHydratedRequest(completionRequest)) {
+      error.put("message", "Invalid GPT request");
+      response.put("error", error);
+      return response;
+    }
+    SessionUser sessionUser = FHUtils.getSessionUser();
+    List<GPTFunction> functions = new ArrayList<>();
+    // If a function call is specified, then a project id is required
+    String projectId = completionRequest.getProjectId();;
+    if (completionRequest.getFunctionCall().equals("auto")) {
+      if (ObjectUtils.isEmpty(projectId)) {
+        error.put("message", "Project ID required for GPT function call");
+        response.put("error", error);
+        return response;
+      }
+      List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(sessionUser.getUid(),
+          UUID.fromString(projectId));
+      if (deployments.size() == 0) {
+        error.put("message", String.format("You have no deployed functions for projectId '%s'", projectId));
+        response.put("error", error);
+        return response;
+      }
+      functions = deployments
+          .stream()
+          .map(this::buildGptFunctionDeployedRequest)
+          .toList();
+    }
     response.putAll(gptRequestWithFunctionCall(
-        user.getUid(),
-        prompt,
+        completionRequest,
         functions,
         null,
         true));
     return response;
   }
 
+  private boolean isValidAndHydratedRequest(GPTCompletionRequest completionRequest) {
+    if (!ObjectUtils.isEmpty(completionRequest) &&
+        !ObjectUtils.isEmpty(completionRequest.getMessages()) &&
+        !ObjectUtils.isEmpty(completionRequest.getMessages().get(0)) &&
+        !ObjectUtils.isEmpty(completionRequest.getMessages().get(0).getContent()) &&
+        !ObjectUtils.isEmpty(completionRequest.getMessages().get(0).getRole())) {
+      // There should be at least one message with a role and content
+      completionRequest.setMaxTokens(completionRequest.getMaxTokens() != null ?
+          completionRequest.getMaxTokens() : openAiProps.getMaxTokens());
+      completionRequest.setFunctionCall(completionRequest.getFunctionCall() != null ?
+          completionRequest.getFunctionCall() : "auto");
+      completionRequest.setTemperature(completionRequest.getTemperature() != null ?
+          completionRequest.getTemperature() : openAiProps.getTemp());
+      completionRequest.setModel(completionRequest.getModel() != null ?
+              completionRequest.getModel() : openAiProps.getCompletionModel());
+      return true;
+    }
+    return false;
+  }
+
   @Override
   public Map<String, Object> devGptCompletion(String functionSlug,
-      FHCompletionRequest fhCompletionRequest) {
+      GPTCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
     if (!user.getAuthMode().name().equals(AuthMode.FB.name()) && !sourceProps.getProfile().equals("test")) {
       FHUtils.raiseHttpError(httpServletResponse,
@@ -315,7 +347,7 @@ public class ChatServiceImpl implements ChatService {
   }
 
   @Override
-  public Map<String, Object> prodGptCompletion(FHCompletionRequest fhCompletionRequest) {
+  public Map<String, Object> prodGptCompletion(GPTCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
     if (!user.getAuthMode().name().equals(AuthMode.AK.name())) {
       FHUtils.raiseHttpError(httpServletResponse,

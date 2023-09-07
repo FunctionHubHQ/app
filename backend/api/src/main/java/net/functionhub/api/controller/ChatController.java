@@ -3,7 +3,7 @@ package net.functionhub.api.controller;
 import java.io.IOException;
 import java.util.Map;
 import net.functionhub.api.ChatApi;
-import net.functionhub.api.FHCompletionRequest;
+import net.functionhub.api.GPTCompletionRequest;
 import net.functionhub.api.service.chat.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ public class ChatController implements ChatApi {
 
   @Override
   public ResponseEntity<Map<String, Object>> devGptCompletion(String functionSlug,
-      FHCompletionRequest fhCompletionRequest) {
+      GPTCompletionRequest fhCompletionRequest) {
     try {
       return ResponseEntity.ok(chatService.devGptCompletion(functionSlug, fhCompletionRequest));
     } catch (IOException e) {
@@ -32,7 +32,7 @@ public class ChatController implements ChatApi {
 
   @Override
   public ResponseEntity<Map<String, Object>> prodCompletionRequest(
-      FHCompletionRequest fhCompletionRequest) {
+      GPTCompletionRequest fhCompletionRequest) {
     try {
       return ResponseEntity.ok(chatService.prodGptCompletion(fhCompletionRequest));
     } catch (IOException e) {
