@@ -14,31 +14,30 @@ export const AuthContext = React.createContext({});
 export const useAuthContext = () => React.useContext(AuthContext);
 
 export const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
-  const [authUser, setAuthUser] = React.useState<User | null>(null);
-  const [fhUser, setFhUser] = React.useState<UserProfile | null>(null);
+  const [authUser, setAuthUser] = React.useState<User | undefined>(undefined);
+  const [fhUser, setFhUser] = React.useState<UserProfile | undefined>(undefined);
   const [loading, setLoading] = React.useState(true);
 
   useEffect(() => {
     if (!auth) {
-      setAuthUser(null)
-      setFhUser(null)
+      setAuthUser(undefined)
+      setFhUser(undefined)
       setLoading(false)
       return
     }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setAuthUser(user);
         const token = await getAuthToken(user)
+        setAuthUser(user);
         setCookie("token", token)
-        try {
-          const response: UserProfileResponse = await new UserApi(headerConfig(token)).getUserprofile()
-          setFhUser(response.profile as UserProfile)
-        } catch (e) {
-          ERROR(e)
-        }
+        new UserApi(headerConfig(token)).getUserprofile().then(response => {
+          const profileResponse: UserProfileResponse = response.data
+          setFhUser(profileResponse.profile)
+        }).catch(e => ERROR(e))
+
       } else {
-        setAuthUser(null);
-        setFhUser(null)
+        setAuthUser(undefined);
+        setFhUser(undefined)
         deleteCookie("token")
       }
       setLoading(false);

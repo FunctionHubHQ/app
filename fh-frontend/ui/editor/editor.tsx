@@ -15,7 +15,7 @@ import {
 } from "#/codegen";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
-import SandboxTabs, from "#/ui/interactive-api/sandboxTabs";
+import SandboxTabs from "#/ui/interactive-api/sandboxTabs";
 import DeployModal from "#/ui/editor/deploy-modal";
 import {useAuthContext} from "#/context/AuthContext";
 
@@ -98,7 +98,6 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
           new RuntimeApi(headerConfig(token))
           .updateCode({
             uid: props.userCode?.uid,
-            user_id: authUser.uid,
             code: btoa(mainCode),
             fields_to_update: ["code"]
           })
@@ -135,10 +134,10 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
   }
 
   const setTokens = () => {
+    setApiKey(fhUser?.api_key)
     getAuthToken(authUser).then(token => {
       if (token) {
         setBearerToken(token)
-        setApiKey(fhUser?.api_key)
       }
     })
   }

@@ -3,15 +3,13 @@ import React, {FC, useEffect, useState} from 'react'
 import { Tab } from '@headlessui/react'
 import Toggle from "#/ui/interactive-api/toggle";
 import Sandbox from "#/ui/interactive-api/sandbox";
-import {auth} from "#/ui/utils/firebase-setup";
 import {SpecApi} from "#/codegen";
-import {headerConfig} from "#/ui/utils/headerConfig";
+import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {BASE_PATH} from "#/codegen/base";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
 import UseAnimations from "react-useanimations";
 import loading from "react-useanimations/lib/loading";
-// import Toggle from "@/components/interactive-api/toggle";
-// import Sandbox, {SandboxProps} from "@/components/interactive-api/sandbox";
+import {useAuthContext} from "#/context/AuthContext";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -29,6 +27,7 @@ const SandboxTabs: FC<SandboxTabProps> = (props) => {
   const [prodBaseSpecUrl, setProdBaseSpecUrl] = useState<string | undefined>(undefined)
   const [devGptEnabled, setDevGptEnabled] = useState(false)
   const [prodGptEnabled, setProdGptEnabled] = useState(false)
+  const { authUser, fhUser } = useAuthContext()
   const [envs]= useState({
     dev: {
       name: 'Dev',
@@ -71,8 +70,8 @@ const SandboxTabs: FC<SandboxTabProps> = (props) => {
 
   const onSetBaseSpecUrl = async (functionSlug: string | undefined, version: string | undefined, deployed: boolean) => {
     DEBUG("onSetBaseSpecUrl")
-    const tokenResult = await auth.currentUser?.getIdTokenResult(false)
-    const api = new SpecApi(headerConfig(tokenResult.token))
+    const token = await getAuthToken(authUser)
+    const api = new SpecApi(headerConfig(token))
     const response = await api
     .getSpecStatus({
       slug: functionSlug,
@@ -92,7 +91,7 @@ const SandboxTabs: FC<SandboxTabProps> = (props) => {
     }
   }
 
-  const buildFullSpecUrl = (env) => {
+  const buildFullSpecUrl = (env: string) => {
     if (env === envs.dev.name) {
       let id = envs.dev.id
       if (devGptEnabled) {
