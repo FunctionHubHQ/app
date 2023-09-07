@@ -228,9 +228,7 @@ public class ChatServiceImpl implements ChatService {
       gptUsage.getAggregateUsage().put("completion_tokens", _prevCompletionTokens + newCompletionTokens);
       gptUsage.getAggregateUsage().put("total_tokens", _prevTotalTokens + newTotalTokens);
       if (hasPrevUsage) {
-        gptUsage.getAggregateUsage().put("aggregate", true);
-        gptUsage.getAggregateUsage().put("description",
-            "Aggregate usage includes token count for the initial function call and a subsequent call to GPT");
+        gptUsage.getAggregateUsage().put("function_call_aggregate", true);
       }
     }
     if (result != null) {
