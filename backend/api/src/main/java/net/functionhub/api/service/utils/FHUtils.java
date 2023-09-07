@@ -128,4 +128,8 @@ public class FHUtils {
       user.setMaxProjects(projection.getMaxprojects());
     }
   }
+
+  public static String generateEntityId(String prefix) {
+    return prefix + generateUid(SHORT_UID_LENGTH);
+  }
 }

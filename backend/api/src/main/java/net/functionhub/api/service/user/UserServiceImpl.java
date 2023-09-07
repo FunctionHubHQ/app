@@ -68,7 +68,7 @@ public class UserServiceImpl implements UserService {
         apiKeyRepo.save(apiKeyEntity);
 
         EntitlementEntity entitlements = new EntitlementEntity();
-        entitlements.setUid(UUID.randomUUID());
+        entitlements.setUid(FHUtils.generateEntityId("et"));
         entitlements.setUserId(userProfile.getUid());
         entitlements.setMaxExecutionTime(entitlementProps.getFree().getMaxExecutionTime());
         entitlements.setMaxCpuTime(entitlementProps.getFree().getMaxCpuTime());
@@ -195,7 +195,7 @@ public class UserServiceImpl implements UserService {
       apiKeyRepo.save(apiKeyEntity);
 
       EntitlementEntity entitlements = new EntitlementEntity();
-      entitlements.setUid(UUID.randomUUID());
+      entitlements.setUid(FHUtils.generateEntityId(EntitlementEntity.class.getName()));
       entitlements.setUserId(userEntity.getUid());
       entitlementRepo.save(entitlements);
     }

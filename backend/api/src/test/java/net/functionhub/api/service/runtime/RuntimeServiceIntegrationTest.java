@@ -127,7 +127,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         } catch (InterruptedException ignored) {
         }
         List<CommitHistoryEntity> commitHistory = commitHistoryRepo
-            .findByCodeCellId(UUID.fromString(response.getUid()));
+            .findByCodeCellId(response.getUid());
         assertNotNull(commitHistory);
         assertEquals(2, commitHistory.size());
 
@@ -147,7 +147,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
     @Test
     public void getUserCodeTest() {
         CodeCellEntity codeCell = new CodeCellEntity();
-        codeCell.setUid(UUID.randomUUID());
+        codeCell.setUid(FHUtils.generateEntityId("cc"));
         codeCell.setCode(Base64.getEncoder().encodeToString(rawCode.getBytes()));
         codeCell.setDescription("This is a demo code");
         codeCell.setUserId(user.getUid());

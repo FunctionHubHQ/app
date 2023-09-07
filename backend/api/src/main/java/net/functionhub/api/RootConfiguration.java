@@ -44,7 +44,7 @@ public class RootConfiguration {
     flywayPostgresMigration.migrate(false);
     userService.createAnonymousUser();
     if (!sourceProps.getProfile().equals("prod")) {
-//      seedData.generateSeedData();
+      seedData.generateSeedData();
     }
   }
 

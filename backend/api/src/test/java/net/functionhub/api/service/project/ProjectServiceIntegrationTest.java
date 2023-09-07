@@ -199,13 +199,13 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(forkResult.getUid());
         assertNotNull(forkResult.getUid());
 
-        CodeCellEntity forkedCell = codeCellRepo.findByUid(UUID.fromString(forkResult.getUid()));
+        CodeCellEntity forkedCell = codeCellRepo.findByUid(forkResult.getUid());
         assertNotNull(forkedCell);
         assertNotNull(forkedCell.getParentId());
-        assertEquals(functions.getFunctions().get(0).getCodeId(), forkedCell.getParentId().toString());
+        assertEquals(functions.getFunctions().get(0).getCodeId(), forkedCell.getParentId());
 
         CodeCellEntity parentCell = codeCellRepo
-            .findByUid(UUID.fromString(functions.getFunctions().get(0).getCodeId()));
+            .findByUid(functions.getFunctions().get(0).getCodeId());
         assertEquals(1, parentCell.getForkCount().longValue());
     }
 
@@ -213,7 +213,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
     public void updateFunctionTest() {
         FHFunctions functions = createAndAssertFunctions();
         FHFunction function = functions.getFunctions().get(0);
-        ProjectItemEntity projectItem = projectItemRepo.findByCodeId(UUID.fromString(function.getCodeId()));
+        ProjectItemEntity projectItem = projectItemRepo.findByCodeId(function.getCodeId());
         FHFunction functionToUpdate = new FHFunction().tags("apple, google, facebook")
             .projectId(projectItem.getProjectId().toString())
             .codeId(function.getCodeId());
@@ -394,7 +394,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(functions);
         assertEquals(0, functions.getFunctions().size());
         assertNull(codeCellRepo.findBySlug(result.getSlug()));
-        assertEquals(0, projectItemRepo.findByProjectIdOrderByCreatedAtDesc(UUID.fromString(projects.getProjects().get(0).getProjectId())).size());
+        assertEquals(0, projectItemRepo.findByProjectIdOrderByCreatedAtDesc(projects.getProjects().get(0).getProjectId()).size());
     }
 
     @Test
@@ -432,6 +432,6 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
             remainingProjects.getProjects().get(0).getProjectId());
 
         assertNull(codeCellRepo.findBySlug(result.getSlug()));
-        assertEquals(0, projectItemRepo.findByProjectIdOrderByCreatedAtDesc(UUID.fromString(projects.getProjects().get(0).getProjectId())).size());
+        assertEquals(0, projectItemRepo.findByProjectIdOrderByCreatedAtDesc(projects.getProjects().get(0).getProjectId()).size());
     }
 }

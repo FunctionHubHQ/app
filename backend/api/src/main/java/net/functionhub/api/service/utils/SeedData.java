@@ -16,6 +16,7 @@ import net.functionhub.api.UserProfileResponse;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
+import net.functionhub.api.data.postgres.repo.ProjectRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.service.project.ProjectService;
@@ -38,6 +39,7 @@ public class SeedData {
   private final RuntimeService runtimeService;
   private final WordList wordList;
   private final UserRepo userRepo;
+  private final ProjectRepo projectRepo;
   private final ApiKeyRepo apiKeyRepo;
   private final UserService userService;
   private final int numProjects = 12;
@@ -45,8 +47,10 @@ public class SeedData {
   private final int numPublicFunctions = 12;
 
   public void generateSeedData() {
-    generateSeedData("bmelesse@elifsis.com");
-    generateSeedData(null);
+    if (projectRepo.count() < numProjects) {
+      generateSeedData("bmelesse@elifsis.com");
+      generateSeedData(null);
+    }
   }
 
   public void generateSeedData(String email) {

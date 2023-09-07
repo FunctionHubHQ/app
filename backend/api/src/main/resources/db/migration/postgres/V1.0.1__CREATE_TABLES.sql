@@ -1,5 +1,4 @@
 CREATE SCHEMA IF NOT EXISTS public;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS public.user (
@@ -31,9 +30,9 @@ ALTER TABLE public.api_key OWNER TO root;
 comment on table public.api_key is 'User API Keys';
 
 CREATE TABLE IF NOT EXISTS public.code_cell (
-    uid uuid NOT NULL primary key,
-    parent_id uuid,
-    user_id varchar(255) NOT NULL,
+    uid varchar(255) NOT NULL primary key,
+    parent_id varchar(255),
+    user_id varchar(255) NOT NULL, 
     function_name varchar(255) NOT NULL default '',
     summary varchar(255) NOT NULL default '',
     description varchar(255) NOT NULL default '',
@@ -62,7 +61,7 @@ CREATE INDEX code_cell_search_idx ON public.code_cell
 
 CREATE OR REPLACE FUNCTION search_docs(query text)
     RETURNS TABLE(
-    codeid uuid,
+    codeid varchar(255),
     ownerid text,
     ownerusername text,
     owneravatar text,
@@ -101,7 +100,7 @@ $$ LANGUAGE SQL;
 
 
 CREATE TABLE IF NOT EXISTS public.entitlement (
-    uid uuid NOT NULL primary key,
+    uid varchar(255) NOT NULL primary key,
     user_id varchar(255) NOT NULL,
 
 --     Max wall clock time
@@ -143,7 +142,7 @@ CREATE TABLE IF NOT EXISTS public.entitlement (
 ALTER TABLE public.entitlement OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.usage (
-    uid uuid NOT NULL primary key,
+    uid varchar(255) NOT NULL primary key,
     user_id varchar(255) NOT NULL,
     tokens bigint NOT NULL,
     daily_invocations bigint NOT NULL,
@@ -154,7 +153,7 @@ CREATE TABLE IF NOT EXISTS public.usage (
 ALTER TABLE public.usage OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.project (
-    uid uuid NOT NULL primary key,
+    uid varchar(255) NOT NULL primary key,
     user_id varchar(255) NOT NULL,
     project_name varchar(255) NOT NULL,
     description varchar(255) NOT NULL,
@@ -165,17 +164,17 @@ CREATE TABLE IF NOT EXISTS public.project (
 ALTER TABLE public.project OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.project_item (
-    uid uuid NOT NULL primary key,
-    project_id uuid NOT NULL,
-    code_id uuid NOT NULL,
+    uid varchar(255) NOT NULL primary key,
+    project_id varchar(255) NOT NULL,
+    code_id varchar(255) NOT NULL,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(uid, code_id, project_id)
 );
 ALTER TABLE public.project_item OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.commit_history (
-    uid uuid NOT NULL primary key,
-    code_cell_id uuid NOT NULL,
+    uid varchar(255) NOT NULL primary key,
+    code_cell_id varchar(255) NOT NULL,
     user_id varchar(255) NOT NULL,
     version varchar(32),
     deployed boolean NOT NULL default false,
@@ -187,7 +186,7 @@ CREATE TABLE IF NOT EXISTS public.commit_history (
 ALTER TABLE public.commit_history OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.request_history (
-    id uuid NOT NULL primary key,
+    id varchar(255) NOT NULL primary key,
     user_id varchar(255),
     http_method varchar(255),
     url text,

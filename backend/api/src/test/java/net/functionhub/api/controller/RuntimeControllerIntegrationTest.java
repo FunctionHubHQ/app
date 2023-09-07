@@ -18,7 +18,8 @@ import java.util.concurrent.Future;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
-import net.functionhub.api.FHCompletionRequest;
+import net.functionhub.api.GPTCompletionRequest;
+import net.functionhub.api.GPTMessage;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
@@ -290,8 +291,11 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         deployCodeCell(updateResult);
 
         // 5. Make dev GPT function call
-        FHCompletionRequest devCompletionRequest = new FHCompletionRequest();
-        devCompletionRequest.setPrompt("What is the current time and weather in Boston in degrees Celsius?");
+        GPTCompletionRequest devCompletionRequest = new GPTCompletionRequest();
+        GPTMessage message = new GPTMessage()
+            .role("user")
+            .content("What is the current time and weather in Boston in degrees Celsius?");
+        devCompletionRequest.setMessages(List.of(message));
 
         String completionResponseDevResponseStr = request("/completion/" + updateResult.getSlug(),
             "POST", devCompletionRequest);
@@ -299,13 +303,16 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         Map<String, Object> completionResponseDevResponse = objectMapper
             .readValue(completionResponseDevResponseStr, typeRef);
         assertNotNull(completionResponseDevResponse);
-        assertTrue(completionResponseDevResponse.get("content").toString().contains("Boston"));
+        assertTrue(completionResponseDevResponse.get("choices").toString().contains("Boston"));
         assertTrue(completionResponseDevResponse.get("content").toString().contains("rainy"));
 
 
         // 6. Make prod GPT function call
-        FHCompletionRequest prodCompletionRequest = new FHCompletionRequest();
-        prodCompletionRequest.setPrompt("What is the current time and weather in Chicago?");
+        GPTCompletionRequest prodCompletionRequest = new GPTCompletionRequest();
+        message = new GPTMessage()
+            .role("user")
+            .content("What is the current time and weather in Chicago?");
+        devCompletionRequest.setMessages(List.of(message));
 
         String completionResponseProdResponseStr = request("/completion",
             "POST", prodCompletionRequest);
@@ -373,7 +380,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
         assertNotNull(deployResponse.getStatus());
 
-        CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(updateResult.getUid()));
+        CodeCellEntity codeCell = codeCellRepo.findByUid(updateResult.getUid());
         assertTrue(codeCell.getDeployed());
         String schema = runtimeService.getJsonSchema(updateResult.getUid());
         assertNotNull(schema);

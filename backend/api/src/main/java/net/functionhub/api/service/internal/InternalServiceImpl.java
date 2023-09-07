@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.data.postgres.entity.RequestHistoryEntity;
 import net.functionhub.api.data.postgres.repo.RequestHistoryRepo;
+import net.functionhub.api.service.utils.FHUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,7 +27,7 @@ public class InternalServiceImpl implements InternalService {
   public GenericResponse logHttpRequests(Map<String, Object> requestLog) {
     Thread.startVirtualThread(() -> {
       RequestHistoryEntity requestHistory = new RequestHistoryEntity();
-      requestHistory.setId(UUID.randomUUID());
+      requestHistory.setId(FHUtils.generateEntityId("rh"));
       requestHistory.setUserId(objectToString(requestLog.get("userId")));
       requestHistory.setHttpMethod(objectToString(requestLog.get("httpMethod")));
       requestHistory.setUrl(objectToString(requestLog.get("url")));

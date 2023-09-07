@@ -7,7 +7,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,7 +22,7 @@ public class RequestHistoryEntity {
     @Id
     @JsonProperty("id")
     @Column(name = "id")
-    private UUID id;
+    private String id;
     
     @JsonProperty("user_id")
     @Column(name = "user_id")

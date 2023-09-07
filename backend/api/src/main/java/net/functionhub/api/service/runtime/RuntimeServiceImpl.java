@@ -119,7 +119,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   @Override
   public ExecResultAsync exec(ExecRequest execRequest, boolean applyEntitlementLimits) {
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
-      return execHelper(execRequest, codeCellRepo.findByUid(UUID.fromString(execRequest.getUid())),
+      return execHelper(execRequest, codeCellRepo.findByUid(execRequest.getUid()),
           applyEntitlementLimits);
     }
     return new ExecResultAsync().error("Unknown error");
@@ -290,12 +290,11 @@ public class RuntimeServiceImpl implements RuntimeService {
       String code = null;
       String userId = null;
       if (deployed && !ObjectUtils.isEmpty(version)) {
-        List<CommitHistoryEntity> commitHistoryEntities = commitHistoryRepo
-            .findByCodeCellIdAndVersion(UUID.fromString(uid), version);
+        List<CommitHistoryEntity> commitHistoryEntities = commitHistoryRepo.findByCodeCellIdAndVersion(uid, version);
         code = commitHistoryEntities.get(0).getCode();
         userId = commitHistoryEntities.get(0).getUserId();
       } else {
-        CodeCellEntity entity = codeCellRepo.findByUid(UUID.fromString(uid));
+        CodeCellEntity entity = codeCellRepo.findByUid(uid);
         code = entity.getCode();
         userId = entity.getUserId();
       }
@@ -381,7 +380,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   private void validateCodeCell(ExecResultAsync execResult, String uid) {
-    CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
+    CodeCellEntity codeCell = codeCellRepo.findByUid(uid);
     if (codeCell != null) {
       String error = null;
       // TODO: ensure function name is unique within the user's namespace
@@ -422,7 +421,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
       }
       CodeCellEntity codeCell = new CodeCellEntity();
-      codeCell.setUid(UUID.randomUUID());
+      codeCell.setUid(FHUtils.generateEntityId("cc"));
       codeCell.setCode(code.getCode());
       codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
       codeCell.setDescription(parseCodeComment(rawCode, "@description"));
@@ -433,14 +432,14 @@ public class RuntimeServiceImpl implements RuntimeService {
       codeCell.setSlug(getUniqueSlug());
       codeCell.setVersion(generateCodeVersion());
       if (!ObjectUtils.isEmpty(code.getParentId())) {
-        codeCell.setParentId(UUID.fromString(code.getParentId()));
+        codeCell.setParentId(code.getParentId());
       }
       codeCell.setDeployed(false);
       codeCellRepo.save(codeCell);
       updatedCell = codeCell;
     }
     else {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(code.getUid()));
+      CodeCellEntity codeCell = codeCellRepo.findByUid(code.getUid());
       if (codeCell != null && !ObjectUtils.isEmpty(code.getFieldsToUpdate())) {
         for (String field : code.getFieldsToUpdate()) {
           switch (field) {
@@ -474,7 +473,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         final CodeCellEntity finalCell = updatedCell;
         Thread.startVirtualThread(() -> {
           CommitHistoryEntity commitHistory = new CommitHistoryEntity();
-          commitHistory.setUid(UUID.randomUUID());
+          commitHistory.setUid(FHUtils.generateEntityId("ch"));
           commitHistory.setUserId(finalCell.getUserId());
           commitHistory.setCodeCellId(finalCell.getUid());
           commitHistory.setVersion(finalCell.getVersion());
@@ -557,7 +556,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   @Override
   public Code getCodeDetail(String uid) {
     if (!ObjectUtils.isEmpty(uid)) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
+      CodeCellEntity codeCell = codeCellRepo.findByUid(uid);
       if (codeCell != null) {
         return new Code()
             .code(codeCell.getCode())
@@ -606,7 +605,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       spec = spec.replace("/**", "\n/**");
     }
     if (!ObjectUtils.isEmpty(specResult.getUid())) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(specResult.getUid()));
+      CodeCellEntity codeCell = codeCellRepo.findByUid(specResult.getUid());
       if (codeCell != null) {
         if (format.equals("json")) {
           Map<String, Object> requestDto  = getRequestDto( constructDto(spec), codeCell.getVersion());
@@ -614,7 +613,7 @@ public class RuntimeServiceImpl implements RuntimeService {
           codeCell.setJsonSchema(requestDtoStr);
           String fullOpenApiSchema = generateFullSpec(spec, specResult.getUid());
           codeCell.setFullOpenApiSchema(fullOpenApiSchema);
-          jsonSchema.put(codeCell.getUid().toString(), requestDtoStr);
+          jsonSchema.put(codeCell.getUid(), requestDtoStr);
 
           // Insert the schema into an existing commit
           List<CommitHistoryEntity> commitHistory = commitHistoryRepo.findByCodeCellIdAndVersion(
@@ -644,7 +643,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       spec = spec.replace("#/definitions", "#/components/definitions");
       fullSpecMap = objectMapper.readValue(spec,
           typeRef);
-      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(uid));
+      CodeCellEntity codeCell = codeCellRepo.findByUid(uid);
       if (codeCell != null) {
         Map<String, Object> template = specTemplate.getUserSpec();
         Map<String, Object> paths = new HashMap<>();
@@ -774,7 +773,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   @Override
   public GenericResponse deploy(ExecRequest execRequest) {
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(execRequest.getUid()));
+      CodeCellEntity codeCell = codeCellRepo.findByUid(execRequest.getUid());
       if (codeCell != null) {
         if (codeCell.getIsDeployable()) {
           codeCell.setDeployed(true);

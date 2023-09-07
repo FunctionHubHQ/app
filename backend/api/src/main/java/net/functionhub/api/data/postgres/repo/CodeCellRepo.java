@@ -3,7 +3,6 @@ package net.functionhub.api.data.postgres.repo;
 
 import java.util.List;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
-import java.util.UUID;
 import net.functionhub.api.data.postgres.projection.FHFunctionProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Repository
 @Transactional
-public interface CodeCellRepo extends JpaRepository<CodeCellEntity, UUID> {
-  CodeCellEntity findByUid(UUID uid);
+public interface CodeCellRepo extends JpaRepository<CodeCellEntity, String> {
+  CodeCellEntity findByUid(String uid);
 
   @Query(value = "SELECT count(*) " +
       "FROM code_cell " +
@@ -47,7 +46,7 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, UUID> {
       + "WHERE pi.project_id = ?1 "
       + "ORDER BY cc.created_at DESC",
       nativeQuery = true)
-  List<CodeCellEntity> findByProjectId(UUID projectId);
+  List<CodeCellEntity> findByProjectId(String projectId);
 
   // TODO: enable query caching here
   @Query(value = ""

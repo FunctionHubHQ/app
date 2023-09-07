@@ -294,7 +294,7 @@ public class ChatServiceImpl implements ChatService {
         return response;
       }
       List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(sessionUser.getUid(),
-          UUID.fromString(projectId));
+          projectId);
       if (deployments.size() == 0) {
         error.put("message", String.format("You have no deployed functions for projectId '%s'", projectId));
         response.put("error", error);

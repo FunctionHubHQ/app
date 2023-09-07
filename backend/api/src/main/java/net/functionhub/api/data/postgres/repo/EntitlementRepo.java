@@ -1,7 +1,6 @@
 package net.functionhub.api.data.postgres.repo;
 
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
-import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Repository
 @Transactional
-public interface EntitlementRepo extends JpaRepository<EntitlementEntity, UUID> {
+public interface EntitlementRepo extends JpaRepository<EntitlementEntity, String> {
   EntitlementEntity findByUserId(String uid);
 }

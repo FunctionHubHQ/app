@@ -63,7 +63,7 @@ public class ProjectServiceImpl implements ProjectService {
     entity.setProjectName(FHUtils.truncate(projectCreateRequest.getName()));
     entity.setDescription(FHUtils.truncate(projectCreateRequest.getDescription()));
     entity.setUserId(FHUtils.getSessionUser().getUid());
-    entity.setUid(UUID.randomUUID());
+    entity.setUid(FHUtils.generateEntityId("p"));
     projectRepo.save(entity);
     return getAllProjects();
   }
@@ -75,7 +75,7 @@ public class ProjectServiceImpl implements ProjectService {
       CodeCellEntity cellEntity = codeCellRepo.findBySlug(functionSlug);
       if (cellEntity != null) {
         ProjectItemEntity itemEntity = projectItemRepo.findByCodeId(cellEntity.getUid());
-        projectId = itemEntity.getProjectId().toString();
+        projectId = itemEntity.getProjectId();
         projectItemRepo.delete(itemEntity);
         codeCellRepo.delete(cellEntity);
       }
@@ -86,13 +86,13 @@ public class ProjectServiceImpl implements ProjectService {
   @Override
   public Projects deleteProject(String projectId) {
     codeCellRepo.deleteAll(
-        codeCellRepo.findByProjectId(UUID.fromString(projectId)));
+        codeCellRepo.findByProjectId(projectId));
 
     projectItemRepo.deleteAll(
-        projectItemRepo.findByProjectIdOrderByCreatedAtDesc(UUID.fromString(projectId))
+        projectItemRepo.findByProjectIdOrderByCreatedAtDesc(projectId)
     );
 
-    projectRepo.deleteById(UUID.fromString(projectId));
+    projectRepo.deleteById(projectId);
 
     return getAllProjects();
   }
@@ -104,13 +104,13 @@ public class ProjectServiceImpl implements ProjectService {
         .projectId(projectId)
         .functions(
         projectMapper.mapFromCodeCellEntities(
-            codeCellRepo.findByProjectId(UUID.fromString(projectId))));
+            codeCellRepo.findByProjectId(projectId)));
   }
 
   @Override
   public FHFunctions updateFunction(FHFunction fhFunction) {
     if (!ObjectUtils.isEmpty(fhFunction.getProjectId())) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(fhFunction.getCodeId()));
+      CodeCellEntity codeCell = codeCellRepo.findByUid(fhFunction.getCodeId());
       if (codeCell != null) {
         // only tags can be updated through this route for now
         if (ObjectUtils.isEmpty(fhFunction.getTags())) {
@@ -134,7 +134,7 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   public Projects updateProject(ProjectUpdateRequest projectUpdateRequest) {
-    Optional<ProjectEntity> entityOpt = projectRepo.findById(UUID.fromString(projectUpdateRequest.getProjectId()));
+    Optional<ProjectEntity> entityOpt = projectRepo.findById(projectUpdateRequest.getProjectId());
     if (entityOpt.isPresent()) {
       ProjectEntity entity = entityOpt.get();
       entity.setProjectName(projectUpdateRequest.getName());
@@ -147,13 +147,13 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   public CodeUpdateResult forkCode(ForkRequest forkRequest) {
-    CodeCellEntity codeCell = codeCellRepo.findByUid(UUID.fromString(forkRequest.getParentCodeId()));
+    CodeCellEntity codeCell = codeCellRepo.findByUid(forkRequest.getParentCodeId());
     if (codeCell != null) {
       codeCell.setForkCount(codeCell.getForkCount() + 1);
       codeCellRepo.save(codeCell);
       return runtimeService.updateCode(new Code()
           .code(codeCell.getCode())
-          .parentId(codeCell.getUid().toString()));
+          .parentId(codeCell.getUid()));
     }
     return new CodeUpdateResult();
   }
@@ -199,9 +199,9 @@ public class ProjectServiceImpl implements ProjectService {
   private CodeUpdateResult upsertCode(Code code, String projectId) {
     CodeUpdateResult result = runtimeService.updateCode(code);
     ProjectItemEntity projectItemEntity = new ProjectItemEntity();
-    projectItemEntity.setProjectId(UUID.fromString(projectId));
-    projectItemEntity.setUid(UUID.randomUUID());
-    projectItemEntity.setCodeId(UUID.fromString(result.getUid()));
+    projectItemEntity.setProjectId(projectId);
+    projectItemEntity.setUid(FHUtils.generateEntityId("pi"));
+    projectItemEntity.setCodeId(result.getUid());
     projectItemRepo.save(projectItemEntity);
     return result;
   }

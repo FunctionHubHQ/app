@@ -7,7 +7,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,7 +22,7 @@ public class CommitHistoryEntity {
     @Id
     @JsonProperty("uid")
     @Column(name = "uid")
-    private UUID uid;
+    private String uid;
 
     @JsonProperty("user_id")
     @Column(name = "user_id")
@@ -31,7 +30,7 @@ public class CommitHistoryEntity {
 
     @JsonProperty("code_cell_id")
     @Column(name = "code_cell_id")
-    private UUID codeCellId;
+    private String codeCellId;
 
     @JsonProperty("version")
     @Column(name = "version")
