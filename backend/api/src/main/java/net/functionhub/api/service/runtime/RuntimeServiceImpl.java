@@ -213,8 +213,8 @@ public class RuntimeServiceImpl implements RuntimeService {
       // Entitlement limits don't apply for internal calls from GPT. GPT
       // calls are part of the original invocation that called the function.
       if (!(invocationUnderLimit() &&
-          contentLengthUnderLimit(asyncResult.getResult()))) {
-        return null;
+          contentLengthUnderLimit(execRequest.getPayload()))) {
+        return new ExecResultAsync();
       }
       entitlementService.recordFunctionInvocation();
     }
@@ -938,9 +938,9 @@ public class RuntimeServiceImpl implements RuntimeService {
       FHUtils.raiseHttpError(httpServletResponse, objectMapper,
           messagesProps.getInvocationLimitReached(),
           HttpStatus.FORBIDDEN_403);
-      return true;
+      return false;
     }
-    return false;
+    return true;
   }
 
   private StringEntity getEntityBody(Object body) {
