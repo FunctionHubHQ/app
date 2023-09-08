@@ -22,5 +22,7 @@ public class MessagesProps {
     private String executionTimeout;
     private String serviceNotFound;
     private String resultProcessingError;
+    private String forkToExec;
+    private String signInForkToExec;
 
 }
