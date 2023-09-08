@@ -13,7 +13,7 @@ import {
   Code,
   RuntimeApi
 } from "#/codegen";
-import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
+import {ANONYMOUS_USER_API_KEY, getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
 import SandboxTabs from "#/ui/interactive-api/sandboxTabs";
 import DeployModal from "#/ui/editor/deploy-modal";
@@ -134,12 +134,17 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
   }
 
   const setTokens = () => {
-    setApiKey(fhUser?.api_key)
-    getAuthToken(authUser).then(token => {
-      if (token) {
-        setBearerToken(token)
-      }
-    })
+    if (authUser) {
+      setApiKey(fhUser?.api_key)
+      getAuthToken(authUser).then(token => {
+        if (token) {
+          setBearerToken(token)
+        }
+      })
+    } else {
+      setApiKey(ANONYMOUS_USER_API_KEY)
+      setBearerToken(ANONYMOUS_USER_API_KEY)
+    }
   }
 
   // @ts-ignore

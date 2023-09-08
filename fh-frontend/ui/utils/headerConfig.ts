@@ -3,15 +3,16 @@ import {User} from "firebase/auth";
 
 export const offlineMode = false
 
+export const ANONYMOUS_USER_API_KEY = "fh-anon-YmaGJfzBpgjWbgWiphfF7RfGNirNtQT7UJ2Ig5jB2SffW7"
+
 export const getAuthToken = async (user: User): Promise<string> => {
-    if (offlineMode && process.env.NODE_ENV !== 'production') {
-        return "fh-NP2E0Ax4yui54PbeYILhT5JmU7Q4P1r7WlKpX5hZNdCe7E"
+    if (!!user) {
+        const tokenResult = await user?.getIdTokenResult(false)
+        if (tokenResult?.token) {
+            return tokenResult?.token
+        }
     }
-    const tokenResult = await user?.getIdTokenResult(false)
-    if (tokenResult?.token) {
-        return tokenResult?.token
-    }
-    return ''
+    return ANONYMOUS_USER_API_KEY
 }
 
 export const headerConfig = (token: string) => {

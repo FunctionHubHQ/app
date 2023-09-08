@@ -169,6 +169,12 @@ export interface CodeUpdateResult {
      * @memberof CodeUpdateResult
      */
     version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CodeUpdateResult
+     */
+    project_id?: string;
 }
 /**
  * 
@@ -261,19 +267,6 @@ export interface ExecResultAsync {
      * @memberof ExecResultAsync
      */
     error?: string;
-}
-/**
- * 
- * @export
- * @interface FHCompletionRequest
- */
-export interface FHCompletionRequest {
-    /**
-     * 
-     * @type {string}
-     * @memberof FHCompletionRequest
-     */
-    prompt: string;
 }
 /**
  * 
@@ -413,6 +406,68 @@ export interface ForkRequest {
 /**
  * 
  * @export
+ * @interface GPTCompletionRequest
+ */
+export interface GPTCompletionRequest {
+    /**
+     * 
+     * @type {Array<GPTMessage>}
+     * @memberof GPTCompletionRequest
+     */
+    messages: Array<GPTMessage>;
+    /**
+     * 
+     * @type {string}
+     * @memberof GPTCompletionRequest
+     */
+    project_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof GPTCompletionRequest
+     */
+    model?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof GPTCompletionRequest
+     */
+    max_tokens?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof GPTCompletionRequest
+     */
+    temperature?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof GPTCompletionRequest
+     */
+    function_call?: string;
+}
+/**
+ * 
+ * @export
+ * @interface GPTMessage
+ */
+export interface GPTMessage {
+    /**
+     * 
+     * @type {string}
+     * @memberof GPTMessage
+     */
+    role?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof GPTMessage
+     */
+    content?: string;
+}
+/**
+ * 
+ * @export
  * @interface GenericResponse
  */
 export interface GenericResponse {
@@ -527,6 +582,18 @@ export interface Project {
      * @memberof Project
      */
     updated_at?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Project
+     */
+    num_functions?: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Project
+     */
+    full?: boolean;
 }
 /**
  * 
@@ -739,6 +806,12 @@ export interface UserProfile {
      * @memberof UserProfile
      */
     auth_mode?: string;
+    /**
+     * 
+     * @type {Array<Project>}
+     * @memberof UserProfile
+     */
+    projects?: Array<Project>;
 }
 /**
  * 
@@ -796,15 +869,15 @@ export const ChatApiAxiosParamCreator = function (configuration?: Configuration)
          * Call GPT completion endpoint
          * @summary Call GPT completion endpoint
          * @param {string} functionSlug 
-         * @param {FHCompletionRequest} fHCompletionRequest GPT Completion request
+         * @param {GPTCompletionRequest} gPTCompletionRequest GPT Completion request
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        devGptCompletion: async (functionSlug: string, fHCompletionRequest: FHCompletionRequest, options: any = {}): Promise<RequestArgs> => {
+        devGptCompletion: async (functionSlug: string, gPTCompletionRequest: GPTCompletionRequest, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'functionSlug' is not null or undefined
             assertParamExists('devGptCompletion', 'functionSlug', functionSlug)
-            // verify required parameter 'fHCompletionRequest' is not null or undefined
-            assertParamExists('devGptCompletion', 'fHCompletionRequest', fHCompletionRequest)
+            // verify required parameter 'gPTCompletionRequest' is not null or undefined
+            assertParamExists('devGptCompletion', 'gPTCompletionRequest', gPTCompletionRequest)
             const localVarPath = `/completion/{function_slug}`
                 .replace(`{${"function_slug"}}`, encodeURIComponent(String(functionSlug)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
@@ -825,7 +898,7 @@ export const ChatApiAxiosParamCreator = function (configuration?: Configuration)
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(fHCompletionRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(gPTCompletionRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -835,13 +908,13 @@ export const ChatApiAxiosParamCreator = function (configuration?: Configuration)
         /**
          * Call GPT completion endpoint
          * @summary Call GPT completion endpoint
-         * @param {FHCompletionRequest} fHCompletionRequest GPT Completion request
+         * @param {GPTCompletionRequest} gPTCompletionRequest GPT Completion request
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        prodCompletionRequest: async (fHCompletionRequest: FHCompletionRequest, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'fHCompletionRequest' is not null or undefined
-            assertParamExists('prodCompletionRequest', 'fHCompletionRequest', fHCompletionRequest)
+        prodCompletionRequest: async (gPTCompletionRequest: GPTCompletionRequest, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'gPTCompletionRequest' is not null or undefined
+            assertParamExists('prodCompletionRequest', 'gPTCompletionRequest', gPTCompletionRequest)
             const localVarPath = `/completion`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -861,7 +934,7 @@ export const ChatApiAxiosParamCreator = function (configuration?: Configuration)
             setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(fHCompletionRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(gPTCompletionRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -882,23 +955,23 @@ export const ChatApiFp = function(configuration?: Configuration) {
          * Call GPT completion endpoint
          * @summary Call GPT completion endpoint
          * @param {string} functionSlug 
-         * @param {FHCompletionRequest} fHCompletionRequest GPT Completion request
+         * @param {GPTCompletionRequest} gPTCompletionRequest GPT Completion request
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async devGptCompletion(functionSlug: string, fHCompletionRequest: FHCompletionRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<{ [key: string]: object; }>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.devGptCompletion(functionSlug, fHCompletionRequest, options);
+        async devGptCompletion(functionSlug: string, gPTCompletionRequest: GPTCompletionRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<{ [key: string]: object; }>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.devGptCompletion(functionSlug, gPTCompletionRequest, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
          * Call GPT completion endpoint
          * @summary Call GPT completion endpoint
-         * @param {FHCompletionRequest} fHCompletionRequest GPT Completion request
+         * @param {GPTCompletionRequest} gPTCompletionRequest GPT Completion request
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async prodCompletionRequest(fHCompletionRequest: FHCompletionRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<{ [key: string]: object; }>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.prodCompletionRequest(fHCompletionRequest, options);
+        async prodCompletionRequest(gPTCompletionRequest: GPTCompletionRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<{ [key: string]: object; }>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.prodCompletionRequest(gPTCompletionRequest, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
     }
@@ -915,22 +988,22 @@ export const ChatApiFactory = function (configuration?: Configuration, basePath?
          * Call GPT completion endpoint
          * @summary Call GPT completion endpoint
          * @param {string} functionSlug 
-         * @param {FHCompletionRequest} fHCompletionRequest GPT Completion request
+         * @param {GPTCompletionRequest} gPTCompletionRequest GPT Completion request
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        devGptCompletion(functionSlug: string, fHCompletionRequest: FHCompletionRequest, options?: any): AxiosPromise<{ [key: string]: object; }> {
-            return localVarFp.devGptCompletion(functionSlug, fHCompletionRequest, options).then((request) => request(axios, basePath));
+        devGptCompletion(functionSlug: string, gPTCompletionRequest: GPTCompletionRequest, options?: any): AxiosPromise<{ [key: string]: object; }> {
+            return localVarFp.devGptCompletion(functionSlug, gPTCompletionRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Call GPT completion endpoint
          * @summary Call GPT completion endpoint
-         * @param {FHCompletionRequest} fHCompletionRequest GPT Completion request
+         * @param {GPTCompletionRequest} gPTCompletionRequest GPT Completion request
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        prodCompletionRequest(fHCompletionRequest: FHCompletionRequest, options?: any): AxiosPromise<{ [key: string]: object; }> {
-            return localVarFp.prodCompletionRequest(fHCompletionRequest, options).then((request) => request(axios, basePath));
+        prodCompletionRequest(gPTCompletionRequest: GPTCompletionRequest, options?: any): AxiosPromise<{ [key: string]: object; }> {
+            return localVarFp.prodCompletionRequest(gPTCompletionRequest, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -946,25 +1019,128 @@ export class ChatApi extends BaseAPI {
      * Call GPT completion endpoint
      * @summary Call GPT completion endpoint
      * @param {string} functionSlug 
-     * @param {FHCompletionRequest} fHCompletionRequest GPT Completion request
+     * @param {GPTCompletionRequest} gPTCompletionRequest GPT Completion request
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ChatApi
      */
-    public devGptCompletion(functionSlug: string, fHCompletionRequest: FHCompletionRequest, options?: any) {
-        return ChatApiFp(this.configuration).devGptCompletion(functionSlug, fHCompletionRequest, options).then((request) => request(this.axios, this.basePath));
+    public devGptCompletion(functionSlug: string, gPTCompletionRequest: GPTCompletionRequest, options?: any) {
+        return ChatApiFp(this.configuration).devGptCompletion(functionSlug, gPTCompletionRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * Call GPT completion endpoint
      * @summary Call GPT completion endpoint
-     * @param {FHCompletionRequest} fHCompletionRequest GPT Completion request
+     * @param {GPTCompletionRequest} gPTCompletionRequest GPT Completion request
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ChatApi
      */
-    public prodCompletionRequest(fHCompletionRequest: FHCompletionRequest, options?: any) {
-        return ChatApiFp(this.configuration).prodCompletionRequest(fHCompletionRequest, options).then((request) => request(this.axios, this.basePath));
+    public prodCompletionRequest(gPTCompletionRequest: GPTCompletionRequest, options?: any) {
+        return ChatApiFp(this.configuration).prodCompletionRequest(gPTCompletionRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+/**
+ * InternalApi - axios parameter creator
+ * @export
+ */
+export const InternalApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Log user HTTP requests
+         * @param {{ [key: string]: object; }} requestBody Request log
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        logHttpRequests: async (requestBody: { [key: string]: object; }, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'requestBody' is not null or undefined
+            assertParamExists('logHttpRequests', 'requestBody', requestBody)
+            const localVarPath = `/log`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(requestBody, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * InternalApi - functional programming interface
+ * @export
+ */
+export const InternalApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = InternalApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Log user HTTP requests
+         * @param {{ [key: string]: object; }} requestBody Request log
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async logHttpRequests(requestBody: { [key: string]: object; }, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GenericResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.logHttpRequests(requestBody, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+    }
+};
+
+/**
+ * InternalApi - factory interface
+ * @export
+ */
+export const InternalApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = InternalApiFp(configuration)
+    return {
+        /**
+         * Log user HTTP requests
+         * @param {{ [key: string]: object; }} requestBody Request log
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        logHttpRequests(requestBody: { [key: string]: object; }, options?: any): AxiosPromise<GenericResponse> {
+            return localVarFp.logHttpRequests(requestBody, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * InternalApi - object-oriented interface
+ * @export
+ * @class InternalApi
+ * @extends {BaseAPI}
+ */
+export class InternalApi extends BaseAPI {
+    /**
+     * Log user HTTP requests
+     * @param {{ [key: string]: object; }} requestBody Request log
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof InternalApi
+     */
+    public logHttpRequests(requestBody: { [key: string]: object; }, options?: any) {
+        return InternalApiFp(this.configuration).logHttpRequests(requestBody, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -1768,10 +1944,11 @@ export const RuntimeApiAxiosParamCreator = function (configuration?: Configurati
          * Get user code detail
          * @summary Get user code detail
          * @param {string} uid 
+         * @param {boolean} [bySlug] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getCodeDetail: async (uid: string, options: any = {}): Promise<RequestArgs> => {
+        getCodeDetail: async (uid: string, bySlug?: boolean, options: any = {}): Promise<RequestArgs> => {
             // verify required parameter 'uid' is not null or undefined
             assertParamExists('getCodeDetail', 'uid', uid)
             const localVarPath = `/code/{uid}`
@@ -1786,6 +1963,10 @@ export const RuntimeApiAxiosParamCreator = function (configuration?: Configurati
             const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            if (bySlug !== undefined) {
+                localVarQueryParameter['by_slug'] = bySlug;
+            }
 
 
     
@@ -2092,11 +2273,12 @@ export const RuntimeApiFp = function(configuration?: Configuration) {
          * Get user code detail
          * @summary Get user code detail
          * @param {string} uid 
+         * @param {boolean} [bySlug] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getCodeDetail(uid: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Code>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getCodeDetail(uid, options);
+        async getCodeDetail(uid: string, bySlug?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Code>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getCodeDetail(uid, bySlug, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -2211,11 +2393,12 @@ export const RuntimeApiFactory = function (configuration?: Configuration, basePa
          * Get user code detail
          * @summary Get user code detail
          * @param {string} uid 
+         * @param {boolean} [bySlug] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getCodeDetail(uid: string, options?: any): AxiosPromise<Code> {
-            return localVarFp.getCodeDetail(uid, options).then((request) => request(axios, basePath));
+        getCodeDetail(uid: string, bySlug?: boolean, options?: any): AxiosPromise<Code> {
+            return localVarFp.getCodeDetail(uid, bySlug, options).then((request) => request(axios, basePath));
         },
         /**
          * Execution results are short-lived
@@ -2326,12 +2509,13 @@ export class RuntimeApi extends BaseAPI {
      * Get user code detail
      * @summary Get user code detail
      * @param {string} uid 
+     * @param {boolean} [bySlug] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RuntimeApi
      */
-    public getCodeDetail(uid: string, options?: any) {
-        return RuntimeApiFp(this.configuration).getCodeDetail(uid, options).then((request) => request(this.axios, this.basePath));
+    public getCodeDetail(uid: string, bySlug?: boolean, options?: any) {
+        return RuntimeApiFp(this.configuration).getCodeDetail(uid, bySlug, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

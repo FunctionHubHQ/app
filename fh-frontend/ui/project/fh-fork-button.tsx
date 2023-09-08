@@ -4,9 +4,11 @@ import {BiGitRepoForked} from "react-icons/bi";
 import * as React from "react";
 
 export interface FHForkButtonProps {
-  onClick?: () => void
+  onClick: () => void
   disabled?: boolean,
-  forkCount?: number
+  forkCount?: number,
+  showCount?: boolean,
+  label: string
 }
 
 const FHForkButton: FC<FHForkButtonProps> = (props) => {
@@ -23,8 +25,11 @@ const FHForkButton: FC<FHForkButtonProps> = (props) => {
               width="32px"
               style={{marginRight: '0.5rem'}}
           />
-          Fork
-          <span className={"ml-2 p-1 px-2 rounded bg-blue-600"}>{props.forkCount}</span>
+          {props.label}
+          {
+            props.showCount && <span className={"ml-2 p-1 px-2 rounded bg-blue-600"}>{props.forkCount}</span>
+          }
+
         </button>
       </div>
   );

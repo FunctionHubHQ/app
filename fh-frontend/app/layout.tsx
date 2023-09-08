@@ -17,12 +17,14 @@ export default function RootLayout({
   const loginLayout = pathname.includes("/login")
   const editorLayout = pathname.includes("edit:")
   const homePageLayout = pathname === '/'
-  const exploreLayout = pathname.includes("/explore")
+  const exploreLayout = pathname.startsWith("/explore")
+  const viewParentLayout = pathname.startsWith("/view") && pathname.length == "/view".length || pathname.length == "/view/".length
+  const viewChildLayout = pathname.startsWith("/view") && pathname.length > "/view/".length
   const noBgLayout = pathname.includes("/terms") ||
       pathname.includes("/privacy") ||
       pathname.includes("/about") ||
       pathname.includes("/pricing")
-  const applyGlobalLayout = !(loginLayout || editorLayout || noBgLayout || homePageLayout || exploreLayout)
+  const applyGlobalLayout = !(loginLayout || editorLayout || noBgLayout || homePageLayout || exploreLayout || viewParentLayout || viewChildLayout)
 
   return (
     <html lang="en" className="[color-scheme:dark]">
@@ -64,7 +66,7 @@ export default function RootLayout({
             </div>
         }
 
-        {applyGlobalLayout &&
+        {(applyGlobalLayout || viewParentLayout) &&
         <div className="min-h-screen pt-20">
           <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
 
@@ -81,8 +83,18 @@ export default function RootLayout({
         }
 
         {exploreLayout &&
-           <>{children}</>
+            <div className="min-h-screen pt-16">
+              <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20  lg:py-8">
+                <div >
+                </div>
+                <div className="bg-vc-border-gradient rounded-lg p-px shadow-lg shadow-black/20">
+                  <div className="rounded-lg bg-black  ">{children}</div>
+                </div>
+              </div>
+            </div>
         }
+
+        {viewChildLayout && children}
         <Footer/>
       </AuthContextProvider>
       </body>
