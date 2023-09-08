@@ -17,9 +17,13 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import net.functionhub.api.Project;
 import net.functionhub.api.UserProfile;
+import net.functionhub.api.data.postgres.entity.CodeCellEntity;
+import net.functionhub.api.data.postgres.projection.Deployment;
 import net.functionhub.api.data.postgres.projection.UserProjectProjection;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.dto.SessionUser;
+import net.functionhub.api.props.MessagesProps;
+import net.functionhub.api.service.user.UserService;
 import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -150,6 +154,78 @@ public class FHUtils {
       user.setMaxFunctions(projection.getMaxfunctions());
       user.setMaxProjects(projection.getMaxprojects());
     }
+  }
+
+  public static void populateAnonymousUser(SessionUser user) {
+    if (user != null) {
+      user.setName("Anonymous");
+      user.setAnonymous(true);
+      user.setEmail("");
+      user.setUid(generateUid(SHORT_UID_LENGTH));
+      user.setAvatar("");
+      user.setApiKey(user.getApiKey() == null ? UserService.apiKeyPrefix + "anon-" + generateUid(API_KEY_LENGTH) : user.getApiKey());
+      user.setUsername("");
+      user.setMaxExecutionTime(0L);
+      user.setMaxCpuTime(0L);
+      user.setMaxMemoryUsage(0L);
+      user.setMaxDataTransfer(0L);
+      user.setMaxHttpCalls(0L);
+      user.setMaxInvocations(0L);
+      user.setMaxFunctions(0L);
+      user.setMaxProjects(0L);
+    }
+  }
+
+  public static boolean hasWriteAccess(CodeCellEntity codeCell,
+      HttpServletResponse httpServletResponse, ObjectMapper objectMapper,
+      MessagesProps messagesProps) {
+    boolean hasAccess = false;
+    if (codeCell != null) {
+      hasAccess = codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
+    }
+    if (!hasAccess) {
+      FHUtils.raiseHttpError(httpServletResponse,
+          objectMapper,
+          messagesProps.getUnauthorized(),
+          HttpStatus.FORBIDDEN_403);
+    }
+    return hasAccess;
+  }
+
+  public static boolean hasReadAccess(CodeCellEntity codeCell,
+      HttpServletResponse httpServletResponse, ObjectMapper objectMapper,
+      MessagesProps messagesProps) {
+    boolean hasAccess = false;
+    if (codeCell != null) {
+      if (codeCell.getIsPublic() != null && codeCell.getIsPublic()) {
+        hasAccess = true;
+      } else {
+        hasAccess = codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
+      }
+    }
+    if (!hasAccess) {
+      FHUtils.raiseHttpError(httpServletResponse,
+          objectMapper,
+          messagesProps.getUnauthorized(),
+          HttpStatus.FORBIDDEN_403);
+    }
+    return hasAccess;
+  }
+
+  public static boolean hasReadAccess(Deployment deployment,
+      HttpServletResponse httpServletResponse, ObjectMapper objectMapper,
+      MessagesProps messagesProps) {
+    boolean hasAccess = false;
+    if (deployment != null) {
+      hasAccess = deployment.getOwnerid().equals(FHUtils.getSessionUser().getUid());
+    }
+    if (!hasAccess) {
+      FHUtils.raiseHttpError(httpServletResponse,
+          objectMapper,
+          messagesProps.getUnauthorized(),
+          HttpStatus.FORBIDDEN_403);
+    }
+    return hasAccess;
   }
 
   public static String generateEntityId(String prefix) {

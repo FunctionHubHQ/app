@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
  */
 public interface Deployment {
   String getId();
+  String getOwnerid();
   String getPayload();
   String getName();
   String getDescription();

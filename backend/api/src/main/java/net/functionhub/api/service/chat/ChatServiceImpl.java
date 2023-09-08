@@ -335,23 +335,54 @@ public class ChatServiceImpl implements ChatService {
   public Map<String, Object> devGptCompletion(String functionSlug,
       GPTCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
+    // Only owners can execute functions directly
+    if (!isOwner(functionSlug)) {
+      String message = messagesProps.getForkToExec();
+      if (user.isAnonymous()) {
+        message = messagesProps.getSignInForkToExec();
+      }
+      FHUtils.raiseHttpError(httpServletResponse,
+          objectMapper,
+          message,
+          HttpStatus.FORBIDDEN_403);
+      return null;
+    }
     if (!user.getAuthMode().name().equals(AuthMode.FB.name()) && !sourceProps.getProfile().equals("test")) {
       FHUtils.raiseHttpError(httpServletResponse,
           objectMapper,
           messagesProps.getUnauthorized(),
           HttpStatus.FORBIDDEN_403);
+      return null;
     }
     return gptCompletionDevRequest(functionSlug, fhCompletionRequest);
+  }
+
+  private boolean isOwner(String functionSlug) {
+    CodeCellEntity codeCell = codeCellRepo.findBySlug(functionSlug);
+    if (codeCell != null) {
+      return FHUtils.getSessionUser().getUid().equals(codeCell.getUserId());
+    }
+    return false;
   }
 
   @Override
   public Map<String, Object> prodGptCompletion(GPTCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
+   if (user.isAnonymous()) {
+     FHUtils.raiseHttpError(httpServletResponse,
+         objectMapper,
+         messagesProps.getSignInForkToExec(),
+         HttpStatus.FORBIDDEN_403);
+     return null;
+   }
+   // For authenticated users, we don't need to check code ownership because later on we
+    // only fetch deployments owned by the user
     if (!user.getAuthMode().name().equals(AuthMode.AK.name())) {
       FHUtils.raiseHttpError(httpServletResponse,
           objectMapper,
           messagesProps.getUnauthorized(),
           HttpStatus.FORBIDDEN_403);
+      return null;
     }
     return gptCompletionDeployedRequest(fhCompletionRequest);
   }

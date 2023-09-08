@@ -50,6 +50,7 @@ public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, St
 
   @Query(value = "SELECT "
       + "cc.uid as id, "
+      + "cc.user_id as ownerid, "
       + "cc.function_name as name, "
       + "cc.version as version, "
       + "cc.description as description, "

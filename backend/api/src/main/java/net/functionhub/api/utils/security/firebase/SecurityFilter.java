@@ -105,8 +105,7 @@ public class SecurityFilter extends OncePerRequestFilter {
           user.setName("Internal");
         } else if (bearerToken.contains("anon")) {
           user.setApiKey(bearerToken);
-          user.setName("Anonymous");
-          user.setAnonymous(true);
+          FHUtils.populateAnonymousUser(user);
         } else {
           FHUtils.populateSessionUser(userRepo.findByApiKey(bearerToken), user);
         }
@@ -116,7 +115,7 @@ public class SecurityFilter extends OncePerRequestFilter {
           DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);
           user = jwtTokenToUser(decodedToken);
           user.setAuthMode(AuthMode.JWT);
-          user.setAnonymous(true);
+          FHUtils.populateAnonymousUser(user);
           credentials.setDecodedJwtToken(decodedToken);
           credentials.setAuthToken(bearerToken);
         } catch (Exception e) {

@@ -1191,6 +1191,9 @@
           "parent_id": {
             "type": "string"
           },
+          "owner_id": {
+            "type": "string"
+          },
           "function_slug": {
             "type": "string"
           },

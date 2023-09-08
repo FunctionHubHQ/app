@@ -427,58 +427,61 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public CodeUpdateResult updateCode(Code code, boolean forked, String projectId) {
-    String rawCode = null;
-    CodeCellEntity updatedCell = null;
-    if (ObjectUtils.isEmpty(code.getUid())) {
-      if (!ObjectUtils.isEmpty(code.getCode())) {
-        rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
-      }
-      CodeCellEntity codeCell = new CodeCellEntity();
-      codeCell.setUid(FHUtils.generateEntityId("cc"));
-      codeCell.setCode(code.getCode());
-      codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
-      codeCell.setDescription(parseCodeComment(rawCode, "@description"));
-      codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
-      codeCell.setUserId(FHUtils.getSessionUser().getUid());
-      codeCell.setIsActive(isBelowActiveLimit(FHUtils.getSessionUser().getUid()));
-      codeCell.setIsPublic(false);
-      codeCell.setSlug(getUniqueSlug());
-      codeCell.setVersion(generateCodeVersion());
-      if (!ObjectUtils.isEmpty(code.getParentId())) {
-        codeCell.setParentId(code.getParentId());
-      }
-      codeCell.setDeployed(false);
-      codeCellRepo.save(codeCell);
-      updatedCell = codeCell;
-    }
-    else {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(code.getUid());
-      if (codeCell != null && !ObjectUtils.isEmpty(code.getFieldsToUpdate())) {
-        for (String field : code.getFieldsToUpdate()) {
-          switch (field) {
-            case "code" -> {
-              codeCell.setCode(code.getCode());
-              codeCell.setVersion(generateCodeVersion());
-              rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
-              codeCell.setDescription(parseCodeComment(rawCode, "@description"));
-              codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
-              codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
-            }
-            case "is_active" -> {
-              if (isBelowActiveLimit(FHUtils.getSessionUser().getUid()) || !code.getIsActive()) {
-                codeCell.setIsActive(code.getIsActive());
-              }
-            }
-            case "is_public" -> codeCell.setIsPublic(code.getIsPublic());
-          }
+    if (!FHUtils.getSessionUser().isAnonymous()) {
+      String rawCode = null;
+      CodeCellEntity updatedCell = null;
+      if (ObjectUtils.isEmpty(code.getUid())) {
+        if (!ObjectUtils.isEmpty(code.getCode())) {
+          rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
+        }
+        CodeCellEntity codeCell = new CodeCellEntity();
+        codeCell.setUid(FHUtils.generateEntityId("cc"));
+        codeCell.setCode(code.getCode());
+        codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
+        codeCell.setDescription(parseCodeComment(rawCode, "@description"));
+        codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
+        codeCell.setUserId(FHUtils.getSessionUser().getUid());
+        codeCell.setIsActive(isBelowActiveLimit(FHUtils.getSessionUser().getUid()));
+        codeCell.setIsPublic(false);
+        codeCell.setSlug(getUniqueSlug());
+        codeCell.setVersion(generateCodeVersion());
+        if (!ObjectUtils.isEmpty(code.getParentId())) {
+          codeCell.setParentId(code.getParentId());
         }
         codeCell.setDeployed(false);
-        codeCell.setUpdatedAt(LocalDateTime.now());
         codeCellRepo.save(codeCell);
         updatedCell = codeCell;
+      } else {
+        CodeCellEntity codeCell = codeCellRepo.findByUid(code.getUid());
+        if (FHUtils.hasWriteAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+          if (codeCell != null && !ObjectUtils.isEmpty(code.getFieldsToUpdate())) {
+            for (String field : code.getFieldsToUpdate()) {
+              switch (field) {
+                case "code" -> {
+                  codeCell.setCode(code.getCode());
+                  codeCell.setVersion(generateCodeVersion());
+                  rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
+                  codeCell.setDescription(parseCodeComment(rawCode, "@description"));
+                  codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
+                  codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
+                }
+                case "is_active" -> {
+                  if (isBelowActiveLimit(FHUtils.getSessionUser().getUid())
+                      || !code.getIsActive()) {
+                    codeCell.setIsActive(code.getIsActive());
+                  }
+                }
+                case "is_public" -> codeCell.setIsPublic(code.getIsPublic());
+              }
+            }
+            codeCell.setDeployed(false);
+            codeCell.setUpdatedAt(LocalDateTime.now());
+            codeCellRepo.save(codeCell);
+            updatedCell = codeCell;
+          }
+        }
       }
-    }
-    if (updatedCell != null) {
+      if (updatedCell != null) {
         // Reset schema fields
         updatedCell.setFullOpenApiSchema(null);
         updatedCell.setJsonSchema(null);
@@ -494,7 +497,8 @@ public class RuntimeServiceImpl implements RuntimeService {
           commitHistoryRepo.save(commitHistory);
         });
 
-        final SessionUser user = FHUtils.getSessionUser();;
+        final SessionUser user = FHUtils.getSessionUser();
+        ;
         Thread.startVirtualThread(() -> generateJsonSchema(user,
             new String(Base64.getDecoder()
                 .decode(finalCell.getCode()
@@ -506,6 +510,7 @@ public class RuntimeServiceImpl implements RuntimeService {
             .slug(updatedCell.getSlug())
             .version(updatedCell.getVersion());
       }
+    }
     return new CodeUpdateResult();
   }
 
@@ -616,16 +621,19 @@ public class RuntimeServiceImpl implements RuntimeService {
       } else {
         codeCell = codeCellRepo.findByUid(uid);
       }
-      if (codeCell != null) {
-        return new Code()
-            .code(codeCell.getCode())
-            .uid(uid)
-            .functionSlug(codeCell.getSlug())
-            .version(codeCell.getVersion())
-            .isActive(codeCell.getIsActive())
-            .isPublic(codeCell.getIsPublic())
-            .updatedAt(codeCell.getUpdatedAt().toEpochSecond(ZoneOffset.UTC))
-            .createdAt(codeCell.getCreatedAt().toEpochSecond(ZoneOffset.UTC));
+      if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+        if (codeCell != null) {
+          return new Code()
+              .code(codeCell.getCode())
+              .uid(uid)
+              .ownerId(codeCell.getUserId())
+              .functionSlug(codeCell.getSlug())
+              .version(codeCell.getVersion())
+              .isActive(codeCell.getIsActive())
+              .isPublic(codeCell.getIsPublic())
+              .updatedAt(codeCell.getUpdatedAt().toEpochSecond(ZoneOffset.UTC))
+              .createdAt(codeCell.getCreatedAt().toEpochSecond(ZoneOffset.UTC));
+        }
       }
     }
     return null;
@@ -833,25 +841,28 @@ public class RuntimeServiceImpl implements RuntimeService {
   public GenericResponse deploy(ExecRequest execRequest) {
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
       CodeCellEntity codeCell = codeCellRepo.findByUid(execRequest.getUid());
-      if (codeCell != null) {
-        if (codeCell.getIsDeployable()) {
-          codeCell.setDeployed(true);
-          codeCell.setDeployedVersion(codeCell.getVersion());
-          codeCellRepo.save(codeCell);
-          List<CommitHistoryEntity> commitHistory = commitHistoryRepo.findByCodeCellIdAndVersion(
-              codeCell.getUid(),
-              codeCell.getVersion());
-          if (!ObjectUtils.isEmpty(commitHistory)) {
-            commitHistory.get(0).setDeployed(true);
-            commitHistoryRepo.save(commitHistory.get(0));
+      if (FHUtils.hasWriteAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+        if (codeCell != null) {
+          if (codeCell.getIsDeployable()) {
+            codeCell.setDeployed(true);
+            codeCell.setDeployedVersion(codeCell.getVersion());
+            codeCellRepo.save(codeCell);
+            List<CommitHistoryEntity> commitHistory = commitHistoryRepo.findByCodeCellIdAndVersion(
+                codeCell.getUid(),
+                codeCell.getVersion());
+            if (!ObjectUtils.isEmpty(commitHistory)) {
+              commitHistory.get(0).setDeployed(true);
+              commitHistoryRepo.save(commitHistory.get(0));
+            }
+            return new GenericResponse().status("ok");
+          } else {
+            return new GenericResponse().error(codeCell.getReasonNotDeployable());
           }
-          return new GenericResponse().status("ok");
-        } else {
-          return new GenericResponse().error(codeCell.getReasonNotDeployable());
         }
       }
     }
-    return new GenericResponse().error("No previous commits found");
+    return new GenericResponse()
+        .error("No previous commits found");
   }
 
   @Override
@@ -863,52 +874,56 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (env.equals("fhd")) {
         // Dev
         CodeCellEntity codeCell = codeCellRepo.findBySlugAndVersion(functionId, version);
-        if (codeCell == null || !codeOwner(codeCell)) {
-          throw new RuntimeException("Invalid request");
+        if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+          if (ObjectUtils.isEmpty(codeCell.getFullOpenApiSchema())) {
+            throw new RuntimeException("Requested function not available");
+          }
+          try {
+            Map<String, Object> spec = objectMapper.readValue(codeCell.getFullOpenApiSchema(),
+                typeRef);
+            Map<String, Object> prodPaths = objectMapper.readValue(
+                new Gson().toJson(spec.get("paths")),
+                typeRef);
+            String key = "/" + codeCell.getSlug();
+            Map<String, Object> devPaths = new HashMap<>();
+            devPaths.put("/d" + key, prodPaths.get(key));
+            spec.put("paths", devPaths);
+            return new Gson().toJson(spec);
+          } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error processing api specification");
+          }
         }
-        if (ObjectUtils.isEmpty(codeCell.getFullOpenApiSchema())) {
-          throw new RuntimeException("Requested function not available");
-        }
-
-        try {
-          Map<String, Object> spec = objectMapper.readValue(codeCell.getFullOpenApiSchema(), typeRef);
-          Map<String, Object> prodPaths = objectMapper.readValue( new Gson().toJson(spec.get("paths")),
-              typeRef);
-          String key = "/" + codeCell.getSlug();
-          Map<String, Object> devPaths = new HashMap<>();
-          devPaths.put("/d" + key, prodPaths.get(key));
-          spec.put("paths", devPaths);
-          return new Gson().toJson(spec);
-        } catch (JsonProcessingException e) {
-          throw new RuntimeException("Error processing api specification");
-        }
-
       } else if (env.equals("fhp")) {
         // Prod
         Deployment deployment = commitHistoryRepo.findDeployedCommitByVersionAndSlug(version, functionId);
-        if (deployment == null) {
-          throw new RuntimeException("A deployed function does not exist for " + functionId);
+        if (FHUtils.hasReadAccess(deployment, httpServletResponse, objectMapper, messagesProps)) {
+          return deployment.getSchema();
         }
-        return deployment.getSchema();
       } else if (env.equals("gd")) {
         // GPT dev
-        // TODO: Load the function-specific gpt dev spec
-        Map<String, Object> gptDevSpec = specTemplate.getGptDevSpec();
-        Map<String, Object> paths = new HashMap<>();
+        if (FHUtils.hasReadAccess(codeCellRepo.findBySlugAndVersion(functionId, version),
+            httpServletResponse, objectMapper, messagesProps)) {
+          // TODO: Load the function-specific gpt dev spec
+          Map<String, Object> gptDevSpec = specTemplate.getGptDevSpec();
+          Map<String, Object> paths = new HashMap<>();
 
-        try {
-          Map<String, Object> pathTemplate = objectMapper.readValue(
-              new Gson().toJson(gptDevSpec.get("paths")), typeRef);
-          paths.put("/completion/" + functionId, pathTemplate.get("/completion"));
-          gptDevSpec.put("paths", paths);
-          return new Gson().toJson(gptDevSpec);
-        } catch (JsonProcessingException e) {
-          log.error("{}.submitExecutionTask: {}",
-              getClass().getSimpleName(),
-              e.getMessage());
+          try {
+            Map<String, Object> pathTemplate = objectMapper.readValue(
+                new Gson().toJson(gptDevSpec.get("paths")), typeRef);
+            paths.put("/completion/" + functionId, pathTemplate.get("/completion"));
+            gptDevSpec.put("paths", paths);
+            return new Gson().toJson(gptDevSpec);
+          } catch (JsonProcessingException e) {
+            log.error("{}.submitExecutionTask: {}",
+                getClass().getSimpleName(),
+                e.getMessage());
+          }
         }
       } else if (env.equals("gp")) {
-       return new Gson().toJson(specTemplate.getGptProdSpec());
+        if (FHUtils.hasReadAccess(commitHistoryRepo.findDeployedCommitByVersionAndSlug(version, functionId),
+            httpServletResponse, objectMapper, messagesProps)) {
+          return new Gson().toJson(specTemplate.getGptProdSpec());
+        }
       }
     }
     throw new RuntimeException("Invalid request");
@@ -920,7 +935,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         !ObjectUtils.isEmpty(statusRequest.getVersion())) {
       CodeCellEntity codeCell = codeCellRepo.findBySlugAndVersion(statusRequest.getSlug(),
           statusRequest.getVersion());
-      if (codeCell == null || !codeOwner(codeCell)) {
+      if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
         throw new RuntimeException("Function not found");
       }
       if (statusRequest.getDeployed() != null && statusRequest.getDeployed()) {
@@ -955,13 +970,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     return Base64.getEncoder().encodeToString((new Gson()).toJson(accessToken).getBytes());
   }
 
-  private boolean codeOwner(CodeCellEntity codeCell) {
-    if (codeCell.getIsPublic() != null && codeCell.getIsPublic()) {
-      // Everyone has view right on a public function
-      return true;
-    }
-    return codeCell == null || codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
-  }
+
 
   private Boolean isBelowActiveLimit(String userId) {
     return codeCellRepo.numActiveCells(userId) < Integer.MAX_VALUE;
