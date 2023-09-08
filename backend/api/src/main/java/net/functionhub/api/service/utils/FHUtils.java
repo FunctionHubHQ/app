@@ -176,9 +176,14 @@ public class FHUtils {
     }
   }
 
+  public static boolean hasExecAccess(CodeCellEntity codeCell, HttpServletResponse httpServletResponse,
+      ObjectMapper objectMapper, String message) {
+    return hasWriteAccess(codeCell, httpServletResponse, objectMapper, message);
+  }
+
   public static boolean hasWriteAccess(CodeCellEntity codeCell,
       HttpServletResponse httpServletResponse, ObjectMapper objectMapper,
-      MessagesProps messagesProps) {
+      String message) {
     boolean hasAccess = false;
     if (codeCell != null) {
       hasAccess = codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
@@ -186,7 +191,7 @@ public class FHUtils {
     if (!hasAccess) {
       FHUtils.raiseHttpError(httpServletResponse,
           objectMapper,
-          messagesProps.getUnauthorized(),
+          message,
           HttpStatus.FORBIDDEN_403);
     }
     return hasAccess;
@@ -194,7 +199,7 @@ public class FHUtils {
 
   public static boolean hasReadAccess(CodeCellEntity codeCell,
       HttpServletResponse httpServletResponse, ObjectMapper objectMapper,
-      MessagesProps messagesProps) {
+      String message) {
     boolean hasAccess = false;
     if (codeCell != null) {
       if (codeCell.getIsPublic() != null && codeCell.getIsPublic()) {
@@ -206,7 +211,7 @@ public class FHUtils {
     if (!hasAccess) {
       FHUtils.raiseHttpError(httpServletResponse,
           objectMapper,
-          messagesProps.getUnauthorized(),
+          message,
           HttpStatus.FORBIDDEN_403);
     }
     return hasAccess;
@@ -214,7 +219,7 @@ public class FHUtils {
 
   public static boolean hasReadAccess(Deployment deployment,
       HttpServletResponse httpServletResponse, ObjectMapper objectMapper,
-      MessagesProps messagesProps) {
+      String message) {
     boolean hasAccess = false;
     if (deployment != null) {
       hasAccess = deployment.getOwnerid().equals(FHUtils.getSessionUser().getUid());
@@ -222,7 +227,7 @@ public class FHUtils {
     if (!hasAccess) {
       FHUtils.raiseHttpError(httpServletResponse,
           objectMapper,
-          messagesProps.getUnauthorized(),
+          message,
           HttpStatus.FORBIDDEN_403);
     }
     return hasAccess;

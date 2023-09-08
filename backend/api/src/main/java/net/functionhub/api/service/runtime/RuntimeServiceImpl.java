@@ -453,7 +453,8 @@ public class RuntimeServiceImpl implements RuntimeService {
         updatedCell = codeCell;
       } else {
         CodeCellEntity codeCell = codeCellRepo.findByUid(code.getUid());
-        if (FHUtils.hasWriteAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+        if (FHUtils.hasWriteAccess(codeCell, httpServletResponse, objectMapper,
+            messagesProps.getUnauthorized())) {
           if (codeCell != null && !ObjectUtils.isEmpty(code.getFieldsToUpdate())) {
             for (String field : code.getFieldsToUpdate()) {
               switch (field) {
@@ -621,7 +622,8 @@ public class RuntimeServiceImpl implements RuntimeService {
       } else {
         codeCell = codeCellRepo.findByUid(uid);
       }
-      if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+      if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper,
+          messagesProps.getUnauthorized())) {
         if (codeCell != null) {
           return new Code()
               .code(codeCell.getCode())
@@ -841,7 +843,8 @@ public class RuntimeServiceImpl implements RuntimeService {
   public GenericResponse deploy(ExecRequest execRequest) {
     if (!ObjectUtils.isEmpty(execRequest.getUid())) {
       CodeCellEntity codeCell = codeCellRepo.findByUid(execRequest.getUid());
-      if (FHUtils.hasWriteAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+      if (FHUtils.hasWriteAccess(codeCell, httpServletResponse, objectMapper,
+          messagesProps.getUnauthorized())) {
         if (codeCell != null) {
           if (codeCell.getIsDeployable()) {
             codeCell.setDeployed(true);
@@ -874,7 +877,8 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (env.equals("fhd")) {
         // Dev
         CodeCellEntity codeCell = codeCellRepo.findBySlugAndVersion(functionId, version);
-        if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+        if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper,
+            messagesProps.getUnauthorized())) {
           if (ObjectUtils.isEmpty(codeCell.getFullOpenApiSchema())) {
             throw new RuntimeException("Requested function not available");
           }
@@ -896,13 +900,15 @@ public class RuntimeServiceImpl implements RuntimeService {
       } else if (env.equals("fhp")) {
         // Prod
         Deployment deployment = commitHistoryRepo.findDeployedCommitByVersionAndSlug(version, functionId);
-        if (FHUtils.hasReadAccess(deployment, httpServletResponse, objectMapper, messagesProps)) {
+        if (FHUtils.hasReadAccess(deployment, httpServletResponse, objectMapper,
+            messagesProps.getUnauthorized())) {
           return deployment.getSchema();
         }
       } else if (env.equals("gd")) {
         // GPT dev
         if (FHUtils.hasReadAccess(codeCellRepo.findBySlugAndVersion(functionId, version),
-            httpServletResponse, objectMapper, messagesProps)) {
+            httpServletResponse, objectMapper,
+            messagesProps.getUnauthorized())) {
           // TODO: Load the function-specific gpt dev spec
           Map<String, Object> gptDevSpec = specTemplate.getGptDevSpec();
           Map<String, Object> paths = new HashMap<>();
@@ -921,7 +927,8 @@ public class RuntimeServiceImpl implements RuntimeService {
         }
       } else if (env.equals("gp")) {
         if (FHUtils.hasReadAccess(commitHistoryRepo.findDeployedCommitByVersionAndSlug(version, functionId),
-            httpServletResponse, objectMapper, messagesProps)) {
+            httpServletResponse, objectMapper,
+            messagesProps.getUnauthorized())) {
           return new Gson().toJson(specTemplate.getGptProdSpec());
         }
       }
@@ -935,7 +942,8 @@ public class RuntimeServiceImpl implements RuntimeService {
         !ObjectUtils.isEmpty(statusRequest.getVersion())) {
       CodeCellEntity codeCell = codeCellRepo.findBySlugAndVersion(statusRequest.getSlug(),
           statusRequest.getVersion());
-      if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper, messagesProps)) {
+      if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper,
+          messagesProps.getUnauthorized())) {
         throw new RuntimeException("Function not found");
       }
       if (statusRequest.getDeployed() != null && statusRequest.getDeployed()) {

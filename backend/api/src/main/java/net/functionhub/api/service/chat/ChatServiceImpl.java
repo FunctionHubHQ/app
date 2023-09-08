@@ -13,14 +13,12 @@ import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.projection.Deployment;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
-import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.GPTFunction;
 import net.functionhub.api.dto.GPTFunctionCall;
 import net.functionhub.api.dto.GptUsage;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.MessagesProps;
 import net.functionhub.api.props.OpenAiProps;
-import net.functionhub.api.dto.RequestHeaders;
 import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.openai.completion.CompletionRequest;
 import net.functionhub.api.service.openai.completion.CompletionRequestFunctionalCall;
@@ -59,8 +57,6 @@ public class ChatServiceImpl implements ChatService {
   private final OpenAiProps openAiProps;
   private final CodeCellRepo codeCellRepo;
   private final RuntimeService runtimeService;
-  private final RequestHeaders requestHeaders;
-  private final UserRepo userRepo;
   private final SourceProps sourceProps;
   private final MessagesProps messagesProps;
   private final CommitHistoryRepo commitHistoryRepo;
@@ -336,7 +332,8 @@ public class ChatServiceImpl implements ChatService {
       GPTCompletionRequest fhCompletionRequest) {
     SessionUser user = FHUtils.getSessionUser();
     // Only owners can execute functions directly
-    if (!isOwner(functionSlug)) {
+    if (!FHUtils.hasExecAccess(codeCellRepo.findBySlug(functionSlug),
+        httpServletResponse, objectMapper, messagesProps.getUnauthorized())) {
       String message = messagesProps.getForkToExec();
       if (user.isAnonymous()) {
         message = messagesProps.getSignInForkToExec();
@@ -347,7 +344,8 @@ public class ChatServiceImpl implements ChatService {
           HttpStatus.FORBIDDEN_403);
       return null;
     }
-    if (!user.getAuthMode().name().equals(AuthMode.FB.name()) && !sourceProps.getProfile().equals("test")) {
+    if (!user.getAuthMode().name().equals(AuthMode.FB.name()) &&
+        !sourceProps.getProfile().equals("test")) {
       FHUtils.raiseHttpError(httpServletResponse,
           objectMapper,
           messagesProps.getUnauthorized(),
@@ -355,14 +353,6 @@ public class ChatServiceImpl implements ChatService {
       return null;
     }
     return gptCompletionDevRequest(functionSlug, fhCompletionRequest);
-  }
-
-  private boolean isOwner(String functionSlug) {
-    CodeCellEntity codeCell = codeCellRepo.findBySlug(functionSlug);
-    if (codeCell != null) {
-      return FHUtils.getSessionUser().getUid().equals(codeCell.getUserId());
-    }
-    return false;
   }
 
   @Override
