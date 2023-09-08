@@ -60,7 +60,7 @@ public interface RuntimeService {
   GenericResponse handleExecResult(ExecResultAsync execResult);
   String generateCodeVersion();
   CodeUpdateResult updateCode(Code code, boolean forked, String projectId);
-  Code getCodeDetail(String uid);
+  Code getCodeDetail(String uid, Boolean bySlug);
   void generateJsonSchema(SessionUser sessionUser, String code, String uid);
   String getJsonSchema(String uid);
   GenericResponse handleSpecResult(SpecResult specResult);

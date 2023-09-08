@@ -161,8 +161,9 @@ public class RuntimeServiceImpl implements RuntimeService {
     // as that is the one the user is testing. For prod, it's the latest deployed version that runs.
     // Although there may be previous deployments in the commit history, only the deployment version
     // in CodeCellEntity is used.
+    SessionUser sessionUser = FHUtils.getSessionUser();
     CodeCellEntity codeCell = codeCellRepo.findBySlugAndApiKey(
-        functionSlug, FHUtils.getSessionUser().getApiKey());
+        functionSlug, sessionUser.getApiKey());
     if (codeCell != null) {
       ExecRequest request = new ExecRequest()
           .execId(UUID.randomUUID().toString())
@@ -189,8 +190,14 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
       return mergeResult(result, deployed);
     }
+    String message = messagesProps.getServiceNotFound();
+    if (sessionUser.isAnonymous()) {
+      message = messagesProps.getSignInForkToExec();
+    } else {
+      message = messagesProps.getForkToExec();
+    }
     return FHUtils.raiseHttpError(httpServletResponse, objectMapper,
-        messagesProps.getServiceNotFound(), HttpStatus.NOT_FOUND_404);
+        message, HttpStatus.NOT_FOUND_404);
   }
 
   private String mergeResult(ExecResultAsync result, boolean deployed) {
@@ -528,10 +535,18 @@ public class RuntimeServiceImpl implements RuntimeService {
         return projectEntity.getUid();
       }
     }
-    // DO NOT handle any NPEs here. A code cell at this point of the should always have an associated
-    // project
-    ProjectItemEntity projectItemEntity = projectItemRepo.findByCodeId(updatedCell.getUid());
-    return projectItemEntity.getProjectId();
+    else {
+      ProjectItemEntity projectItemEntity = projectItemRepo.findByCodeId(updatedCell.getUid());
+      if (projectItemEntity == null) {
+        projectItemEntity = new ProjectItemEntity();
+        projectItemEntity.setUid(FHUtils.generateEntityId("pi"));
+        projectItemEntity.setCodeId(updatedCell.getUid());
+        projectItemEntity.setProjectId(projectId);
+        projectItemRepo.save(projectItemEntity);
+        return projectItemEntity.getProjectId();
+      }
+    }
+    return null;
   }
 
   private String getUniqueSlug() {
@@ -593,9 +608,14 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public Code getCodeDetail(String uid) {
+  public Code getCodeDetail(String uid, Boolean bySlug) {
     if (!ObjectUtils.isEmpty(uid)) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(uid);
+      CodeCellEntity codeCell = null;
+      if (bySlug) {
+        codeCell = codeCellRepo.findBySlug(uid);
+      } else {
+        codeCell = codeCellRepo.findByUid(uid);
+      }
       if (codeCell != null) {
         return new Code()
             .code(codeCell.getCode())
@@ -936,6 +956,10 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   private boolean codeOwner(CodeCellEntity codeCell) {
+    if (codeCell.getIsPublic() != null && codeCell.getIsPublic()) {
+      // Everyone has view right on a public function
+      return true;
+    }
     return codeCell == null || codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
   }
 

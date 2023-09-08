@@ -35,17 +35,13 @@ import org.springframework.core.task.support.TaskExecutorAdapter;
 @RequiredArgsConstructor
 public class RootConfiguration {
   private final FlywayPostgresMigration flywayPostgresMigration;
-  private final SeedData seedData;
-  private final SourceProps sourceProps;
+
   private final UserService userService;
 
   @PostConstruct
   public void onStart() {
     flywayPostgresMigration.migrate(false);
     userService.createAnonymousUser();
-    if (!sourceProps.getProfile().equals("prod")) {
-      seedData.generateSeedData();
-    }
   }
 
   @Bean(TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME)

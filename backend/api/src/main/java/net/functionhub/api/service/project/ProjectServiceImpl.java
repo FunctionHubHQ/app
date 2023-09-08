@@ -195,12 +195,6 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   private CodeUpdateResult upsertCode(Code code, String projectId) {
-    CodeUpdateResult result = runtimeService.updateCode(code, false, null);
-    ProjectItemEntity projectItemEntity = new ProjectItemEntity();
-    projectItemEntity.setProjectId(projectId);
-    projectItemEntity.setUid(FHUtils.generateEntityId("pi"));
-    projectItemEntity.setCodeId(result.getUid());
-    projectItemRepo.save(projectItemEntity);
-    return result;
+    return runtimeService.updateCode(code, false, projectId);
   }
 }

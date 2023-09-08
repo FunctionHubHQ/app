@@ -33,8 +33,8 @@ public class RuntimeController implements RuntimeApi, SpecApi {
   }
 
   @Override
-  public ResponseEntity<Code> getCodeDetail(String uid) {
-    return ResponseEntity.ok(runtimeService.getCodeDetail(uid));
+  public ResponseEntity<Code> getCodeDetail(String uid, Boolean bySlug) {
+    return ResponseEntity.ok(runtimeService.getCodeDetail(uid, bySlug));
   }
 
   @Override

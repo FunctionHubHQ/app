@@ -16,4 +16,5 @@ import org.springframework.transaction.annotation.Transactional;
 public interface ProjectItemRepo extends JpaRepository<ProjectItemEntity, String> {
   List<ProjectItemEntity> findByProjectIdOrderByCreatedAtDesc(String uid);
   ProjectItemEntity findByCodeId(String uid);
+  ProjectItemEntity findByProjectId(String uid);
 }

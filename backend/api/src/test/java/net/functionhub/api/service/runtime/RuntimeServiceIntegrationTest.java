@@ -131,7 +131,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         assertNotNull(commitHistory);
         assertEquals(2, commitHistory.size());
 
-        Code savedCode = runtimeService.getCodeDetail(code.getUid());
+        Code savedCode = runtimeService.getCodeDetail(code.getUid(), false);
         assertNotNull(savedCode);
 
         // Ensure the decoded code matches the raw code
