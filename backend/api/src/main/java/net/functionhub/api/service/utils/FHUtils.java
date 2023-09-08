@@ -92,10 +92,11 @@ public class FHUtils {
         .apiKey(sessionUser.getApiKey())
         .picture(sessionUser.getAvatar())
         .username(sessionUser.getUsername())
+        .anonymous(sessionUser.isAnonymous())
         .projects(getUserProjects(projections, sessionUser.getMaxFunctions()));
   }
 
-  public static List<Project> getUserProjects(List<UserProjectProjection> projections, long maxFunctionsAllowed) {
+  public static List<Project> getUserProjects(List<UserProjectProjection> projections, Long maxFunctionsAllowed) {
     // lambda doesn't propagate errors so just loop over it
     List<Project> projects = new ArrayList<>();
     for (UserProjectProjection it : projections) {
@@ -106,7 +107,7 @@ public class FHUtils {
           .name(it.getProjectname())
           .description(it.getDescription())
           .numFunctions(it.getNumfunctions())
-          .full(it.getNumfunctions() >= maxFunctionsAllowed));
+          .full(maxFunctionsAllowed == null || it.getNumfunctions() >= maxFunctionsAllowed));
     }
     return projects;
   }

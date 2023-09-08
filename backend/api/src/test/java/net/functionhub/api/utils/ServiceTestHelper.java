@@ -37,6 +37,7 @@ public class ServiceTestHelper {
         user.setEmail("testuser@exampe.com");
         user.setApiKey("fh-" + FHUtils.generateUid(FHUtils.API_KEY_LENGTH));
         user.setUid(userId == null ? UUID.randomUUID().toString() : userId);
+        user.setMaxFunctions(10L);
         Mockito.when(authentication.getPrincipal()).thenReturn(user);
 
         SecurityContext securityContext = Mockito.mock(SecurityContext.class);

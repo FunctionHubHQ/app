@@ -19,6 +19,7 @@ public class SessionUser {
   private String avatar;
   private String apiKey;
   private String username;
+  private boolean anonymous;
   private Long maxExecutionTime;
   private Long maxCpuTime;
   private Long maxMemoryUsage;

@@ -40,9 +40,9 @@ public class SeedData {
   private final ProjectRepo projectRepo;
   private final ApiKeyRepo apiKeyRepo;
   private final UserService userService;
-  private final int numProjects = 12;
-  private final int numPrivateFunctions = 12;
-  private final int numPublicFunctions = 12;
+  private final int numProjects = 6;
+  private final int numPrivateFunctions = 6;
+  private final int numPublicFunctions = 6;
 
   public void generateSeedData() {
     if (projectRepo.count() < numProjects) {
@@ -69,6 +69,11 @@ public class SeedData {
       String projectId = projects.getProjects().get(0).getProjectId();
       for (int j = 0; j < numPublicFunctions + numPrivateFunctions; j++) {
         projectService.createFunction(projectId);
+        try {
+          Thread.sleep(1000L);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
       }
 
       // Toggle all these functions to public

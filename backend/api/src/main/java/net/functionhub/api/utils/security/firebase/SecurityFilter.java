@@ -98,19 +98,25 @@ public class SecurityFilter extends OncePerRequestFilter {
       if (bearerToken.startsWith(UserService.apiKeyPrefix)) {
         user = new SessionUser();
         if (bearerToken.contains("internal")) {
-          assert httpServletRequest.getRequestURI().equals("/log") &&
+          assert (httpServletRequest.getRequestURI().equals("/log") ||
+              httpServletRequest.getRequestURI().equals("/seed")) &&
               httpServletRequest.getRemoteHost().equals("127.0.0.1");
           user.setApiKey(bearerToken);
           user.setName("Internal");
+        } else if (bearerToken.contains("anon")) {
+          user.setApiKey(bearerToken);
+          user.setName("Anonymous");
+          user.setAnonymous(true);
         } else {
           FHUtils.populateSessionUser(userRepo.findByApiKey(bearerToken), user);
-          user.setAuthMode(AuthMode.AK);
         }
+        user.setAuthMode(AuthMode.AK);
       } else {
         try {
           DecodedJwt decodedToken = jwtValidationService.verifyToken(bearerToken);
           user = jwtTokenToUser(decodedToken);
           user.setAuthMode(AuthMode.JWT);
+          user.setAnonymous(true);
           credentials.setDecodedJwtToken(decodedToken);
           credentials.setAuthToken(bearerToken);
         } catch (Exception e) {
@@ -123,6 +129,7 @@ public class SecurityFilter extends OncePerRequestFilter {
           user = firebaseTokenToUser(decodedToken);
           FHUtils.populateSessionUser(userRepo.findProjectionByUid(user.getUid()), user);
           user.setAuthMode(AuthMode.FB);
+          user.setAnonymous(false);
           // TODO 2 db calls with the one above so not very efficient for production use. This is why
           //    prod should use api key instead of firebase tokens
 
