@@ -8,4 +8,5 @@ import net.functionhub.api.GenericResponse;
  */
 public interface InternalService {
   GenericResponse logHttpRequests(Map<String, Object> requestLog);
+  GenericResponse generateSeedData();
 }

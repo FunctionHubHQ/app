@@ -19,6 +19,11 @@ public class InternalController implements InternalApi {
   private final InternalService internalService;
 
   @Override
+  public ResponseEntity<GenericResponse> generateSeedData() {
+    return ResponseEntity.ok(internalService.generateSeedData());
+  }
+
+  @Override
   public ResponseEntity<GenericResponse> logHttpRequests(Map<String, Object> requestBody) {
     return ResponseEntity.ok(internalService.logHttpRequests(requestBody));
   }

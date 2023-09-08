@@ -48,6 +48,27 @@
         }
       }
     },
+    "/seed": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "operationId": "generateSeedData",
+        "description": "Generate seed data",
+        "responses": {
+          "200": {
+            "description": "Generic response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/status": {
       "post": {
         "tags": [
@@ -617,6 +638,14 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "by_slug",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],

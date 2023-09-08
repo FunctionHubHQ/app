@@ -4,13 +4,14 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.data.postgres.entity.RequestHistoryEntity;
 import net.functionhub.api.data.postgres.repo.RequestHistoryRepo;
+import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.utils.FHUtils;
+import net.functionhub.api.service.utils.SeedData;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InternalServiceImpl implements InternalService {
   private final RequestHistoryRepo requestHistoryRepo;
+  private final SeedData seedData;
+  private final SourceProps sourceProps;
 
   @Override
   public GenericResponse logHttpRequests(Map<String, Object> requestLog) {
@@ -41,6 +44,14 @@ public class InternalServiceImpl implements InternalService {
       requestHistory.setResponseContentLength(objectToInt(requestLog.get("responseContentLength")));
       requestHistoryRepo.save(requestHistory);
     });
+    return new GenericResponse().status("ok");
+  }
+
+  @Override
+  public GenericResponse generateSeedData() {
+    if (!sourceProps.getProfile().equals("prod")) {
+      seedData.generateSeedData();
+    }
     return new GenericResponse().status("ok");
   }
 
