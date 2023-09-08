@@ -19,12 +19,12 @@ export default function RootLayout({
   const homePageLayout = pathname === '/'
   const exploreLayout = pathname.startsWith("/explore")
   const viewParentLayout = pathname.startsWith("/view") && pathname.length == "/view".length || pathname.length == "/view/".length
-  const viewChildLayout = pathname.startsWith("/view") && pathname.length > "/view/".length
+  const viewPublicCodeLayout = pathname.startsWith("/view") && pathname.length > "/view/".length
   const noBgLayout = pathname.includes("/terms") ||
       pathname.includes("/privacy") ||
       pathname.includes("/about") ||
       pathname.includes("/pricing")
-  const applyGlobalLayout = !(loginLayout || editorLayout || noBgLayout || homePageLayout || exploreLayout || viewParentLayout || viewChildLayout)
+  const applyGlobalLayout = !(loginLayout || editorLayout || noBgLayout || homePageLayout || exploreLayout || viewParentLayout || viewPublicCodeLayout)
 
   return (
     <html lang="en" className="[color-scheme:dark]">
@@ -40,7 +40,7 @@ export default function RootLayout({
         </div>
         }
 
-        {editorLayout && <div className="min-h-screen">
+        {(editorLayout || viewPublicCodeLayout) && <div className="min-h-screen">
           <div className="mx-auto max-w-full lg:px-1 py-16">
             <div className="">
               <div className="rounded-lg bg-[#1e1e1e]">{children}</div>
@@ -94,7 +94,7 @@ export default function RootLayout({
             </div>
         }
 
-        {viewChildLayout && children}
+        {/*{viewPublicCodeLayout && children}*/}
         <Footer/>
       </AuthContextProvider>
       </body>

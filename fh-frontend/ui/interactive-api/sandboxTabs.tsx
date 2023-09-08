@@ -19,7 +19,8 @@ export interface SandboxTabProps {
   functionSlug?: string,
   version?: string,
   apiKey?: string
-  bearerToken?: string
+  bearerToken?: string,
+  isOwner: boolean
 }
 
 const SandboxTabs: FC<SandboxTabProps> = (props) => {
@@ -133,32 +134,38 @@ const SandboxTabs: FC<SandboxTabProps> = (props) => {
                 }
             >
               <div className="w-full flex justify-center items-center">
-                <div className="w-full">{envs.dev.name}</div>
+
+                {props.isOwner ? <div className="w-full">{envs.dev.name}</div> : <div className="w-full">{"Interactive API"}</div>}
+
                 <div className="mr-2">
                   <Toggle onClick={onDevToggleChange}/>
                 </div>
               </div>
             </Tab>
-            <Tab
-                onClick={initBaseSpecUrls}
-                key={envs.prod.id}
-                className={({ selected }) =>
-                    classNames(
-                        'w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-blue-700',
-                        'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
-                        selected
-                            ? 'bg-white shadow'
-                            : 'text-blue-100 hover:bg-white/[0.12] hover:text-white'
-                    )
-                }
-            >
-              <div className="w-full flex justify-center items-center">
-                <div className="w-full">{envs.prod.name}</div>
-                <div className="mr-2">
-                  <Toggle onClick={onProdToggleChange}/>
+
+            {props.isOwner &&
+              <Tab
+                  onClick={initBaseSpecUrls}
+                  key={envs.prod.id}
+                  className={({ selected }) =>
+                      classNames(
+                          'w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-blue-700',
+                          'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
+                          selected
+                              ? 'bg-white shadow'
+                              : 'text-blue-100 hover:bg-white/[0.12] hover:text-white'
+                      )
+                  }
+              >
+                <div className="w-full flex justify-center items-center">
+                  <div className="w-full">{envs.prod.name}</div>
+                  <div className="mr-2">
+                    <Toggle onClick={onProdToggleChange}/>
+                  </div>
                 </div>
-              </div>
-            </Tab>
+              </Tab>
+            }
+
           </Tab.List>
           <Tab.Panels className="mt-2">
             <Tab.Panel

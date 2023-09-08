@@ -38,6 +38,9 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
   const [deploymentFailed, setDeploymentFailed] = useState(false)
   const { authUser, fhUser } = useAuthContext()
 
+  const isOwner = () => {
+    return authUser && fhUser ? fhUser.uid === props.userCode?.owner_id : false
+  }
   const getCodeKey = () => {
     return  "main_" + props.userCode?.uid as string
   }
@@ -155,6 +158,7 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
                 <div className="gf-editor-base gf-editor">
 
                   <div className="w-full ">
+                    {isOwner() ?
                     <div className="flex space-x-1 rounded-xl bg-[#1e1e1e] p-1">
                       <div
                           className='w-full rounded-lg py-2 text-sm font-medium leading-5 text-blue-700'
@@ -195,7 +199,9 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
                           />
                         </div>
                       </div>
-                    </div>
+                    </div> :
+                        <div className="pt-6"></div>
+                    }
                     <CodeMirror
                         className="cm-outer-container"
                         placeholder={"Write your code here..."}
@@ -223,6 +229,7 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
                 version={version}
                 apiKey={apiKey}
                 bearerToken={bearerToken}
+                isOwner={isOwner()}
             />
           </div>
         </div>
