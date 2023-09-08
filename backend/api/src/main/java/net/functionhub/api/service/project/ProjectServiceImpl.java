@@ -1,11 +1,9 @@
 package net.functionhub.api.service.project;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.Code;
@@ -153,7 +151,7 @@ public class ProjectServiceImpl implements ProjectService {
       codeCellRepo.save(codeCell);
       return runtimeService.updateCode(new Code()
           .code(codeCell.getCode())
-          .parentId(codeCell.getUid()));
+          .parentId(codeCell.getUid()), true, forkRequest.getProjectId());
     }
     return new CodeUpdateResult();
   }
@@ -197,7 +195,7 @@ public class ProjectServiceImpl implements ProjectService {
   }
 
   private CodeUpdateResult upsertCode(Code code, String projectId) {
-    CodeUpdateResult result = runtimeService.updateCode(code);
+    CodeUpdateResult result = runtimeService.updateCode(code, false, null);
     ProjectItemEntity projectItemEntity = new ProjectItemEntity();
     projectItemEntity.setProjectId(projectId);
     projectItemEntity.setUid(FHUtils.generateEntityId("pi"));

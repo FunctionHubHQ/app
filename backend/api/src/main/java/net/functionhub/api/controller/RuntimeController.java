@@ -4,7 +4,6 @@ import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
-import net.functionhub.api.ForkRequest;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.RuntimeApi;
 import net.functionhub.api.SpecApi;
@@ -80,7 +79,7 @@ public class RuntimeController implements RuntimeApi, SpecApi {
 
   @Override
   public ResponseEntity<CodeUpdateResult> updateCode(Code code) {
-    return ResponseEntity.ok(runtimeService.updateCode(code));
+    return ResponseEntity.ok(runtimeService.updateCode(code, false, null));
   }
 
   @Override

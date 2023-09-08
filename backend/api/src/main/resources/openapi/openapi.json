@@ -1212,6 +1212,9 @@
           },
           "version": {
             "type": "string"
+          },
+          "project_id": {
+            "type": "string"
           }
         }
       },
@@ -1377,6 +1380,13 @@
           "updated_at": {
             "type": "integer",
             "format": "int64"
+          },
+          "num_functions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "full": {
+            "type": "boolean"
           }
         }
       },
@@ -1494,6 +1504,12 @@
           },
           "auth_mode": {
             "type": "string"
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
           }
         }
       },

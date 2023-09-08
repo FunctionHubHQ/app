@@ -9,10 +9,15 @@ import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
+import net.functionhub.api.Project;
 import net.functionhub.api.UserProfile;
+import net.functionhub.api.data.postgres.projection.UserProjectProjection;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.dto.SessionUser;
 import org.eclipse.jetty.http.HttpStatus;
@@ -78,7 +83,7 @@ public class FHUtils {
     }
   }
 
-  public static UserProfile getUserProfile() {
+  public static UserProfile getUserProfile(List<UserProjectProjection> projections) {
     SessionUser sessionUser = getSessionUser();
     return new UserProfile()
         .name(sessionUser.getName())
@@ -86,7 +91,24 @@ public class FHUtils {
         .uid(sessionUser.getUid())
         .apiKey(sessionUser.getApiKey())
         .picture(sessionUser.getAvatar())
-        .username(sessionUser.getUsername());
+        .username(sessionUser.getUsername())
+        .projects(getUserProjects(projections, sessionUser.getMaxFunctions()));
+  }
+
+  public static List<Project> getUserProjects(List<UserProjectProjection> projections, long maxFunctionsAllowed) {
+    // lambda doesn't propagate errors so just loop over it
+    List<Project> projects = new ArrayList<>();
+    for (UserProjectProjection it : projections) {
+      projects.add(new Project()
+          .projectId(it.getProjectid())
+          .updatedAt(it.getUpdatedat().toEpochSecond(ZoneOffset.UTC))
+          .createdAt(it.getCreatedat().toEpochSecond(ZoneOffset.UTC))
+          .name(it.getProjectname())
+          .description(it.getDescription())
+          .numFunctions(it.getNumfunctions())
+          .full(it.getNumfunctions() >= maxFunctionsAllowed));
+    }
+    return projects;
   }
 
   public static String raiseHttpError(HttpServletResponse httpServletResponse,

@@ -20,7 +20,7 @@ public class GlobalControllerExceptionHandler {
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public ResponseEntity<FHErrorMessage> resourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
     FHErrorMessage message = new FHErrorMessage(
-        obfuscateMessage(ex.getMessage()),
+        obfuscateMessage(ex),
         FHUtils.getCurrentTime());
 
     return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
@@ -29,7 +29,7 @@ public class GlobalControllerExceptionHandler {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<FHErrorMessage> internalError(Exception ex, WebRequest request) {
     FHErrorMessage message = new FHErrorMessage(
-        obfuscateMessage(ex.getMessage()),
+        obfuscateMessage(ex),
         FHUtils.getCurrentTime());
 
     return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -39,22 +39,21 @@ public class GlobalControllerExceptionHandler {
   public ResponseEntity<FHErrorMessage> handleHttpMessageNotReadableException(
       HttpMessageNotReadableException ex, WebRequest request) {
     FHErrorMessage message = new FHErrorMessage(
-        obfuscateMessage(ex.getMessage()),
+        obfuscateMessage(ex),
         FHUtils.getCurrentTime());
 
     return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
   }
 
-  private String obfuscateMessage(String message) {
-    if (message.contains("org.springframework") ||
-        message.contains("java.") ||
-        message.contains("net.functionhub")) {
-      String[] tokens = message.split(":");
-      return tokens[0];
-    }
-    if (message.toLowerCase().contains("JDBC exception".toLowerCase())) {
+  private String obfuscateMessage(Exception e) {
+    if (e.getMessage().contains("org.springframework") ||
+        e.getMessage().contains("java.") ||
+        e.getMessage().contains("net.functionhub") ||
+        e.getMessage().toLowerCase().contains("JDBC".toLowerCase())) {
+      // TODO send all internal errors to slack
+      e.printStackTrace();
       return "Internal Server Error";
     }
-    return message;
+    return e.getMessage();
   }
 }

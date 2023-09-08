@@ -109,7 +109,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         String encodedCode = Base64.getEncoder().encodeToString(rawCode.getBytes());
         Code code = new Code()
             .code(encodedCode);
-        CodeUpdateResult response = runtimeService.updateCode(code);
+        CodeUpdateResult response = runtimeService.updateCode(code, false, null);
         assertNotNull(response);
         assertNotNull(response.getUid());
 
@@ -119,7 +119,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
             .uid(response.getUid())
             .fieldsToUpdate(List.of("is_active", "is_public"));
 
-        response = runtimeService.updateCode(code);
+        response = runtimeService.updateCode(code, false, null);
         assertNotNull(response);
         assertNotNull(response.getUid());
         try {

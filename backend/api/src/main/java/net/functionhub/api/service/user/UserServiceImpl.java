@@ -12,6 +12,7 @@ import net.functionhub.api.data.postgres.entity.EntitlementEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
+import net.functionhub.api.data.postgres.repo.ProjectRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.DefaultConfigsProps;
@@ -35,7 +36,7 @@ import org.springframework.util.ObjectUtils;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-  private final SecurityFilter securityFilter;
+  private final ProjectRepo projectRepo;
   private final UserRepo userRepo;
   private final ApiKeyRepo apiKeyRepo;
   private final EntitlementRepo entitlementRepo;
@@ -45,7 +46,10 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public UserProfileResponse getOrCreateUserprofile() {
-    UserProfile userProfile = FHUtils.getUserProfile();
+    SessionUser sessionUser = FHUtils.getSessionUser();
+    UserProfile userProfile = FHUtils.getUserProfile(
+        projectRepo.findAllUserProjects(sessionUser.getUid())
+    );
     createDbUser(userProfile);
     return new UserProfileResponse().profile(userProfile);
   }
@@ -59,6 +63,7 @@ public class UserServiceImpl implements UserService {
         newUser.setEmail(userProfile.getEmail());
         newUser.setUid(userProfile.getUid());
         newUser.setFullName(userProfile.getName());
+        newUser.setAvatarUrl(userProfile.getPicture());
         userRepo.save(newUser);
         log.info("Created new user with  uid = {}", newUser.getUid());
 

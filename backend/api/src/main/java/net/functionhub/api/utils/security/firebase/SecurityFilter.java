@@ -5,10 +5,9 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.ServletException;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
-import net.functionhub.api.data.postgres.entity.UserEntity;
-import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
+import net.functionhub.api.data.postgres.repo.ProjectRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.DecodedJwt;
 import net.functionhub.api.dto.SessionUser;
@@ -17,7 +16,6 @@ import net.functionhub.api.service.user.UserService.AuthMode;
 import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.firebase.FirebaseService;
 import net.functionhub.api.utils.security.Credentials;
-import net.functionhub.api.UserProfile;
 import net.functionhub.api.utils.security.UnsecurePaths;
 import net.functionhub.api.utils.security.jwt.JwtValidationService;
 import jakarta.servlet.FilterChain;
@@ -27,11 +25,9 @@ import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -73,7 +69,7 @@ public class SecurityFilter extends OncePerRequestFilter {
     private final JwtValidationService jwtValidationService;
     private final UserRepo userRepo;
     private final ApiKeyRepo apiKeyRepo;
-    private final EntitlementRepo entitlementRepo;
+    private final ProjectRepo projectRepo;
 
 
   @Override
@@ -136,7 +132,6 @@ public class SecurityFilter extends OncePerRequestFilter {
             // userEntity could be null if this is the registration flow
             user.setApiKey(apiKeyEntity.getApiKey());
           }
-
           credentials.setAuthToken(bearerToken);
           credentials.setDecodedFirebaseToken(decodedToken);
         }

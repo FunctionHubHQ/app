@@ -19,10 +19,14 @@ import net.functionhub.api.StatusResponse;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.CommitHistoryEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
+import net.functionhub.api.data.postgres.entity.ProjectEntity;
+import net.functionhub.api.data.postgres.entity.ProjectItemEntity;
 import net.functionhub.api.data.postgres.projection.Deployment;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
+import net.functionhub.api.data.postgres.repo.ProjectItemRepo;
+import net.functionhub.api.data.postgres.repo.ProjectRepo;
 import net.functionhub.api.dto.ExecRequestInternal;
 import net.functionhub.api.dto.FHAccessToken;
 import net.functionhub.api.dto.GenerateSpecRequest;
@@ -76,6 +80,8 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final SourceProps sourceProps;
   private final ObjectMapper objectMapper;
   private final CodeCellRepo codeCellRepo;
+  private final ProjectRepo projectRepo;
+  private final ProjectItemRepo projectItemRepo;
   private final EntitlementRepo entitlementRepo;
   private final CommitHistoryRepo commitHistoryRepo;
   private final DenoProps denoProps;
@@ -413,7 +419,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public CodeUpdateResult updateCode(Code code) {
+  public CodeUpdateResult updateCode(Code code, boolean forked, String projectId) {
     String rawCode = null;
     CodeCellEntity updatedCell = null;
     if (ObjectUtils.isEmpty(code.getUid())) {
@@ -485,14 +491,47 @@ public class RuntimeServiceImpl implements RuntimeService {
         Thread.startVirtualThread(() -> generateJsonSchema(user,
             new String(Base64.getDecoder()
                 .decode(finalCell.getCode()
-                    .getBytes())), finalCell.getUid()
-                .toString()));
+                    .getBytes())), finalCell.getUid()));
+        String projectIdFound = maybeHandleFork(updatedCell, forked, projectId);
         return new CodeUpdateResult()
-            .uid(updatedCell.getUid().toString())
+            .projectId(projectIdFound)
+            .uid(updatedCell.getUid())
             .slug(updatedCell.getSlug())
             .version(updatedCell.getVersion());
       }
     return new CodeUpdateResult();
+  }
+
+  private String maybeHandleFork(CodeCellEntity updatedCell, boolean forked, String projectId) {
+    if (forked) {
+      if (projectId != null) {
+        ProjectItemEntity projectItemEntity = new ProjectItemEntity();
+        projectItemEntity.setUid(FHUtils.generateEntityId("pi"));
+        projectItemEntity.setCodeId(updatedCell.getUid());
+        projectItemEntity.setProjectId(projectId);
+        projectItemRepo.save(projectItemEntity);
+        return projectId;
+      } else {
+        // The user has no project so create a default project and fork the code into it
+        ProjectEntity projectEntity = new ProjectEntity();
+        projectEntity.setProjectName("Untitled");
+        projectEntity.setDescription("My first project");
+        projectEntity.setUserId(FHUtils.getSessionUser().getUid());
+        projectEntity.setUid(FHUtils.generateEntityId("p"));
+        projectRepo.save(projectEntity);
+
+        ProjectItemEntity projectItemEntity = new ProjectItemEntity();
+        projectItemEntity.setUid(FHUtils.generateEntityId("pi"));
+        projectItemEntity.setCodeId(updatedCell.getUid());
+        projectItemEntity.setProjectId(projectEntity.getUid());
+        projectItemRepo.save(projectItemEntity);
+        return projectEntity.getUid();
+      }
+    }
+    // DO NOT handle any NPEs here. A code cell at this point of the should always have an associated
+    // project
+    ProjectItemEntity projectItemEntity = projectItemRepo.findByCodeId(updatedCell.getUid());
+    return projectItemEntity.getProjectId();
   }
 
   private String getUniqueSlug() {

@@ -4,14 +4,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.StringJoiner;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.Code;
 import net.functionhub.api.FHFunction;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.Projects;
-import net.functionhub.api.UserProfile;
 import net.functionhub.api.UserProfileResponse;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
@@ -80,7 +78,7 @@ public class SeedData {
         if (publicCount < numPublicFunctions) {
           Code code = new Code().isPublic(true).uid(function.getCodeId())
               .fieldsToUpdate(List.of("is_public"));
-          runtimeService.updateCode(code);
+          runtimeService.updateCode(code, false, null);
           publicCount++;
         }
 
@@ -102,7 +100,7 @@ public class SeedData {
       SessionUser sessionUser = new SessionUser();
       String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
       sessionUser.setUid(userId);
-      sessionUser.setAvatar("https://i.pravatar.cc/300?uniquifier=" + UUID.randomUUID());
+      sessionUser.setAvatar("https://i.pravatar.cc/300?uniquifier");
       sessionUser.setEmail(wordList.getRandomPhrase(3, true) + "@gmail.com");
       sessionUser.setUsername(wordList.getRandomPhrase(3, true)
           .replace("-", "_"));

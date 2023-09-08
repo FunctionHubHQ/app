@@ -8,7 +8,6 @@ import static org.testng.AssertJUnit.assertTrue;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
@@ -207,6 +206,11 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         CodeCellEntity parentCell = codeCellRepo
             .findByUid(functions.getFunctions().get(0).getCodeId());
         assertEquals(1, parentCell.getForkCount().longValue());
+
+        ProjectItemEntity projectItem = projectItemRepo.findByCodeId(forkedCell.getUid());
+        assertNotNull(projectItem);
+        assertEquals(projectItem.getProjectId(), projectId);
+        assertEquals(projectItem.getCodeId(), forkedCell.getUid());
     }
 
     @Test
@@ -215,7 +219,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         FHFunction function = functions.getFunctions().get(0);
         ProjectItemEntity projectItem = projectItemRepo.findByCodeId(function.getCodeId());
         FHFunction functionToUpdate = new FHFunction().tags("apple, google, facebook")
-            .projectId(projectItem.getProjectId().toString())
+            .projectId(projectItem.getProjectId())
             .codeId(function.getCodeId());
         functions = projectService.updateFunction(functionToUpdate);
         assertNotNull(functions);
@@ -331,7 +335,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
             for (FHFunction function : projectService.getAllFunctions(projectId).getFunctions()) {
                 Code code = new Code().isPublic(true).uid(function.getCodeId())
                     .fieldsToUpdate(List.of("is_public"));
-                runtimeService.updateCode(code);
+                runtimeService.updateCode(code, false, null);
                 if (tagged > 0) {
                     projectService.updateFunction(
                         new FHFunction().tags("apple, google, facebook")
