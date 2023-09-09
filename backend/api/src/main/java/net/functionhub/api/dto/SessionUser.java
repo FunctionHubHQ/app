@@ -15,7 +15,7 @@ import net.functionhub.api.service.user.UserService.AuthMode;
 public class SessionUser {
   private String email;
   private String name;
-  private String uid;
+  private String userId;
   private String avatar;
   private String apiKey;
   private String username;

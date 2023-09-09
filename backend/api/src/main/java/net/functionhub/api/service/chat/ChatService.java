@@ -47,5 +47,4 @@ public interface ChatService {
       GPTCompletionRequest fhCompletionRequest) throws IOException;
 
   Map<String, Object> prodGptCompletion(GPTCompletionRequest fhCompletionRequest) throws IOException;
-
 }

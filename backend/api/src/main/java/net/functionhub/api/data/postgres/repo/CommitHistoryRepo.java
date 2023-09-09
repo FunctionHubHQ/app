@@ -20,43 +20,43 @@ public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, St
   List<CommitHistoryEntity> findByCodeCellId(String codeCellId);
 
   @Query(value = "SELECT "
-      + "DISTINCT (cc.uid) as id, "
+      + "DISTINCT (cc.id) as id, "
       + "cc.function_name as name, "
       + "cc.version as version, "
       + "cc.description as description, "
       + "ch.json_schema as payload, "
       + "max(ch.created_at) as createdat " +
       "FROM code_cell cc "
-      + "JOIN commit_history ch ON cc.uid = ch.code_cell_id "
-      + "JOIN project_item pi ON cc.uid = pi.code_id "
+      + "JOIN commit_history ch ON cc.id = ch.code_cell_id "
+      + "JOIN project_item pi ON cc.id = pi.code_id "
       + "WHERE ch.user_id = ?1 "
       + "   AND ch.deployed = true "
       + "   AND pi.project_id = ?2 "
-      + "GROUP BY cc.uid, cc.function_name, cc.version, cc.description, ch.json_schema "
+      + "GROUP BY cc.id, cc.function_name, cc.version, cc.description, ch.json_schema "
       + "ORDER BY max(ch.created_at) DESC ",
       nativeQuery = true)
   List<Deployment> findAllDeployedCommits(String userId, String projectId);
 
   @Query(value = "SELECT "
-      + "cc.uid as id, "
+      + "cc.id as id, "
       + "cc.function_name as name, "
       + "cc.version as version, "
       + "cc.description as description, "
       + "ch.json_schema as payload " +
-      "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
+      "FROM code_cell cc JOIN commit_history ch ON cc.id = ch.code_cell_id "
       + "WHERE ch.version = ?1 AND ch.deployed = true",
       nativeQuery = true)
   Deployment findDeployedCommitByVersion(String version);
 
   @Query(value = "SELECT "
-      + "cc.uid as id, "
+      + "cc.id as id, "
       + "cc.user_id as ownerid, "
       + "cc.function_name as name, "
       + "cc.version as version, "
       + "cc.description as description, "
       + "ch.json_schema as payload, "
       + "ch.full_openapi_schema as schema " +
-      "FROM code_cell cc JOIN commit_history ch ON cc.uid = ch.code_cell_id "
+      "FROM code_cell cc JOIN commit_history ch ON cc.id = ch.code_cell_id "
       + "WHERE ch.version = ?1 AND ch.deployed = true AND cc.slug = ?2",
       nativeQuery = true)
   Deployment findDeployedCommitByVersionAndSlug(String version, String slug);

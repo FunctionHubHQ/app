@@ -3,6 +3,7 @@ package net.functionhub.api.service;
 
 import net.functionhub.api.data.DataConfiguration;
 import net.functionhub.api.props.PropConfiguration;
+import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.mapper.ObjectMapperConfiguration;
 import net.functionhub.api.utils.migration.FlywayMigrationConfiguration;
 import net.functionhub.api.utils.TestUtilConfiguration;
@@ -35,11 +36,12 @@ public class ServiceTestConfiguration {
 
     @Bean
     public UserProfile getUserPrincipal() {
-        UserProfile principal = new UserProfile();
-        principal.setUid(UUID.randomUUID().toString().replace("-", ""));
-        principal.setName("Sideshow Bob");
-        principal.setEmail("bobby@gmail.com");
-        principal.setPicture("http://lorem.picsum/200");
-        return principal;
+        UserProfile userProfile = new UserProfile();
+        userProfile.setUsername(FHUtils.generateEntityId("up"));
+        userProfile.setUsername(UUID.randomUUID().toString().replace("-", ""));
+        userProfile.setName("Sideshow Bob");
+        userProfile.setEmail("bobby@gmail.com");
+        userProfile.setPicture("http://lorem.picsum/200");
+        return userProfile;
     }
 }

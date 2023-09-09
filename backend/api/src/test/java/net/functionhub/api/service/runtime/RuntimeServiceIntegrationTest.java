@@ -3,6 +3,8 @@ package net.functionhub.api.service.runtime;
 
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
+import net.functionhub.api.ProjectCreateRequest;
+import net.functionhub.api.Projects;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.CommitHistoryEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
@@ -10,6 +12,7 @@ import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.service.ServiceTestConfiguration;
+import net.functionhub.api.service.project.ProjectService;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.ServiceTestHelper;
@@ -58,6 +61,9 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
     private CommitHistoryRepo commitHistoryRepo;
 
     @Autowired
+    private ProjectService projectService;
+
+    @Autowired
     private FlywayPostgresMigration flywayPostgresMigration;
 
     final String rawCode = "import moment from \"npm:moment\";\n"
@@ -83,7 +89,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         userService.getOrCreateUserprofile();
         try {
             Thread.sleep(5000L);
-            user = userRepo.findByUid(userId);
+            user = userRepo.findById(userId).orElse(null);
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
         }
@@ -106,36 +112,43 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
 
     @Test
     public void updateCodeTest() {
+        ProjectCreateRequest request = new ProjectCreateRequest()
+            .name("My Demo Project 1")
+            .description("This is a demo project created by TestNG 1");
+        Projects projects = projectService.createProject(request);
+
         String encodedCode = Base64.getEncoder().encodeToString(rawCode.getBytes());
         Code code = new Code()
-            .code(encodedCode);
-        CodeUpdateResult response = runtimeService.updateCode(code, false, null);
+            .code(encodedCode)
+            .projectId(projects.getProjects().get(0).getProjectId());
+        CodeUpdateResult response = runtimeService.updateCode(code, false
+        );
         assertNotNull(response);
-        assertNotNull(response.getUid());
+        assertNotNull(response.getCodeId());
 
         code = new Code()
             .isActive(true)
             .isPublic(true)
-            .uid(response.getUid())
+            .codeId(response.getCodeId())
             .fieldsToUpdate(List.of("is_active", "is_public"));
 
-        response = runtimeService.updateCode(code, false, null);
+        response = runtimeService.updateCode(code, false);
         assertNotNull(response);
-        assertNotNull(response.getUid());
+        assertNotNull(response.getCodeId());
         try {
             Thread.sleep(500);
         } catch (InterruptedException ignored) {
         }
         List<CommitHistoryEntity> commitHistory = commitHistoryRepo
-            .findByCodeCellId(response.getUid());
+            .findByCodeCellId(response.getCodeId());
         assertNotNull(commitHistory);
         assertEquals(2, commitHistory.size());
 
-        Code savedCode = runtimeService.getCodeDetail(code.getUid(), false);
+        Code savedCode = runtimeService.getCodeDetail(code.getCodeId(), false);
         assertNotNull(savedCode);
 
         // Ensure the decoded code matches the raw code
-        String decodedRawCode = runtimeService.getUserCode(code.getUid());
+        String decodedRawCode = runtimeService.getUserCode(code.getCodeId());
         String template = testHelper.loadFile("classpath:ts/workerTemplate.ts");
         assertNotNull(decodedRawCode);
         assertNotNull(template);
@@ -147,17 +160,17 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
     @Test
     public void getUserCodeTest() {
         CodeCellEntity codeCell = new CodeCellEntity();
-        codeCell.setUid(FHUtils.generateEntityId("cc"));
+        codeCell.setId(FHUtils.generateEntityId("cc"));
         codeCell.setCode(Base64.getEncoder().encodeToString(rawCode.getBytes()));
         codeCell.setDescription("This is a demo code");
-        codeCell.setUserId(user.getUid());
+        codeCell.setUserId(user.getId());
         codeCell.setIsActive(true);
         codeCell.setFunctionName("demo_code");
         codeCell.setSlug("demo-code");
         codeCell.setVersion(runtimeService.generateCodeVersion());
         codeCellRepo.save(codeCell);
 
-        String code = runtimeService.getUserCode(codeCell.getUid().toString());
+        String code = runtimeService.getUserCode(codeCell.getId());
         assertNotNull(code);
     }
 

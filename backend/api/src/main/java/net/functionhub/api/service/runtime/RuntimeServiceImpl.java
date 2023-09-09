@@ -124,8 +124,8 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public ExecResultAsync exec(ExecRequest execRequest, boolean applyEntitlementLimits) {
-    if (!ObjectUtils.isEmpty(execRequest.getUid())) {
-      return execHelper(execRequest, codeCellRepo.findByUid(execRequest.getUid()),
+    if (!ObjectUtils.isEmpty(execRequest.getCodeId())) {
+      return execHelper(execRequest, codeCellRepo.findById(execRequest.getCodeId()).orElse(null),
           applyEntitlementLimits);
     }
     return new ExecResultAsync().error("Unknown error");
@@ -171,7 +171,7 @@ public class RuntimeServiceImpl implements RuntimeService {
           .validate(validate)
           .payload(body)
           .version(codeCell.getVersion())
-          .uid(codeCell.getUid().toString());
+          .codeId(codeCell.getId());
       ExecResultAsync result = execHelper(request, codeCell, applyEntitlementLimits);
       if (ObjectUtils.isEmpty(result)) {
         return FHUtils.raiseHttpError(httpServletResponse, objectMapper,
@@ -232,7 +232,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       entitlementService.recordFunctionInvocation();
     }
 
-    if (!ObjectUtils.isEmpty(execRequest.getUid())) {
+    if (!ObjectUtils.isEmpty(execRequest.getCodeId())) {
       String execId = execRequest.getExecId();
       if (ObjectUtils.isEmpty(execId)) {
         execId = UUID.randomUUID().toString();
@@ -244,16 +244,16 @@ public class RuntimeServiceImpl implements RuntimeService {
         if (!ObjectUtils.isEmpty(execRequest.getVersion())) {
           version = execRequest.getVersion();
         }
-        String uid = execRequest.getUid() + "@" +version;
+        String compositeCodeId = execRequest.getCodeId() + "@" +version;
         if (execRequest.getDeployed() != null && execRequest.getDeployed()) {
-          uid += deployedFlag;
+          compositeCodeId += deployedFlag;
         }
-        uid += "apiKey=" + FHUtils.getSessionUser().getApiKey();
+        compositeCodeId += "apiKey=" + FHUtils.getSessionUser().getApiKey();
         ExecRequestInternal request = new ExecRequestInternal();
         request.setAccessToken(accessToken);
         request.setPayload(parseExecRequestPayload(execRequest.getPayload()));
         request.setEnv(sourceProps.getProfile());
-        request.setUid(uid);
+        request.setCompositeCodeId(compositeCodeId);
         request.setMaxExecutionTime(entitlements.getMaxExecutionTime());
         request.setMaxCpuTime(entitlements.getMaxCpuTime());
         request.setMaxMemoryUsage(entitlements.getMaxMemoryUsage());
@@ -307,9 +307,11 @@ public class RuntimeServiceImpl implements RuntimeService {
         code = commitHistoryEntities.get(0).getCode();
         userId = commitHistoryEntities.get(0).getUserId();
       } else {
-        CodeCellEntity entity = codeCellRepo.findByUid(uid);
-        code = entity.getCode();
-        userId = entity.getUserId();
+        CodeCellEntity entity = codeCellRepo.findById(uid).orElse(null);
+        if (entity != null) {
+          code = entity.getCode();
+          userId = entity.getUserId();
+        }
       }
       if (!ObjectUtils.isEmpty(code) && !ObjectUtils.isEmpty(userId)) {
         String rawCode = new String(Base64.getDecoder().decode(code.getBytes()));
@@ -346,13 +348,13 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public GenericResponse handleExecResult(ExecResultAsync execResult) {
-    if (!ObjectUtils.isEmpty(execResult.getUid())) {
+    if (!ObjectUtils.isEmpty(execResult.getCodeId())) {
       ExecResultAsync execResultAsync = new ExecResultAsync();
-      String uid = parseUid(execResult.getUid());
+      String uid = parseUid(execResult.getCodeId());
       if (execResult.getValidate() != null && execResult.getValidate()) {
         Thread.startVirtualThread(() -> validateCodeCell(execResult, uid));
       }
-      execResultAsync.setUid(uid);
+      execResultAsync.setCodeId(uid);
       execResultAsync.setExecId(execResult.getExecId());
 
       if (!execResult.getResult().equals("null") &&
@@ -393,7 +395,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   private void validateCodeCell(ExecResultAsync execResult, String uid) {
-    CodeCellEntity codeCell = codeCellRepo.findByUid(uid);
+    CodeCellEntity codeCell = codeCellRepo.findById(uid).orElse(null);
     if (codeCell != null) {
       String error = null;
       // TODO: ensure function name is unique within the user's namespace
@@ -426,22 +428,22 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public CodeUpdateResult updateCode(Code code, boolean forked, String projectId) {
+  public CodeUpdateResult updateCode(Code code, boolean forked) {
     if (!FHUtils.getSessionUser().isAnonymous()) {
       String rawCode = null;
       CodeCellEntity updatedCell = null;
-      if (ObjectUtils.isEmpty(code.getUid())) {
+      if (ObjectUtils.isEmpty(code.getCodeId())) {
         if (!ObjectUtils.isEmpty(code.getCode())) {
           rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
         }
         CodeCellEntity codeCell = new CodeCellEntity();
-        codeCell.setUid(FHUtils.generateEntityId("cc"));
+        codeCell.setId(FHUtils.generateEntityId("cc"));
         codeCell.setCode(code.getCode());
         codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
         codeCell.setDescription(parseCodeComment(rawCode, "@description"));
         codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
-        codeCell.setUserId(FHUtils.getSessionUser().getUid());
-        codeCell.setIsActive(isBelowActiveLimit(FHUtils.getSessionUser().getUid()));
+        codeCell.setUserId(FHUtils.getSessionUser().getUserId());
+        codeCell.setIsActive(isBelowActiveLimit(FHUtils.getSessionUser().getUserId()));
         codeCell.setIsPublic(false);
         codeCell.setSlug(getUniqueSlug());
         codeCell.setVersion(generateCodeVersion());
@@ -452,7 +454,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         codeCellRepo.save(codeCell);
         updatedCell = codeCell;
       } else {
-        CodeCellEntity codeCell = codeCellRepo.findByUid(code.getUid());
+        CodeCellEntity codeCell = codeCellRepo.findById(code.getCodeId()).orElse(null);
         if (FHUtils.hasWriteAccess(codeCell, httpServletResponse, objectMapper,
             messagesProps.getUnauthorized())) {
           if (codeCell != null && !ObjectUtils.isEmpty(code.getFieldsToUpdate())) {
@@ -467,7 +469,7 @@ public class RuntimeServiceImpl implements RuntimeService {
                   codeCell.setFunctionName(parseCodeComment(rawCode, "@name"));
                 }
                 case "is_active" -> {
-                  if (isBelowActiveLimit(FHUtils.getSessionUser().getUid())
+                  if (isBelowActiveLimit(FHUtils.getSessionUser().getUserId())
                       || !code.getIsActive()) {
                     codeCell.setIsActive(code.getIsActive());
                   }
@@ -490,9 +492,9 @@ public class RuntimeServiceImpl implements RuntimeService {
         final CodeCellEntity finalCell = updatedCell;
         Thread.startVirtualThread(() -> {
           CommitHistoryEntity commitHistory = new CommitHistoryEntity();
-          commitHistory.setUid(FHUtils.generateEntityId("ch"));
+          commitHistory.setId(FHUtils.generateEntityId("ch"));
           commitHistory.setUserId(finalCell.getUserId());
-          commitHistory.setCodeCellId(finalCell.getUid());
+          commitHistory.setCodeCellId(finalCell.getId());
           commitHistory.setVersion(finalCell.getVersion());
           commitHistory.setCode(finalCell.getCode());
           commitHistoryRepo.save(commitHistory);
@@ -503,11 +505,11 @@ public class RuntimeServiceImpl implements RuntimeService {
         Thread.startVirtualThread(() -> generateJsonSchema(user,
             new String(Base64.getDecoder()
                 .decode(finalCell.getCode()
-                    .getBytes())), finalCell.getUid()));
-        String projectIdFound = maybeHandleFork(updatedCell, forked, projectId);
+                    .getBytes())), finalCell.getId()));
+        String projectIdFound = maybeHandleFork(updatedCell, forked, code.getProjectId());
         return new CodeUpdateResult()
             .projectId(projectIdFound)
-            .uid(updatedCell.getUid())
+            .codeId(updatedCell.getId())
             .slug(updatedCell.getSlug())
             .version(updatedCell.getVersion());
       }
@@ -519,8 +521,8 @@ public class RuntimeServiceImpl implements RuntimeService {
     if (forked) {
       if (projectId != null) {
         ProjectItemEntity projectItemEntity = new ProjectItemEntity();
-        projectItemEntity.setUid(FHUtils.generateEntityId("pi"));
-        projectItemEntity.setCodeId(updatedCell.getUid());
+        projectItemEntity.setId(FHUtils.generateEntityId("pi"));
+        projectItemEntity.setCodeId(updatedCell.getId());
         projectItemEntity.setProjectId(projectId);
         projectItemRepo.save(projectItemEntity);
         return projectId;
@@ -529,24 +531,24 @@ public class RuntimeServiceImpl implements RuntimeService {
         ProjectEntity projectEntity = new ProjectEntity();
         projectEntity.setProjectName("Untitled");
         projectEntity.setDescription("My first project");
-        projectEntity.setUserId(FHUtils.getSessionUser().getUid());
-        projectEntity.setUid(FHUtils.generateEntityId("p"));
+        projectEntity.setUserId(FHUtils.getSessionUser().getUserId());
+        projectEntity.setId(FHUtils.generateEntityId("p"));
         projectRepo.save(projectEntity);
 
         ProjectItemEntity projectItemEntity = new ProjectItemEntity();
-        projectItemEntity.setUid(FHUtils.generateEntityId("pi"));
-        projectItemEntity.setCodeId(updatedCell.getUid());
-        projectItemEntity.setProjectId(projectEntity.getUid());
+        projectItemEntity.setId(FHUtils.generateEntityId("pi"));
+        projectItemEntity.setCodeId(updatedCell.getId());
+        projectItemEntity.setProjectId(projectEntity.getId());
         projectItemRepo.save(projectItemEntity);
-        return projectEntity.getUid();
+        return projectEntity.getId();
       }
     }
     else {
-      ProjectItemEntity projectItemEntity = projectItemRepo.findByCodeId(updatedCell.getUid());
+      ProjectItemEntity projectItemEntity = projectItemRepo.findByCodeId(updatedCell.getId());
       if (projectItemEntity == null) {
         projectItemEntity = new ProjectItemEntity();
-        projectItemEntity.setUid(FHUtils.generateEntityId("pi"));
-        projectItemEntity.setCodeId(updatedCell.getUid());
+        projectItemEntity.setId(FHUtils.generateEntityId("pi"));
+        projectItemEntity.setCodeId(updatedCell.getId());
         projectItemEntity.setProjectId(projectId);
         projectItemRepo.save(projectItemEntity);
         return projectItemEntity.getProjectId();
@@ -620,14 +622,14 @@ public class RuntimeServiceImpl implements RuntimeService {
       if (bySlug) {
         codeCell = codeCellRepo.findBySlug(uid);
       } else {
-        codeCell = codeCellRepo.findByUid(uid);
+        codeCell = codeCellRepo.findById(uid).orElse(null);
       }
       if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper,
           messagesProps.getUnauthorized())) {
         if (codeCell != null) {
           return new Code()
               .code(codeCell.getCode())
-              .uid(uid)
+              .codeId(uid)
               .ownerId(codeCell.getUserId())
               .functionSlug(codeCell.getSlug())
               .version(codeCell.getVersion())
@@ -642,11 +644,11 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public void generateJsonSchema(SessionUser sessionUser, String code, String uid) {
+  public void generateJsonSchema(SessionUser sessionUser, String code, String codeId) {
     GenerateSpecRequest request = new GenerateSpecRequest();
     request.setFile(code);
     request.setEnv(sourceProps.getProfile());
-    request.setUid(uid);
+    request.setCodeId(codeId);
     request.setFrom("ts");
     request.setTo("jsc");
     request.setApiKey(sessionUser.getApiKey());
@@ -673,20 +675,20 @@ public class RuntimeServiceImpl implements RuntimeService {
     if (format.equals("ts")) {
       spec = spec.replace("/**", "\n/**");
     }
-    if (!ObjectUtils.isEmpty(specResult.getUid())) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(specResult.getUid());
+    if (!ObjectUtils.isEmpty(specResult.getCodeId())) {
+      CodeCellEntity codeCell = codeCellRepo.findById(specResult.getCodeId()).orElse(null);
       if (codeCell != null) {
         if (format.equals("json")) {
           Map<String, Object> requestDto  = getRequestDto( constructDto(spec), codeCell.getVersion());
           String requestDtoStr = new Gson().toJson(requestDto);
           codeCell.setJsonSchema(requestDtoStr);
-          String fullOpenApiSchema = generateFullSpec(spec, specResult.getUid());
+          String fullOpenApiSchema = generateFullSpec(spec, specResult.getCodeId());
           codeCell.setFullOpenApiSchema(fullOpenApiSchema);
-          jsonSchema.put(codeCell.getUid(), requestDtoStr);
+          jsonSchema.put(codeCell.getId(), requestDtoStr);
 
           // Insert the schema into an existing commit
           List<CommitHistoryEntity> commitHistory = commitHistoryRepo.findByCodeCellIdAndVersion(
-              codeCell.getUid(), codeCell.getVersion()
+              codeCell.getId(), codeCell.getVersion()
           );
           if (!ObjectUtils.isEmpty(commitHistory)) {
             commitHistory.get(0).setJsonSchema(requestDtoStr);
@@ -712,7 +714,7 @@ public class RuntimeServiceImpl implements RuntimeService {
       spec = spec.replace("#/definitions", "#/components/definitions");
       fullSpecMap = objectMapper.readValue(spec,
           typeRef);
-      CodeCellEntity codeCell = codeCellRepo.findByUid(uid);
+      CodeCellEntity codeCell = codeCellRepo.findById(uid).orElse(null);
       if (codeCell != null) {
         Map<String, Object> template = specTemplate.getUserSpec();
         Map<String, Object> paths = new HashMap<>();
@@ -841,8 +843,8 @@ public class RuntimeServiceImpl implements RuntimeService {
 
   @Override
   public GenericResponse deploy(ExecRequest execRequest) {
-    if (!ObjectUtils.isEmpty(execRequest.getUid())) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(execRequest.getUid());
+    if (!ObjectUtils.isEmpty(execRequest.getCodeId())) {
+      CodeCellEntity codeCell = codeCellRepo.findById(execRequest.getCodeId()).orElse(null);
       if (FHUtils.hasWriteAccess(codeCell, httpServletResponse, objectMapper,
           messagesProps.getUnauthorized())) {
         if (codeCell != null) {
@@ -851,7 +853,7 @@ public class RuntimeServiceImpl implements RuntimeService {
             codeCell.setDeployedVersion(codeCell.getVersion());
             codeCellRepo.save(codeCell);
             List<CommitHistoryEntity> commitHistory = commitHistoryRepo.findByCodeCellIdAndVersion(
-                codeCell.getUid(),
+                codeCell.getId(),
                 codeCell.getVersion());
             if (!ObjectUtils.isEmpty(commitHistory)) {
               commitHistory.get(0).setDeployed(true);
@@ -973,7 +975,7 @@ public class RuntimeServiceImpl implements RuntimeService {
     SessionUser sessionUser = FHUtils.getSessionUser();
     accessToken.setDtl(sessionUser.getMaxDataTransfer());
     accessToken.setHce(sessionUser.getMaxHttpCalls());
-    accessToken.setUid(sessionUser.getUid());
+    accessToken.setUid(sessionUser.getUserId());
     accessToken.setRid(executionId);
     return Base64.getEncoder().encodeToString((new Gson()).toJson(accessToken).getBytes());
   }

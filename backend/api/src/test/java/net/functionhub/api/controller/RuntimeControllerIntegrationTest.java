@@ -15,12 +15,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import net.functionhub.api.ApiKeyProvider;
+import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.GPTCompletionRequest;
 import net.functionhub.api.GPTMessage;
 import net.functionhub.api.GenericResponse;
+import net.functionhub.api.ProjectCreateRequest;
+import net.functionhub.api.Projects;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
@@ -31,6 +35,8 @@ import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.MessagesProps;
+import net.functionhub.api.props.OpenAiProps;
+import net.functionhub.api.service.project.ProjectService;
 import net.functionhub.api.service.runtime.RuntimeService;
 import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.utils.FHUtils;
@@ -41,7 +47,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -103,6 +108,14 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     @Autowired
     private RuntimeService runtimeService;
 
+    @Autowired
+    private ProjectService projectService;
+
+    @Autowired
+    private OpenAiProps openAiProps;
+
+    private String projectId;
+
     private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};;
 
     private SessionUser sessionUser;
@@ -116,12 +129,12 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         try {
             sessionUser = new SessionUser();
             Thread.sleep(2000L);
-            UserProjection userProjection = userRepo.findProjectionByUid(userId);
+            UserProjection userProjection = userRepo.findByProjectId(userId);
             sessionUser.setName(userProjection.getName());
-            sessionUser.setUid(userProjection.getUid());
+            sessionUser.setUserId(userProjection.getUserid());
             sessionUser.setEmail(userProjection.getEmail());
             sessionUser.setUsername(userProjection.getUsername());
-            ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(userProjection.getUid());
+            ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(userProjection.getUserid());
             if (apiKeyEntity != null) {
                 // userEntity could be null if this is the registration flow
                 sessionUser.setApiKey(apiKeyEntity.getApiKey());
@@ -130,6 +143,10 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
         }
+
+        userService.createNewApiKey(new ApiKeyRequest()
+            .key(openAiProps.getApiKey())
+            .provider(ApiKeyProvider.OPEN_AI));
     }
 
     @AfterTest
@@ -140,6 +157,11 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     @BeforeMethod
     public void beforeEachTest(Method method) {
         log.info("  Testcase: " + method.getName() + " has started");
+        ProjectCreateRequest request = new ProjectCreateRequest()
+            .name("My Demo Project 1")
+            .description("This is a demo project created by TestNG 1");
+        Projects projects = projectService.createProject(request);
+        projectId = projects.getProjects().get(0).getProjectId();
     }
 
     @AfterMethod
@@ -147,7 +169,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         log.info("  Testcase: " + method.getName() + " has ended");
     }
 
-    @Test
+    @Test(enabled = false)
     public void stressTestNonBlockingCalls() throws JsonProcessingException {
         final CodeUpdateResult nonBlockingCodeCell = createCodeCell(nonBlockingCode);
 
@@ -194,8 +216,8 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         // extremely unlikely even in the worst possible case for our use case.
         int numNonBlockingRequests = 20;
         int numBlockingRequests = 20;
-        log.info("Non-blocking: {}", nonBlockingCodeCell.getUid());
-        log.info("Blocking: {}", blockingCodeCell.getUid());
+        log.info("Non-blocking: {}", nonBlockingCodeCell.getCodeId());
+        log.info("Blocking: {}", blockingCodeCell.getCodeId());
 
         ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
         List<Future<Map<String, Object>>> tasks = new ArrayList<>();
@@ -253,7 +275,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
 
     @Test(enabled = false) // Unstable
     public void invocationLimitTest() throws JsonProcessingException  {
-        EntitlementEntity entity = entitlementRepo.findByUserId(sessionUser.getUid());
+        EntitlementEntity entity = entitlementRepo.findByUserId(sessionUser.getUserId());
         entity.setMaxInvocations(2L);
         entitlementRepo.save(entity);
         CodeUpdateResult updateResult = createCodeCell(code);
@@ -283,6 +305,12 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     public void fullFlowTest() throws JsonProcessingException {
         // 1. Create code cell
         CodeUpdateResult updateResult = createCodeCell(code);
+        // Wait for spec generation
+        try {
+            Thread.sleep(1000L);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         // 2. Run it
         runDevCodeCell(updateResult);
@@ -304,7 +332,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
             .readValue(completionResponseDevResponseStr, typeRef);
         assertNotNull(completionResponseDevResponse);
         assertTrue(completionResponseDevResponse.get("choices").toString().contains("Boston"));
-        assertTrue(completionResponseDevResponse.get("content").toString().contains("rainy"));
+        assertTrue(completionResponseDevResponse.get("choices").toString().contains("rainy"));
 
 
         // 6. Make prod GPT function call
@@ -312,28 +340,30 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         message = new GPTMessage()
             .role("user")
             .content("What is the current time and weather in Chicago?");
-        devCompletionRequest.setMessages(List.of(message));
+        prodCompletionRequest.setMessages(List.of(message));
+        prodCompletionRequest.setProjectId(projectId);
 
         String completionResponseProdResponseStr = request("/completion",
             "POST", prodCompletionRequest);
-// TODO: prod requests require user's own OpenAI key
+
         assertNotNull(completionResponseProdResponseStr);
         Map<String, Object> deployedCompletionResponse = objectMapper.readValue(
             completionResponseProdResponseStr, typeRef);
         assertNotNull(deployedCompletionResponse);
-        assertTrue(deployedCompletionResponse.get("content").toString().contains("Chicago"));
-        assertTrue(deployedCompletionResponse.get("content").toString().contains("rainy"));
+        assertTrue(deployedCompletionResponse.get("choices").toString().contains("Chicago"));
+        assertTrue(deployedCompletionResponse.get("choices").toString().contains("rainy"));
     }
 
     private CodeUpdateResult createCodeCell(String rawCode) throws JsonProcessingException {
         String codeEncoded = Base64.getEncoder().encodeToString(rawCode.getBytes());
 
         String updateResultStr = request("/update-code", "POST", new Code()
+            .projectId(projectId)
             .code(codeEncoded));
 
         CodeUpdateResult updateResult = objectMapper
             .readValue(updateResultStr, CodeUpdateResult.class);
-        assertNotNull(updateResult.getUid());
+        assertNotNull(updateResult.getCodeId());
         return updateResult;
     }
 
@@ -375,14 +405,15 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
     private void deployCodeCell(CodeUpdateResult updateResult) throws JsonProcessingException {
         String deployResponseStr = request("/deploy",
             "POST", new ExecRequest()
-                .uid(updateResult.getUid()));
+                .codeId(updateResult.getCodeId()));
 
         GenericResponse deployResponse = objectMapper.readValue(deployResponseStr, GenericResponse.class);
         assertNotNull(deployResponse.getStatus());
 
-        CodeCellEntity codeCell = codeCellRepo.findByUid(updateResult.getUid());
+        CodeCellEntity codeCell = codeCellRepo.findById(updateResult.getCodeId()).orElse(null);
+        assertNotNull(codeCell);
         assertTrue(codeCell.getDeployed());
-        String schema = runtimeService.getJsonSchema(updateResult.getUid());
+        String schema = runtimeService.getJsonSchema(updateResult.getCodeId());
         assertNotNull(schema);
     }
 

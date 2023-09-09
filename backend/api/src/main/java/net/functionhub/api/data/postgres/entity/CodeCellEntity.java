@@ -20,9 +20,9 @@ import lombok.Setter;
 @Table(schema = "public", name = "code_cell")
 public class CodeCellEntity {
     @Id
-    @JsonProperty("uid")
-    @Column(name = "uid")
-    private String uid;
+    @JsonProperty("id")
+    @Column(name = "id")
+    private String id;
 
     @JsonProperty("parent_id")
     @Column(name = "parent_id")

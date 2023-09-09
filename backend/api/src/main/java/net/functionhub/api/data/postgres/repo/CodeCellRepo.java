@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Transactional
 public interface CodeCellRepo extends JpaRepository<CodeCellEntity, String> {
-  CodeCellEntity findByUid(String uid);
 
   @Query(value = "SELECT count(*) " +
       "FROM code_cell " +
@@ -42,7 +41,7 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, String> {
   CodeCellEntity findBySlugAndApiKey(String slug, String apiKey);
 
   @Query(value = "SELECT cc.* "
-      + "FROM code_cell cc JOIN project_item pi ON cc.uid = pi.code_id "
+      + "FROM code_cell cc JOIN project_item pi ON cc.id = pi.code_id "
       + "WHERE pi.project_id = ?1 "
       + "ORDER BY cc.created_at DESC",
       nativeQuery = true)
@@ -50,8 +49,8 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, String> {
 
   // TODO: enable query caching here
   @Query(value = ""
-      + "SELECT cc.uid as codeid,"
-      + "u.uid AS ownerid,"
+      + "SELECT cc.id as codeid,"
+      + "u.id AS ownerid,"
       + "u.username as ownerusername,"
       + "u.avatar_url as owneravatar,"
       + "cc.is_public AS ispublic,"
@@ -63,7 +62,7 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, String> {
       + "cc.tags as tags,"
       + "cc.created_at AS createdat,"
       + "cc.updated_at AS updatedat "
-      + "FROM public.code_cell cc JOIN public.user u on cc.user_id = u.uid "
+      + "FROM public.code_cell cc JOIN public.user u on cc.user_id = u.id "
       + "WHERE cc.is_public = true",
       nativeQuery = true)
   Page<FHFunctionProjection> findAllPublicFunctions(Pageable pageable);

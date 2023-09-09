@@ -1,6 +1,5 @@
 package net.functionhub.api.service.project;
 
-import net.functionhub.api.Code;
 import net.functionhub.api.CodeUpdateResult;
 import net.functionhub.api.FHFunction;
 import net.functionhub.api.FHFunctions;

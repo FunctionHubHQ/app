@@ -17,14 +17,9 @@ import java.time.LocalDateTime;
 @Table(schema = "public", name = "user")
 public class UserEntity {
     @Id
-    @SequenceGenerator(name="user_sequence_generator",sequenceName="user_id_seq", allocationSize=1)
-    @GeneratedValue(strategy= GenerationType.AUTO,generator="user_sequence_generator")
+    @JsonProperty("id")
     @Column(name = "id")
-    private Long id;
-    
-    @JsonProperty("uid")
-    @Column(name = "uid")
-    private String uid;
+    private String id;
 
     @JsonProperty("username")
     @Column(name = "username")

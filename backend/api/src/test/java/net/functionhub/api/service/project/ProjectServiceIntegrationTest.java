@@ -20,6 +20,7 @@ import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.ProjectUpdateRequest;
 import net.functionhub.api.Projects;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
+import net.functionhub.api.data.postgres.entity.ProjectEntity;
 import net.functionhub.api.data.postgres.entity.ProjectItemEntity;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
@@ -96,7 +97,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         userService.getOrCreateUserprofile();
         try {
             Thread.sleep(1000L);
-            user = userRepo.findProjectionByUid(userId);
+            user = userRepo.findByProjectId(userId);
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
         }
@@ -177,7 +178,48 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
     }
 
     @Test
-    public void forkTest() {
+    public void forkIntoEmptyProjectsTest() {
+        FHFunctions functions = createAndAssertFunctions();
+
+        // Create a new project and fork the function to that
+        ProjectCreateRequest projRequest = new ProjectCreateRequest()
+            .name("My Demo Project")
+            .description("This is a demo project created by TestNG");
+        Projects projects = projectService.createProject(projRequest);
+        assertNotNull(projects);
+        assertNotNull(projects.getProjects());
+        assertEquals(2, projects.getProjects().size());
+
+        CodeUpdateResult forkResult = projectService.forkCode(new ForkRequest()
+            .projectId(null)
+            .parentCodeId(functions.getFunctions().get(0).getCodeId()));
+        assertNotNull(forkResult);
+        assertNotNull(forkResult.getVersion());
+        assertNotNull(forkResult.getCodeId());
+        assertNotNull(forkResult.getCodeId());
+
+        CodeCellEntity forkedCell = codeCellRepo.findById(forkResult.getCodeId()).orElse(null);
+        assertNotNull(forkedCell);
+        assertNotNull(forkedCell.getParentId());
+        assertEquals(functions.getFunctions().get(0).getCodeId(), forkedCell.getParentId());
+
+        CodeCellEntity parentCell = codeCellRepo
+            .findById(functions.getFunctions().get(0).getCodeId()).orElse(null);
+        assertNotNull(parentCell);
+        assertEquals(1, parentCell.getForkCount().longValue());
+
+        ProjectItemEntity projectItem = projectItemRepo.findByCodeId(forkedCell.getId());
+        assertNotNull(projectItem);
+        assertEquals(projectItem.getCodeId(), forkedCell.getId());
+
+        ProjectEntity projectEntity = projectRepo.findById(projectItem.getProjectId()).orElse(null);
+        assertNotNull(projectEntity);
+        assertEquals(projectEntity.getProjectName(), "Untitled");
+        assertEquals(projectEntity.getDescription(), "My first project");
+    }
+
+    @Test
+    public void forkIntoExistingProjectTest() {
         FHFunctions functions = createAndAssertFunctions();
 
         // Create a new project and fork the function to that
@@ -195,22 +237,23 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
             .parentCodeId(functions.getFunctions().get(0).getCodeId()));
         assertNotNull(forkResult);
         assertNotNull(forkResult.getVersion());
-        assertNotNull(forkResult.getUid());
-        assertNotNull(forkResult.getUid());
+        assertNotNull(forkResult.getCodeId());
+        assertNotNull(forkResult.getCodeId());
 
-        CodeCellEntity forkedCell = codeCellRepo.findByUid(forkResult.getUid());
+        CodeCellEntity forkedCell = codeCellRepo.findById(forkResult.getCodeId()).orElse(null);
         assertNotNull(forkedCell);
         assertNotNull(forkedCell.getParentId());
         assertEquals(functions.getFunctions().get(0).getCodeId(), forkedCell.getParentId());
 
         CodeCellEntity parentCell = codeCellRepo
-            .findByUid(functions.getFunctions().get(0).getCodeId());
+            .findById(functions.getFunctions().get(0).getCodeId()).orElse(null);
+        assertNotNull(parentCell);
         assertEquals(1, parentCell.getForkCount().longValue());
 
-        ProjectItemEntity projectItem = projectItemRepo.findByCodeId(forkedCell.getUid());
+        ProjectItemEntity projectItem = projectItemRepo.findByCodeId(forkedCell.getId());
         assertNotNull(projectItem);
         assertEquals(projectItem.getProjectId(), projectId);
-        assertEquals(projectItem.getCodeId(), forkedCell.getUid());
+        assertEquals(projectItem.getCodeId(), forkedCell.getId());
     }
 
     @Test
@@ -333,9 +376,9 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
             int tagged = numWithTags;
             // Toggle all these functions to public
             for (FHFunction function : projectService.getAllFunctions(projectId).getFunctions()) {
-                Code code = new Code().isPublic(true).uid(function.getCodeId())
+                Code code = new Code().isPublic(true).codeId(function.getCodeId())
                     .fieldsToUpdate(List.of("is_public"));
-                runtimeService.updateCode(code, false, null);
+                runtimeService.updateCode(code, false);
                 if (tagged > 0) {
                     projectService.updateFunction(
                         new FHFunction().tags("apple, google, facebook")
@@ -369,7 +412,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         CodeUpdateResult result = projectService.createFunction(projects.getProjects().get(0).getProjectId());
         assertNotNull(result);
         assertNotNull(result.getSlug());
-        assertNotNull(result.getUid());
+        assertNotNull(result.getCodeId());
         assertNotNull(result.getVersion());
 
         FHFunctions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());
@@ -422,7 +465,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
         CodeUpdateResult result = projectService.createFunction(projects.getProjects().get(0).getProjectId());
         assertNotNull(result);
         assertNotNull(result.getSlug());
-        assertNotNull(result.getUid());
+        assertNotNull(result.getCodeId());
         assertNotNull(result.getVersion());
 
         FHFunctions functions = projectService.getAllFunctions(projects.getProjects().get(0).getProjectId());

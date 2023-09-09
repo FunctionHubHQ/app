@@ -20,9 +20,9 @@ import lombok.Setter;
 @Table(schema = "public", name = "entitlement")
 public class EntitlementEntity {
     @Id
-    @JsonProperty("uid")
-    @Column(name = "uid")
-    private String uid;
+    @JsonProperty("id")
+    @Column(name = "id")
+    private String id;
 
     @JsonProperty("user_id")
     @Column(name = "user_id")

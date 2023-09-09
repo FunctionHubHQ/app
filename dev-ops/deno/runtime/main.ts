@@ -63,12 +63,12 @@ async function getBody(ctx) {
   return body;
 }
 
-function getWorkerId(body?: any, uid?: string, execId?: string) {
+function getWorkerId(body?: any, compositeCodeId?: string, execId?: string) {
   if (body) {
-    uid = body.uid
+    compositeCodeId = body.compositeCodeId
     execId = body.execId
   }
-  return `${uid}:${execId}`
+  return `${compositeCodeId}:${execId}`
 }
 
 function clearTimeouts(workerId) {
@@ -100,7 +100,7 @@ function getWorkerStdout(workerId) {
 function registerEventListener(worker, ctx) {
   // Listen for messages from the Web Worker
   worker.onmessage = (event) => {
-    const workerId = getWorkerId(null, event.data.uid, event.data.execId)
+    const workerId = getWorkerId(null, event.data.compositeCodeId, event.data.execId)
     if (event.data.stdout) {
       let prevStdout = stdout.get(workerId);
       if (!prevStdout) {
@@ -210,7 +210,7 @@ function spawnNewIsolate(ctx, userScriptUrl, body) {
   registerErrorListener(worker, ctx, body);
 
   worker.postMessage({
-    uid: body.uid,
+    compositeCodeId: body.compositeCodeId,
     payload: body.payload,
     execId: body.execId,
     accessToken: body.accessToken
@@ -219,13 +219,13 @@ function spawnNewIsolate(ctx, userScriptUrl, body) {
 
 async function sendExecutionResult(ctx, result, workerStdOut, error) {
   const body = await getBody(ctx);
-  if (body.uid && body.execId) {
+  if (body.compositeCodeId && body.execId) {
     const workerId = getWorkerId(body, null, null)
     clearWorkerId(workerId)
     clearTimeouts(workerId)
     exitedWorkersByWorkerId.set(workerId, true)
     const data = {
-      uid: body.uid,
+      code_id: body.compositeCodeId,
       exec_id: body.execId,
       validate: body.validate,
       deployed: body.deployed,
@@ -250,7 +250,7 @@ async function sendExecutionResult(ctx, result, workerStdOut, error) {
 async function executeUserCode(ctx) {
   const body = await getBody(ctx);
   const host = getHost(body.env);
-  const url = `${host}/npm/${body.uid}`;
+  const url = `${host}/npm/${body.compositeCodeId}`;
 
   // Synchronize any concurrent requests here for proper attribution of thread ID from the
   // thread monitor to the correct worker. The workersPendingId queue needs to be empty before

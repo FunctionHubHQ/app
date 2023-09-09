@@ -44,7 +44,7 @@ public class UserController implements UserApi {
 
   @Override
   public ResponseEntity<ApiKeyResponse> upsertApiKey(ApiKeyRequest apiKeyRequest) {
-    return ResponseEntity.ok(userService.upsertApiKey(apiKeyRequest));
+    return ResponseEntity.ok(userService.createNewApiKey(apiKeyRequest));
   }
 
   @Override

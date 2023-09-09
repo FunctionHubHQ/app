@@ -5,12 +5,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import jakarta.servlet.http.HttpServletResponse;
+import net.functionhub.api.ApiKeyProvider;
 import net.functionhub.api.ExecRequest;
 import net.functionhub.api.ExecResultAsync;
 import net.functionhub.api.GPTCompletionRequest;
 import net.functionhub.api.GPTMessage;
+import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.projection.Deployment;
+import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.CodeCellRepo;
 import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.dto.GPTFunction;
@@ -56,6 +59,7 @@ public class ChatServiceImpl implements ChatService {
   private final ObjectMapper objectMapper;
   private final OpenAiProps openAiProps;
   private final CodeCellRepo codeCellRepo;
+  private final ApiKeyRepo apiKeyRepo;
   private final RuntimeService runtimeService;
   private final SourceProps sourceProps;
   private final MessagesProps messagesProps;
@@ -150,12 +154,12 @@ public class ChatServiceImpl implements ChatService {
             codeId = deployment.getId();
             functionName = deployment.getName();
           } else {
-            codeId = codeCell.getUid().toString();
+            codeId = codeCell.getId();
             functionName = codeCell.getFunctionName();
           }
 
           ExecRequest execRequest = new ExecRequest()
-              .uid(codeId)
+              .codeId(codeId)
               .payload(new Gson().toJson(functionCall.getRequestPayload(objectMapper)))
               .execId(UUID.randomUUID().toString())
               .deployed(deployed)
@@ -287,7 +291,7 @@ public class ChatServiceImpl implements ChatService {
         response.put("error", error);
         return response;
       }
-      List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(sessionUser.getUid(),
+      List<Deployment> deployments = commitHistoryRepo.findAllDeployedCommits(sessionUser.getUserId(),
           projectId);
       if (deployments.size() == 0) {
         error.put("message", String.format("You have no deployed functions for projectId '%s'", projectId));
@@ -403,7 +407,7 @@ public class ChatServiceImpl implements ChatService {
         MediaType.parse("application/json"), prompt);
     Request request = new Request.Builder()
         .url(openAiProps.getCompletionEndpoint())
-        .addHeader("Authorization", "Bearer " + openAiProps.getApiKey())
+        .addHeader("Authorization", "Bearer " + getProviderKey(ApiKeyProvider.OPEN_AI))
         .post(body)
         .build();
     Call call = httpClient.newCall(request);
@@ -417,5 +421,19 @@ public class ChatServiceImpl implements ChatService {
       err.put("message", e.getLocalizedMessage());
       return new Gson().toJson(err);
     }
+  }
+
+  private String getProviderKey(ApiKeyProvider provider) {
+    if (provider.name().equals(ApiKeyProvider.OPEN_AI.name())) {
+      List<ApiKeyEntity> apiKeyEntities = apiKeyRepo.findAllByProvider(ApiKeyProvider.OPEN_AI.getValue(),
+          FHUtils.getSessionUser().getUserId());
+      if (apiKeyEntities.size() == 0) {
+        FHUtils.raiseHttpError(httpServletResponse, objectMapper, messagesProps.getOpenAiKeyMissing(),
+            org.apache.http.HttpStatus.SC_FORBIDDEN);
+      } else {
+        return apiKeyEntities.get(0).getApiKey();
+      }
+    }
+    return "KEY_NOT_SET";
   }
 }

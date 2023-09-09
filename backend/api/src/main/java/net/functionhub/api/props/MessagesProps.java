@@ -24,5 +24,6 @@ public class MessagesProps {
     private String resultProcessingError;
     private String forkToExec;
     private String signInForkToExec;
+    private String openAiKeyMissing;
 
 }

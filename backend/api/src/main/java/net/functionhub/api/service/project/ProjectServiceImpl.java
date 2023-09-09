@@ -50,9 +50,10 @@ public class ProjectServiceImpl implements ProjectService {
   public CodeUpdateResult createFunction(String projectId) {
     String template = FHUtils.loadFile("ts/functionTemplate.ts");
     return upsertCode(new Code()
+        .projectId(projectId)
         .isActive(true)
         .isPublic(false)
-        .code(Base64.getEncoder().encodeToString(template.getBytes())), projectId);
+        .code(Base64.getEncoder().encodeToString(template.getBytes())));
   }
 
   @Override
@@ -60,8 +61,8 @@ public class ProjectServiceImpl implements ProjectService {
     ProjectEntity entity = new ProjectEntity();
     entity.setProjectName(FHUtils.truncate(projectCreateRequest.getName()));
     entity.setDescription(FHUtils.truncate(projectCreateRequest.getDescription()));
-    entity.setUserId(FHUtils.getSessionUser().getUid());
-    entity.setUid(FHUtils.generateEntityId("p"));
+    entity.setUserId(FHUtils.getSessionUser().getUserId());
+    entity.setId(FHUtils.generateEntityId("p"));
     projectRepo.save(entity);
     return getAllProjects();
   }
@@ -72,7 +73,7 @@ public class ProjectServiceImpl implements ProjectService {
     if (!ObjectUtils.isEmpty(functionSlug)) {
       CodeCellEntity cellEntity = codeCellRepo.findBySlug(functionSlug);
       if (cellEntity != null) {
-        ProjectItemEntity itemEntity = projectItemRepo.findByCodeId(cellEntity.getUid());
+        ProjectItemEntity itemEntity = projectItemRepo.findByCodeId(cellEntity.getId());
         projectId = itemEntity.getProjectId();
         projectItemRepo.delete(itemEntity);
         codeCellRepo.delete(cellEntity);
@@ -108,16 +109,16 @@ public class ProjectServiceImpl implements ProjectService {
   @Override
   public FHFunctions updateFunction(FHFunction fhFunction) {
     if (!ObjectUtils.isEmpty(fhFunction.getProjectId())) {
-      CodeCellEntity codeCell = codeCellRepo.findByUid(fhFunction.getCodeId());
-      if (codeCell != null) {
+      Optional<CodeCellEntity> codeCell = codeCellRepo.findById(fhFunction.getCodeId());
+      if (codeCell.isPresent()) {
         // only tags can be updated through this route for now
         if (ObjectUtils.isEmpty(fhFunction.getTags())) {
-          codeCell.setTags("");
+          codeCell.get().setTags("");
         } else {
-          codeCell.setTags(fhFunction.getTags());
+          codeCell.get().setTags(fhFunction.getTags());
         }
-        codeCell.setUpdatedAt(LocalDateTime.now());
-        codeCellRepo.save(codeCell);
+        codeCell.get().setUpdatedAt(LocalDateTime.now());
+        codeCellRepo.save(codeCell.get());
       }
       return getAllFunctions(fhFunction.getProjectId());
     }
@@ -126,7 +127,7 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   public Projects getAllProjects() {
-    List<ProjectEntity> projects = projectRepo.findByUserIdOrderByUpdatedAtDesc(FHUtils.getSessionUser().getUid());
+    List<ProjectEntity> projects = projectRepo.findByUserIdOrderByUpdatedAtDesc(FHUtils.getSessionUser().getUserId());
     return new Projects().projects(projectMapper.mapFromProjectEntities(projects));
   }
 
@@ -145,13 +146,14 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   public CodeUpdateResult forkCode(ForkRequest forkRequest) {
-    CodeCellEntity codeCell = codeCellRepo.findByUid(forkRequest.getParentCodeId());
-    if (codeCell != null) {
-      codeCell.setForkCount(codeCell.getForkCount() + 1);
-      codeCellRepo.save(codeCell);
+    Optional<CodeCellEntity> codeCell = codeCellRepo.findById(forkRequest.getParentCodeId());
+    if (codeCell.isPresent()) {
+      codeCell.get().setForkCount(codeCell.get().getForkCount() + 1);
+      codeCellRepo.save(codeCell.get());
       return runtimeService.updateCode(new Code()
-          .code(codeCell.getCode())
-          .parentId(codeCell.getUid()), true, forkRequest.getProjectId());
+          .code(codeCell.get().getCode())
+          .projectId(forkRequest.getProjectId())
+          .parentId(codeCell.get().getId()), true);
     }
     return new CodeUpdateResult();
   }
@@ -169,7 +171,7 @@ public class ProjectServiceImpl implements ProjectService {
     } else {
       pageableResult = codeCellRepo.findAllPublicFunctions(pageable);
     }
-    functions = projectMapper.mapFromProjections(pageableResult.getContent(), FHUtils.getSessionUser().getUid());
+    functions = projectMapper.mapFromProjections(pageableResult.getContent(), FHUtils.getSessionUser().getUserId());
     int totalPages = pageableResult.getTotalPages();
     long totalElements = pageableResult.getTotalElements();
     return new PageableResponse()
@@ -194,7 +196,7 @@ public class ProjectServiceImpl implements ProjectService {
     return sort;
   }
 
-  private CodeUpdateResult upsertCode(Code code, String projectId) {
-    return runtimeService.updateCode(code, false, projectId);
+  private CodeUpdateResult upsertCode(Code code) {
+    return runtimeService.updateCode(code, false);
   }
 }

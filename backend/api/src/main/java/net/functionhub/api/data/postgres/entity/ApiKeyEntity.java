@@ -23,10 +23,9 @@ import lombok.Setter;
 @Table(schema = "public", name = "api_key")
 public class ApiKeyEntity {
     @Id
-    @SequenceGenerator(name="api_key_sequence_generator",sequenceName="api_key_id_seq", allocationSize=1)
-    @GeneratedValue(strategy= GenerationType.AUTO,generator="api_key_sequence_generator")
+    @JsonProperty("id")
     @Column(name = "id")
-    private Long id;
+    private String id;
     
     @JsonProperty("user_id")
     @Column(name = "user_id")
@@ -37,9 +36,9 @@ public class ApiKeyEntity {
     private String apiKey;
 
     @Basic
-    @JsonProperty("is_vendor_key")
-    @Column(name = "is_vendor_key")
-    private Boolean isVendorKey = false;
+    @JsonProperty("provider")
+    @Column(name = "provider")
+    private String provider;
 
     @Basic
     @Column(name = "created_at")

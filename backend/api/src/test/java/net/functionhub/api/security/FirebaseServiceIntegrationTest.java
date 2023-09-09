@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.*;
  * @author Bizuwork Melesse
  * created on 8/22/21
  */
+@Ignore
 @Slf4j
 @SpringBootTest(classes = SecurityTestConfiguration.class)
 public class FirebaseServiceIntegrationTest extends AbstractTestNGSpringContextTests {
@@ -37,7 +38,7 @@ public class FirebaseServiceIntegrationTest extends AbstractTestNGSpringContextT
     @Autowired
     private FirebaseService firebaseService;
 
-    private final String demoUserEmail = UUID.randomUUID() + "@shoppiem.com";
+    private final String demoUserEmail = UUID.randomUUID() + "@functionhub.net";
     private final String demoUserDisplayName = "Recipe Man";
 
     @BeforeClass

@@ -6,7 +6,6 @@ import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.ServletException;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
-import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.ProjectRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.DecodedJwt;
@@ -128,14 +127,14 @@ public class SecurityFilter extends OncePerRequestFilter {
             throw new RuntimeException(ex.getMessage());
           }
           user = firebaseTokenToUser(decodedToken);
-          FHUtils.populateSessionUser(userRepo.findProjectionByUid(user.getUid()), user);
+          FHUtils.populateSessionUser(userRepo.findByProjectId(user.getUserId()), user);
           user.setAuthMode(AuthMode.FB);
           user.setAnonymous(false);
           // TODO 2 db calls with the one above so not very efficient for production use. This is why
           //    prod should use api key instead of firebase tokens
 
           // Arbitrarily set an api key since we're using a non-api key auth method
-          ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(user.getUid());
+          ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(user.getUserId());
           if (apiKeyEntity != null) {
             // userEntity could be null if this is the registration flow
             user.setApiKey(apiKeyEntity.getApiKey());
@@ -153,14 +152,14 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private SessionUser jwtTokenToUser(DecodedJwt decodedToken) {
     SessionUser user = new SessionUser();
-    user.setUid(decodedToken.getUserId());
+    user.setUserId(decodedToken.getUserId());
     return user;
   }
 
   private SessionUser firebaseTokenToUser(FirebaseToken decodedToken) {
     SessionUser user = new SessionUser();
       if (decodedToken != null) {
-          user.setUid(decodedToken.getUid());
+          user.setUserId(decodedToken.getUid());
           user.setName(decodedToken.getName());
           user.setEmail(decodedToken.getEmail());
           user.setAvatar(decodedToken.getPicture());

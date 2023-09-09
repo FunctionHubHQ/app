@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.Collectors;
 import net.functionhub.api.Project;
 import net.functionhub.api.UserProfile;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
@@ -22,7 +21,6 @@ import net.functionhub.api.data.postgres.projection.Deployment;
 import net.functionhub.api.data.postgres.projection.UserProjectProjection;
 import net.functionhub.api.data.postgres.projection.UserProjection;
 import net.functionhub.api.dto.SessionUser;
-import net.functionhub.api.props.MessagesProps;
 import net.functionhub.api.service.user.UserService;
 import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -92,7 +90,7 @@ public class FHUtils {
     return new UserProfile()
         .name(sessionUser.getName())
         .email(sessionUser.getEmail())
-        .uid(sessionUser.getUid())
+        .userId(sessionUser.getUserId())
         .apiKey(sessionUser.getApiKey())
         .picture(sessionUser.getAvatar())
         .username(sessionUser.getUsername())
@@ -141,7 +139,7 @@ public class FHUtils {
     if (projection != null) {
       user.setEmail(projection.getEmail());
       user.setName(projection.getName());
-      user.setUid(projection.getUid());
+      user.setUserId(projection.getUserid());
       user.setAvatar(projection.getAvatar());
       user.setApiKey(projection.getApikey());
       user.setUsername(projection.getUsername());
@@ -161,7 +159,7 @@ public class FHUtils {
       user.setName("Anonymous");
       user.setAnonymous(true);
       user.setEmail("");
-      user.setUid(generateUid(SHORT_UID_LENGTH));
+      user.setUserId(generateUid(SHORT_UID_LENGTH));
       user.setAvatar("");
       user.setApiKey(user.getApiKey() == null ? UserService.apiKeyPrefix + "anon-" + generateUid(API_KEY_LENGTH) : user.getApiKey());
       user.setUsername("");
@@ -186,7 +184,7 @@ public class FHUtils {
       String message) {
     boolean hasAccess = false;
     if (codeCell != null) {
-      hasAccess = codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
+      hasAccess = codeCell.getUserId().equals(FHUtils.getSessionUser().getUserId());
     }
     if (!hasAccess) {
       FHUtils.raiseHttpError(httpServletResponse,
@@ -205,7 +203,7 @@ public class FHUtils {
       if (codeCell.getIsPublic() != null && codeCell.getIsPublic()) {
         hasAccess = true;
       } else {
-        hasAccess = codeCell.getUserId().equals(FHUtils.getSessionUser().getUid());
+        hasAccess = codeCell.getUserId().equals(FHUtils.getSessionUser().getUserId());
       }
     }
     if (!hasAccess) {
@@ -222,7 +220,7 @@ public class FHUtils {
       String message) {
     boolean hasAccess = false;
     if (deployment != null) {
-      hasAccess = deployment.getOwnerid().equals(FHUtils.getSessionUser().getUid());
+      hasAccess = deployment.getOwnerid().equals(FHUtils.getSessionUser().getUserId());
     }
     if (!hasAccess) {
       FHUtils.raiseHttpError(httpServletResponse,

@@ -27,7 +27,7 @@ public interface ProjectMapper {
             return null;
         }
         return new Project()
-            .projectId(entity.getUid().toString())
+            .projectId(entity.getId())
             .name(entity.getProjectName())
             .description(entity.getDescription())
             .createdAt(entity.getCreatedAt().toEpochSecond(ZoneOffset.UTC))
@@ -55,7 +55,7 @@ public interface ProjectMapper {
             .isPublic(entity.getIsPublic())
             .name(entity.getFunctionName())
             .slug(entity.getSlug())
-            .codeId(entity.getUid().toString())
+            .codeId(entity.getId())
             .tags(entity.getTags())
             .forkCount(entity.getForkCount())
             .summary(entity.getSummary())

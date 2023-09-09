@@ -2,7 +2,9 @@ package net.functionhub.api.service.user;
 
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import net.functionhub.api.ApiKey;
+import net.functionhub.api.ApiKeyProvider;
 import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.UsernameRequest;
@@ -19,7 +21,6 @@ import net.functionhub.api.props.DefaultConfigsProps;
 import net.functionhub.api.props.EntitlementProps;
 import net.functionhub.api.service.runtime.Slugify;
 import net.functionhub.api.service.utils.FHUtils;
-import net.functionhub.api.utils.security.firebase.SecurityFilter;
 import net.functionhub.api.UserProfile;
 import net.functionhub.api.UserProfileResponse;
 import java.util.UUID;
@@ -48,7 +49,7 @@ public class UserServiceImpl implements UserService {
   public UserProfileResponse getOrCreateUserprofile() {
     SessionUser sessionUser = FHUtils.getSessionUser();
     UserProfile userProfile = FHUtils.getUserProfile(
-        projectRepo.findAllUserProjects(sessionUser.getUid())
+        projectRepo.findAllUserProjects(sessionUser.getUserId())
     );
     createDbUser(userProfile);
     return new UserProfileResponse().profile(userProfile);
@@ -56,25 +57,27 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public void createDbUser(UserProfile userProfile) {
-    if (userProfile != null && !ObjectUtils.isEmpty(userProfile.getUid())) {
-      UserEntity entity = userRepo.findByUid(userProfile.getUid());
-      if (entity == null) {
+    if (userProfile != null && !ObjectUtils.isEmpty(userProfile.getUserId())) {
+      Optional<UserEntity> entity = userRepo.findById(userProfile.getUserId());
+      if (entity.isEmpty()) {
         UserEntity newUser = new UserEntity();
         newUser.setEmail(userProfile.getEmail());
-        newUser.setUid(userProfile.getUid());
+        newUser.setId(userProfile.getUserId());
         newUser.setFullName(userProfile.getName());
         newUser.setAvatarUrl(userProfile.getPicture());
         userRepo.save(newUser);
-        log.info("Created new user with  uid = {}", newUser.getUid());
+        log.info("Created new user with  ID = {}", newUser.getId());
 
         ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
+        apiKeyEntity.setId(FHUtils.generateEntityId("api"));
         apiKeyEntity.setApiKey(generateApiKey());
-        apiKeyEntity.setUserId(newUser.getUid());
+        apiKeyEntity.setUserId(newUser.getId());
+        apiKeyEntity.setProvider(ApiKeyProvider.FUNCTION_HUB.getValue());
         apiKeyRepo.save(apiKeyEntity);
 
         EntitlementEntity entitlements = new EntitlementEntity();
-        entitlements.setUid(FHUtils.generateEntityId("et"));
-        entitlements.setUserId(userProfile.getUid());
+        entitlements.setId(FHUtils.generateEntityId("et"));
+        entitlements.setUserId(userProfile.getUserId());
         entitlements.setMaxExecutionTime(entitlementProps.getFree().getMaxExecutionTime());
         entitlements.setMaxCpuTime(entitlementProps.getFree().getMaxCpuTime());
         entitlements.setMaxMemoryUsage(entitlementProps.getFree().getMaxMemoryUsage());
@@ -90,18 +93,26 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public ApiKeyResponse getApiKeys() {
-    List<ApiKeyEntity> apiKeyEntities = apiKeyRepo.findByUserIdOrderByCreatedAtDesc(FHUtils.getSessionUser().getUid());
+    List<ApiKeyEntity> apiKeyEntities = apiKeyRepo.findAllByProviders(
+        List.of(
+            ApiKeyProvider.FUNCTION_HUB.getValue(),
+            ApiKeyProvider.OPEN_AI.getValue()),
+        FHUtils.getSessionUser().getUserId());
     if (ObjectUtils.isEmpty(apiKeyEntities)) {
       // A user needs at least 1 api key to access FunctionHub
       // CAUTION: This call may enter a recursive loop if upsert fails for some reason
-      return upsertApiKey(new ApiKeyRequest());
+      return createNewApiKey(new ApiKeyRequest().provider(ApiKeyProvider.FUNCTION_HUB));
     } else {
       return new ApiKeyResponse().keys(apiKeyEntities
               .stream()
               .map(it -> {
                 ApiKey apiKey = new ApiKey();
-                apiKey.setKey(it.getIsVendorKey() ? redactString(it.getApiKey()) : it.getApiKey());
-                apiKey.setIsVendorKey(it.getIsVendorKey());
+                if (it.getProvider().equals(ApiKeyProvider.FUNCTION_HUB.getValue())) {
+                  apiKey.setKey(it.getApiKey());
+                } else {
+                  apiKey.setKey(redactString(it.getApiKey()));
+                }
+                apiKey.setProvider(ApiKeyProvider.fromValue(it.getProvider()));
                 apiKey.setCreatedAt(it.getCreatedAt().toEpochSecond(ZoneOffset.UTC));
                 return apiKey;
       }).toList());
@@ -116,34 +127,37 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public ApiKeyResponse upsertApiKey(ApiKeyRequest apiKeyRequest) {
+  public ApiKeyResponse createNewApiKey(ApiKeyRequest apiKeyRequest) {
     ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
+    apiKeyEntity.setId(FHUtils.generateEntityId("api"));
     if (ObjectUtils.isEmpty(apiKeyRequest.getKey())) {
-      apiKeyEntity.setIsVendorKey(false);
+      apiKeyEntity.setProvider(ApiKeyProvider.FUNCTION_HUB.getValue());
       apiKeyEntity.setApiKey(generateApiKey());
     } else {
-      apiKeyEntity.setIsVendorKey(true);
+      apiKeyEntity.setProvider(apiKeyRequest.getProvider().getValue());
       apiKeyEntity.setApiKey(apiKeyRequest.getKey());
     }
-    apiKeyEntity.setUserId(FHUtils.getSessionUser().getUid());
+    apiKeyEntity.setUserId(FHUtils.getSessionUser().getUserId());
     apiKeyRepo.save(apiKeyEntity);
     return getApiKeys();
   }
 
   @Override
   public ApiKeyResponse deleteKey(ApiKeyRequest apiKeyRequest) {
-    if (apiKeyRequest.getIsVendorKey() != null && apiKeyRequest.getIsVendorKey()) {
+    if (ObjectUtils.isEmpty(apiKeyRequest.getKey())) {
       apiKeyRepo.deleteAll(
-          apiKeyRepo.findByIsVendorKeyAndUserId(true, FHUtils.getSessionUser().getUid()));
+          apiKeyRepo.findAllByProvider(apiKeyRequest.getProvider().getValue(),
+              FHUtils.getSessionUser().getUserId()));
     } else if (!ObjectUtils.isEmpty(apiKeyRequest.getKey())) {
         ApiKeyEntity entity = apiKeyRepo.findByApiKey(apiKeyRequest.getKey());
         if (entity != null) {
           apiKeyRepo.delete(entity);
-          List<ApiKeyEntity> apiKeyEntities = apiKeyRepo.findByUserIdOrderByCreatedAtDesc(
-              FHUtils.getSessionUser().getUid());
-          if (apiKeyEntities.stream().filter(it -> !it.getIsVendorKey()).toList().size() == 0) {
+          List<ApiKeyEntity> apiKeyEntities = apiKeyRepo.findAllByProvider(
+              ApiKeyProvider.FUNCTION_HUB.getValue(),
+              FHUtils.getSessionUser().getUserId());
+          if (apiKeyEntities.size() == 0) {
             // A user must always have at least one FunctionHub key
-            return upsertApiKey(new ApiKeyRequest());
+            return createNewApiKey(new ApiKeyRequest());
           }
         }
     }
@@ -173,10 +187,12 @@ public class UserServiceImpl implements UserService {
     if (!ObjectUtils.isEmpty(usernameRequest) &&
         !ObjectUtils.isEmpty(usernameRequest.getUsername())) {
       String username = cleanUsername(usernameRequest.getUsername());
-      UserEntity entity = userRepo.findByUid(sessionUser.getUid());
-      entity.setUsername(username);
-      userRepo.save(entity);
-      profile.setUsername(username);
+      Optional<UserEntity> entity = userRepo.findById(sessionUser.getUserId());
+      if (entity.isPresent()) {
+        entity.get().setUsername(username);
+        userRepo.save(entity.get());
+        profile.setUsername(username);
+      }
     }
     return new UserProfileResponse().profile(profile);
   }
@@ -190,18 +206,20 @@ public class UserServiceImpl implements UserService {
       userEntity.setUsername("anon-" + UUID.randomUUID());
       userEntity.setEmail(defaultConfigsProps.getAnonEmail());
       userEntity.setFullName("Anon");
-      userEntity.setUid(UUID.randomUUID().toString());
+      userEntity.setId(FHUtils.generateEntityId("u"));
       userEntity.setIsPremiumUser(false);
       userRepo.save(userEntity);
 
       ApiKeyEntity apiKeyEntity = new ApiKeyEntity();
+      apiKeyEntity.setId(FHUtils.generateEntityId("api"));
       apiKeyEntity.setApiKey(defaultConfigsProps.getAnonApiKey());
-      apiKeyEntity.setUserId(userEntity.getUid());
+      apiKeyEntity.setUserId(userEntity.getId());
+      apiKeyEntity.setProvider(ApiKeyProvider.FUNCTION_HUB.getValue());
       apiKeyRepo.save(apiKeyEntity);
 
       EntitlementEntity entitlements = new EntitlementEntity();
-      entitlements.setUid(FHUtils.generateEntityId(EntitlementEntity.class.getName()));
-      entitlements.setUserId(userEntity.getUid());
+      entitlements.setId(FHUtils.generateEntityId(EntitlementEntity.class.getName()));
+      entitlements.setUserId(userEntity.getId());
       entitlementRepo.save(entitlements);
     }
   }

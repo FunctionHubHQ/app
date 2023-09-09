@@ -6,7 +6,7 @@ package net.functionhub.api.data.postgres.projection;
 public interface UserProjection {
   String getEmail();
   String getName();
-  String getUid();
+  String getUserid();
   String getAvatar();
   String getApikey();
   String getUsername();

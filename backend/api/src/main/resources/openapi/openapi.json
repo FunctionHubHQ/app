@@ -241,7 +241,7 @@
         }
       }
     },
-    "/npm/{uid}": {
+    "/npm/{code_id}": {
       "get": {
         "tags": [
           "runtime"
@@ -249,7 +249,7 @@
         "operationId": "getUserCode",
         "parameters": [
           {
-            "name": "uid",
+            "name": "code_id",
             "required": true,
             "in": "path",
             "schema": {
@@ -623,7 +623,7 @@
         }
       }
     },
-    "/code/{uid}": {
+    "/code/{code_id}": {
       "get": {
         "tags": [
           "runtime"
@@ -633,7 +633,7 @@
         "operationId": "getCodeDetail",
         "parameters": [
           {
-            "name": "uid",
+            "name": "code_id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1116,14 +1116,21 @@
         "type": "object",
         "additionalProperties": true
       },
+      "ApiKeyProvider": {
+        "type": "string",
+        "enum": [
+          "FUNCTION_HUB",
+          "OPEN_AI"
+        ]
+      },
       "ApiKeyRequest": {
         "type": "object",
         "properties": {
           "key": {
             "type": "string"
           },
-          "is_vendor_key": {
-            "type": "boolean"
+          "provider": {
+            "$ref": "#/components/schemas/ApiKeyProvider"
           }
         }
       },
@@ -1148,8 +1155,8 @@
             "type": "integer",
             "format": "int64"
           },
-          "is_vendor_key": {
-            "type": "boolean"
+          "provider": {
+            "$ref": "#/components/schemas/ApiKeyProvider"
           }
         }
       },
@@ -1167,9 +1174,11 @@
       "Code":  {
         "type": "object",
         "properties": {
-          "uid": {
-            "type": "string",
-            "description": "Code cell uid"
+          "code_id": {
+            "type": "string"
+          },
+          "project_id": {
+            "type": "string"
           },
           "code": {
             "type": "string"
@@ -1236,7 +1245,7 @@
       "CodeUpdateResult": {
         "type": "object",
         "properties": {
-          "uid": {
+          "code_id": {
             "type": "string"
           },
           "slug": {
@@ -1253,7 +1262,7 @@
       "ExecResultAsync":  {
         "type": "object",
         "properties": {
-          "uid": {
+          "code_id": {
             "type": "string"
           },
           "exec_id": {
@@ -1294,7 +1303,7 @@
       "SpecResult":  {
         "type": "object",
         "properties": {
-          "uid": {
+          "code_id": {
             "type": "string"
           },
           "spec": {
@@ -1308,7 +1317,7 @@
       "ExecRequest":  {
         "type": "object",
         "properties": {
-          "uid": {
+          "code_id": {
             "type": "string"
           },
           "exec_id": {
@@ -1504,7 +1513,7 @@
       "UserProfile":  {
         "type": "object",
         "properties": {
-          "uid": {
+          "user_id": {
             "type": "string"
           },
           "name": {

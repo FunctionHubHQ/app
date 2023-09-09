@@ -2,6 +2,7 @@ package net.functionhub.api.service.user;
 
 
 import java.util.UUID;
+import net.functionhub.api.ApiKeyProvider;
 import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
@@ -77,7 +78,7 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
         assertThat(response, is(notNullValue()));
         assertThat(response.getProfile().getName(), is(notNullValue()));
         assertThat(response.getProfile().getEmail(), is(notNullValue()));
-        assertThat(response.getProfile().getUid(), is(notNullValue()));
+        assertThat(response.getProfile().getUserId(), is(notNullValue()));
         Thread.sleep(5000);
         List<UserEntity> allUsers = userRepo.findAll();
         assertThat(allUsers, is(notNullValue()));
@@ -86,9 +87,9 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
         assertThat(user.getCreatedAt(), is(notNullValue()));
         assertThat(user.getUpdatedAt(), is(notNullValue()));
         assertThat(user.getEmail(), startsWith(response.getProfile().getEmail()));
-        assertThat(user.getUid(), is(notNullValue()));
+        assertThat(user.getIsPremiumUser(), is(notNullValue()));
 
-        EntitlementEntity entitlements = entitlementRepo.findByUserId(user.getUid());
+        EntitlementEntity entitlements = entitlementRepo.findByUserId(user.getId());
         assertThat(entitlements, is(notNullValue()));
         assertThat(entitlements.getMaxCpuTime(), is(equalTo(10L)));
         assertThat(entitlements.getMaxExecutionTime(), is(equalTo(30000L)));
@@ -102,7 +103,7 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
 
     @Test
     public void generateApiKeyTest() {
-        ApiKeyResponse response = userService.upsertApiKey(new ApiKeyRequest());
+        ApiKeyResponse response = userService.createNewApiKey(new ApiKeyRequest());
         assertNotNull(response);
         assertNotNull(response.getKeys());
         assertEquals(1, response.getKeys().size());
@@ -111,12 +112,21 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
 
     @Test
     public void upsertVendorKeyTest() {
-        ApiKeyResponse response = userService.upsertApiKey(new ApiKeyRequest()
-            .key(UUID.randomUUID().toString()));
+        ApiKeyResponse response = userService.createNewApiKey(
+            new ApiKeyRequest()
+                .key(UUID.randomUUID().toString())
+                .provider(ApiKeyProvider.OPEN_AI));
         assertNotNull(response);
         assertNotNull(response.getKeys());
         assertEquals(1, response.getKeys().size());
         assertTrue(response.getKeys().get(0).getKey().contains("*"));
+
+        // Generate function hub key
+        response = userService.createNewApiKey(new ApiKeyRequest());
+        assertNotNull(response);
+        assertNotNull(response.getKeys());
+        assertEquals(2, response.getKeys().size());
+        assertFalse(response.getKeys().get(0).getKey().contains("*"));
     }
 
     @Test
@@ -124,7 +134,7 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
         // generate 10 keys
         ApiKeyResponse response = null;
         for (int i = 0; i < 10; i++) {
-            response = userService.upsertApiKey(new ApiKeyRequest());
+            response = userService.createNewApiKey(new ApiKeyRequest());
         }
         assertNotNull(response);
         assertEquals(10, response.getKeys().size());
@@ -143,7 +153,7 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
     @Test
     public void requireAtLeastOneApiKeyTest() {
         // generate 1 key
-        ApiKeyResponse response = userService.upsertApiKey(new ApiKeyRequest());
+        ApiKeyResponse response = userService.createNewApiKey(new ApiKeyRequest());
         assertNotNull(response);
         assertEquals(1, response.getKeys().size());
 

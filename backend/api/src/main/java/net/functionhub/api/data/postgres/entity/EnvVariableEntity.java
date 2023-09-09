@@ -12,25 +12,29 @@ import lombok.Setter;
 
 /**
  * @author Bizuwork Melesse
- * created on 8/17/23
+ * created on 2/13/21
  *
  */
 @Getter @Setter
 @Entity
-@Table(schema = "public", name = "project_item")
-public class ProjectItemEntity {
+@Table(schema = "public", name = "env_variable")
+public class EnvVariableEntity {
     @Id
     @JsonProperty("id")
     @Column(name = "id")
     private String id;
 
-    @JsonProperty("code_id")
-    @Column(name = "code_id")
-    private String codeId;
+    @JsonProperty("user_id")
+    @Column(name = "user_id")
+    private String userId;
 
-    @JsonProperty("project_id")
-    @Column(name = "project_id")
-    private String projectId;
+    @JsonProperty("env_variable_json")
+    @Column(name = "env_variable_json")
+    private String envVariableJson;
+
+    @Basic
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Basic
     @Column(name = "created_at")

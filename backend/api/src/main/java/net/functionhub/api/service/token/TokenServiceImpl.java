@@ -1,7 +1,6 @@
 package net.functionhub.api.service.token;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.functionhub.api.UserProfile;
 import net.functionhub.api.dto.JwtPayload;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.props.JwtProps;
@@ -18,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.functionhub.api.service.utils.FHUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -56,7 +54,7 @@ public class TokenServiceImpl implements TokenService {
         SessionUser user = FHUtils.getSessionUser();
         JwtPayload payload = new JwtPayload();
         payload.setJuid(UUID.randomUUID().toString());
-        payload.setGuid(user.getUid());
+        payload.setGuid(user.getUserId());
         payload.setIat(
                 OffsetDateTime.now()
                         .atZoneSameInstant(ZoneOffset.UTC).toEpochSecond());

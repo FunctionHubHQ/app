@@ -2,6 +2,7 @@ package net.functionhub.api.service.utils;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.StringJoiner;
 import lombok.RequiredArgsConstructor;
@@ -81,9 +82,9 @@ public class SeedData {
       for (FHFunction function : projectService.getAllFunctions(projectId).getFunctions()) {
 
         if (publicCount < numPublicFunctions) {
-          Code code = new Code().isPublic(true).uid(function.getCodeId())
+          Code code = new Code().isPublic(true).codeId(function.getCodeId())
               .fieldsToUpdate(List.of("is_public"));
-          runtimeService.updateCode(code, false, null);
+          runtimeService.updateCode(code, false);
           publicCount++;
         }
 
@@ -98,13 +99,13 @@ public class SeedData {
   }
 
   private void setSecurityContext(String email) {
-    UserEntity userEntity = new UserEntity();
+    UserEntity userEntity = null;
     if (!ObjectUtils.isEmpty(email)) {
       userEntity = userRepo.findByEmail(email);
     } else {
       SessionUser sessionUser = new SessionUser();
       String userId = "u_" + FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
-      sessionUser.setUid(userId);
+      sessionUser.setUserId(userId);
       sessionUser.setAvatar("https://i.pravatar.cc/300?uniquifier");
       sessionUser.setEmail(wordList.getRandomPhrase(3, true) + "@gmail.com");
       sessionUser.setUsername(wordList.getRandomPhrase(3, true)
@@ -112,10 +113,13 @@ public class SeedData {
       sessionUser.setName("Bob Lee");
       setContext(sessionUser);
       UserProfileResponse profileResponse = userService.getOrCreateUserprofile();
-      userEntity = userRepo.findByUid(profileResponse.getProfile().getUid());
+      Optional<UserEntity> userEntityOpt = userRepo.findById(profileResponse.getProfile().getUserId());
+      if (userEntityOpt.isPresent()) {
+        userEntity = userEntityOpt.get();
+      }
     }
     if (userEntity != null) {
-      ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(userEntity.getUid());
+      ApiKeyEntity apiKeyEntity = apiKeyRepo.findOldestApiKey(userEntity.getId());
       SessionUser sessionUser = new SessionUser();
       FHUtils.populateSessionUser(userRepo.findByApiKey(apiKeyEntity.getApiKey()), sessionUser);
       setContext(sessionUser);

@@ -1,6 +1,5 @@
 package net.functionhub.api.utils;
 
-import net.functionhub.api.UserProfile;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -36,7 +35,7 @@ public class ServiceTestHelper {
         user.setName("TestNG User");
         user.setEmail("testuser@exampe.com");
         user.setApiKey("fh-" + FHUtils.generateUid(FHUtils.API_KEY_LENGTH));
-        user.setUid(userId == null ? UUID.randomUUID().toString() : userId);
+        user.setUserId(userId == null ? UUID.randomUUID().toString() : userId);
         user.setMaxFunctions(10L);
         Mockito.when(authentication.getPrincipal()).thenReturn(user);
 

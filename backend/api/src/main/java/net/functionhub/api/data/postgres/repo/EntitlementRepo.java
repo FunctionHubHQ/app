@@ -13,5 +13,5 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Transactional
 public interface EntitlementRepo extends JpaRepository<EntitlementEntity, String> {
-  EntitlementEntity findByUserId(String uid);
+  EntitlementEntity findByUserId(String userId);
 }

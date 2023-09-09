@@ -47,6 +47,6 @@ public class EntitlementServiceImpl implements EntitlementService {
   }
 
   private String getUserKey() {
-    return INVOCATION_KEY_PREFIX + FHUtils.getSessionUser().getUid();
+    return INVOCATION_KEY_PREFIX + FHUtils.getSessionUser().getUserId();
   }
 }

@@ -34,7 +34,7 @@ public interface UserService {
 
   ApiKeyResponse getApiKeys();
 
-  ApiKeyResponse upsertApiKey(ApiKeyRequest apiKeyRequest);
+  ApiKeyResponse createNewApiKey(ApiKeyRequest apiKeyRequest);
 
   ApiKeyResponse deleteKey(ApiKeyRequest apiKeyRequest);
 

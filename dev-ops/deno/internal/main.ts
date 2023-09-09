@@ -30,7 +30,7 @@ async function getBody(ctx) {
 async function sendResult(ctx, spec, error) {
   const body = await getBody(ctx);
   const data = {
-    uid: body.uid,
+    code_id: body.codeId,
     error: error,
     spec
   }

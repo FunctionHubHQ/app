@@ -2,8 +2,7 @@ CREATE SCHEMA IF NOT EXISTS public;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS public.user (
-    id BIGSERIAL NOT NULL primary key,
-    uid varchar(255),
+    id varchar(255) NOT NULL primary key,
     username varchar(255),
     full_name varchar(255),
     email varchar(255),
@@ -13,24 +12,35 @@ CREATE TABLE IF NOT EXISTS public.user (
     is_premium_user boolean NOT NULL default false,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(uid)
+    UNIQUE(id)
 );
 ALTER TABLE public.user OWNER TO root;
 comment on table public.user is 'Basic user information';
 
 CREATE TABLE IF NOT EXISTS public.api_key (
-    id BIGSERIAL NOT NULL primary key,
+    id varchar(255) NOT NULL primary key,
     user_id varchar(255) NOT NULL,
     api_key varchar(64) NOT NULL,
-    is_vendor_key boolean NOT NULL default false,
+    provider varchar(255) NOT NULL,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(api_key, user_id)
 );
 ALTER TABLE public.api_key OWNER TO root;
 comment on table public.api_key is 'User API Keys';
 
+CREATE TABLE IF NOT EXISTS public.env_variable (
+    id varchar(255) NOT NULL primary key,
+    user_id varchar(255) NOT NULL,
+    env_variable_json text,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
+);
+ALTER TABLE public.env_variable OWNER TO root;
+comment on table public.env_variable is 'User environment variables';
+
 CREATE TABLE IF NOT EXISTS public.code_cell (
-    uid varchar(255) NOT NULL primary key,
+    id varchar(255) NOT NULL primary key,
     parent_id varchar(255),
     user_id varchar(255) NOT NULL, 
     function_name varchar(255) NOT NULL default '',
@@ -78,8 +88,8 @@ CREATE OR REPLACE FUNCTION search_docs(query text)
 ) AS
 $$
 
-SELECT cc.uid as codeid,
-       u.uid AS ownerid,
+SELECT cc.id as codeid,
+       u.id AS ownerid,
        u.username as ownerusername,
        u.avatar_url as owneravatar,
        cc.is_public AS ispublic,
@@ -92,7 +102,7 @@ SELECT cc.uid as codeid,
        cc.created_at AS createdat,
        cc.updated_at AS updatedat,
        ts_rank(search_doc, websearch_to_tsquery('english', query)) AS rank
-FROM public.code_cell cc JOIN public.user u on cc.user_id = u.uid
+FROM public.code_cell cc JOIN public.user u on cc.user_id = u.id
 WHERE search_doc @@ websearch_to_tsquery('english', query) AND
       cc.is_public = true
 ORDER BY rank DESC;
@@ -100,7 +110,7 @@ $$ LANGUAGE SQL;
 
 
 CREATE TABLE IF NOT EXISTS public.entitlement (
-    uid varchar(255) NOT NULL primary key,
+    id varchar(255) NOT NULL primary key,
     user_id varchar(255) NOT NULL,
 
 --     Max wall clock time
@@ -141,39 +151,28 @@ CREATE TABLE IF NOT EXISTS public.entitlement (
 );
 ALTER TABLE public.entitlement OWNER TO root;
 
-CREATE TABLE IF NOT EXISTS public.usage (
-    uid varchar(255) NOT NULL primary key,
-    user_id varchar(255) NOT NULL,
-    tokens bigint NOT NULL,
-    daily_invocations bigint NOT NULL,
-    updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(uid, user_id)
-);
-ALTER TABLE public.usage OWNER TO root;
-
 CREATE TABLE IF NOT EXISTS public.project (
-    uid varchar(255) NOT NULL primary key,
+    id varchar(255) NOT NULL primary key,
     user_id varchar(255) NOT NULL,
     project_name varchar(255) NOT NULL,
     description varchar(255) NOT NULL,
     updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(uid, user_id)
+    UNIQUE(id, user_id)
 );
 ALTER TABLE public.project OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.project_item (
-    uid varchar(255) NOT NULL primary key,
+    id varchar(255) NOT NULL primary key,
     project_id varchar(255) NOT NULL,
     code_id varchar(255) NOT NULL,
     created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(uid, code_id, project_id)
+    UNIQUE(id, code_id, project_id)
 );
 ALTER TABLE public.project_item OWNER TO root;
 
 CREATE TABLE IF NOT EXISTS public.commit_history (
-    uid varchar(255) NOT NULL primary key,
+    id varchar(255) NOT NULL primary key,
     code_cell_id varchar(255) NOT NULL,
     user_id varchar(255) NOT NULL,
     version varchar(32),

@@ -11,7 +11,7 @@ import lombok.Setter;
 public class ExecRequestInternal {
   private Map<String, Object> payload;
   private String env;
-  private String uid;
+  private String compositeCodeId;
   private Long maxCpuTime;
   private Long maxExecutionTime;
   private Long maxMemoryUsage;

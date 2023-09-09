@@ -1,6 +1,7 @@
 package net.functionhub.api.security;
 
 import net.functionhub.api.props.PropConfiguration;
+import net.functionhub.api.service.utils.FHUtils;
 import net.functionhub.api.utils.TestUtilConfiguration;
 import net.functionhub.api.utils.firebase.FirebaseSDKConfig;
 import net.functionhub.api.UserProfile;
@@ -30,7 +31,8 @@ public class SecurityTestConfiguration {
     @Bean
     public UserProfile getUserPrincipal() {
       UserProfile userProfile = new UserProfile();
-      userProfile.setUid(UUID.randomUUID().toString().replace("-", ""));
+      userProfile.setUsername(FHUtils.generateEntityId("up"));
+      userProfile.setUsername(UUID.randomUUID().toString().replace("-", ""));
       userProfile.setName("Sideshow Bob");
       userProfile.setEmail("bobby@gmail.com");
       userProfile.setPicture("http://lorem.picsum/200");

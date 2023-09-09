@@ -15,12 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Repository
 @Transactional
-public interface UserRepo extends JpaRepository<UserEntity, Long> {
-    UserEntity findByUid(String uid);
+public interface UserRepo extends JpaRepository<UserEntity, String> {
     UserEntity findByEmail(String email);
 
     @Query(value = "SELECT "
-        + "u.uid as uid, "
+        + "u.id as userid, "
         + "u.email as email, "
         + "u.full_name as name, "
         + "u.avatar_url as avatar, "
@@ -35,15 +34,15 @@ public interface UserRepo extends JpaRepository<UserEntity, Long> {
         + "e.max_functions as maxfunctions, "
         + "e.max_projects as maxprojects  " +
         "FROM public.user u "
-        + "JOIN public.api_key a ON u.uid = a.user_id "
-        + "JOIN public.entitlement e ON u.uid = e.user_id "
+        + "JOIN public.api_key a ON u.id = a.user_id "
+        + "JOIN public.entitlement e ON u.id = e.user_id "
         + "WHERE a.api_key = ?1",
         nativeQuery = true)
     UserProjection findByApiKey(String apiKey);
 
 
     @Query(value = "SELECT "
-        + "u.uid as uid, "
+        + "u.id as userid, "
         + "u.email as email, "
         + "u.full_name as name, "
         + "u.avatar_url as avatar, "
@@ -57,10 +56,10 @@ public interface UserRepo extends JpaRepository<UserEntity, Long> {
         + "e.max_functions as maxfunctions, "
         + "e.max_projects as maxprojects  " +
         "FROM public.user u "
-        + "JOIN public.entitlement e ON u.uid = e.user_id "
-        + "WHERE u.uid = ?1",
+        + "JOIN public.entitlement e ON u.id = e.user_id "
+        + "WHERE u.id = ?1",
         nativeQuery = true)
-    UserProjection findProjectionByUid(String uid);
+    UserProjection findByProjectId(String projectId);
 
     @Query(value = "SELECT count(*)" +
         "FROM public.user u "

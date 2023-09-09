@@ -10,7 +10,7 @@ import lombok.Setter;
 public class GenerateSpecRequest {
   private String file;
   private String env;
-  private String uid;
+  private String codeId;
   private String from;
   private String to;
   private String apiKey;

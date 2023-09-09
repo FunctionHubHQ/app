@@ -20,9 +20,9 @@ import lombok.Setter;
 @Table(schema = "public", name = "commit_history")
 public class CommitHistoryEntity {
     @Id
-    @JsonProperty("uid")
-    @Column(name = "uid")
-    private String uid;
+    @JsonProperty("id")
+    @Column(name = "id")
+    private String id;
 
     @JsonProperty("user_id")
     @Column(name = "user_id")
