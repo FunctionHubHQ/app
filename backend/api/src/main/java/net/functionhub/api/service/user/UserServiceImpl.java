@@ -1,7 +1,14 @@
 package net.functionhub.api.service.user;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import net.functionhub.api.ApiKey;
 import net.functionhub.api.ApiKeyProvider;
@@ -11,9 +18,11 @@ import net.functionhub.api.UsernameRequest;
 import net.functionhub.api.UsernameResponse;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
+import net.functionhub.api.data.postgres.entity.EnvVariableEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
+import net.functionhub.api.data.postgres.repo.EnvVariableRepo;
 import net.functionhub.api.data.postgres.repo.ProjectRepo;
 import net.functionhub.api.data.postgres.repo.UserRepo;
 import net.functionhub.api.dto.SessionUser;
@@ -44,6 +53,8 @@ public class UserServiceImpl implements UserService {
   private final EntitlementProps entitlementProps;
   private final DefaultConfigsProps defaultConfigsProps;
   private final Slugify slugify;
+  private final ObjectMapper objectMapper;
+  private final EnvVariableRepo envVariableRepo;
 
   @Override
   public UserProfileResponse getOrCreateUserprofile() {
@@ -222,6 +233,56 @@ public class UserServiceImpl implements UserService {
       entitlements.setUserId(userEntity.getId());
       entitlementRepo.save(entitlements);
     }
+  }
+
+  @Override
+  public String getEnvVariables() {
+    Map<String, Object> decodedKeys = getDecodedEnvVariables();
+    if (decodedKeys.size() > 0) {
+      Map<String, Object> redactedKeys = new HashMap<>();
+      for (Map.Entry<String, Object> entry : decodedKeys.entrySet()) {
+        redactedKeys.put(entry.getKey(), entry.getValue().toString().substring(0, 3) + "****************");
+      }
+      try {
+        return Base64.getEncoder().encodeToString(objectMapper.writeValueAsBytes(redactedKeys));
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException("Error parsing environment variables");
+      }
+    }
+    return null;
+  }
+
+  private Map<String, Object> getDecodedEnvVariables() {
+    EnvVariableEntity envVariableEntity = envVariableRepo.findByUserId(FHUtils.getSessionUser().getUserId());
+    if (envVariableEntity != null) {
+      TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
+      String decoded = new String(Base64.getDecoder().decode(envVariableEntity.getEnvVariableJson().getBytes()));
+      try {
+        return objectMapper.readValue(decoded, typeRef);
+      } catch (JsonProcessingException ignored) {
+      }
+    }
+    return new HashMap<>();
+  }
+
+  @Override
+  public Map<String, Object> getEnvVariablesToInject() {
+    return getDecodedEnvVariables();
+  }
+
+  @Override
+  public String upsertEnvVariables(String requestBody) {
+    EnvVariableEntity envVariableEntity = envVariableRepo.findByUserId(FHUtils.getSessionUser().getUserId());
+    if (envVariableEntity == null) {
+      envVariableEntity = new EnvVariableEntity();
+      envVariableEntity.setUserId(FHUtils.getSessionUser().getUserId());
+      envVariableEntity.setId(FHUtils.generateEntityId("ev"));
+    } else {
+      envVariableEntity.setUpdatedAt(LocalDateTime.now());
+    }
+    envVariableEntity.setEnvVariableJson(requestBody);
+    envVariableRepo.save(envVariableEntity);
+    return getEnvVariables();
   }
 
   private String cleanUsername(String username) {

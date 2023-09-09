@@ -1,6 +1,12 @@
 package net.functionhub.api.service.user;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import net.functionhub.api.ApiKeyProvider;
 import net.functionhub.api.ApiKeyRequest;
@@ -52,6 +58,9 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
     @Autowired
     private EntitlementRepo entitlementRepo;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @BeforeClass
     public void setup() {
         testHelper.prepareSecurity(null);
@@ -70,6 +79,27 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
     @AfterMethod
     public void afterEachTest(Method method) {
         log.info("  Testcase: " + method.getName() + " has ended");
+    }
+
+    @Test
+    public void createEnvVariablesTest() {
+        Map<String, Object> envVariables = new HashMap<>();
+        envVariables.put("ALPHA_KEY", "alpha value");
+        envVariables.put("BETA_KEY", "beta value");
+        try {
+            String encoded = userService.upsertEnvVariables(
+                Base64.getEncoder().encodeToString(objectMapper.writeValueAsBytes(envVariables)));
+            assertNotNull(encoded);
+            String decoded = new String(Base64.getDecoder().decode(encoded.getBytes()));
+            TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
+            Map<String, Object> savedKeys = objectMapper.readValue(decoded, typeRef);
+            assertNotNull(savedKeys);
+            assertEquals(2, savedKeys.size());
+            assertTrue(savedKeys.get("ALPHA_KEY").toString().startsWith("alp****************"));
+            assertTrue(savedKeys.get("BETA_KEY").toString().startsWith("bet****************"));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

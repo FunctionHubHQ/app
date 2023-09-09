@@ -10,12 +10,12 @@ self.onmessage = async (event) => {
       const message = args.map(it => JSON.stringify(it)).join(' ');
       self.postMessage({ stdout: message, compositeCodeId: compositeCodeId });
     }
-    self.process = {}
-    self.process.env = {}
+    self.Hub = {}
+    self.Hub.env = {}
     const startedAt = (new Date()).getTime()
     // Log the time the user code has started running for accurate cpu usage
     // measurement attribution
-    self.process.env["FH_ACCESS_TOKEN"] = accessToken;
+    self.Hub.env["FH_ACCESS_TOKEN"] = accessToken;
     self.postMessage({startedAt: startedAt, compositeCodeId: compositeCodeId, execId: execId})
     const result = await handler(event.data.payload);
     self.postMessage({ result: result, compositeCodeId: compositeCodeId });

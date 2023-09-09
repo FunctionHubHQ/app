@@ -33,6 +33,11 @@ public class UserController implements UserApi {
   }
 
   @Override
+  public ResponseEntity<String> getEnvVariables() {
+    return ResponseEntity.ok(userService.getEnvVariables());
+  }
+
+  @Override
   public ResponseEntity<UserProfileResponse> getUserprofile() {
     return ResponseEntity.ok(userService.getOrCreateUserprofile());
   }
@@ -45,6 +50,11 @@ public class UserController implements UserApi {
   @Override
   public ResponseEntity<ApiKeyResponse> upsertApiKey(ApiKeyRequest apiKeyRequest) {
     return ResponseEntity.ok(userService.createNewApiKey(apiKeyRequest));
+  }
+
+  @Override
+  public ResponseEntity<String> upsertEnvVariables(String requestBody) {
+    return ResponseEntity.ok(userService.upsertEnvVariables(requestBody));
   }
 
   @Override

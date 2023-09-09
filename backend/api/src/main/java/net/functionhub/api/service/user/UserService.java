@@ -1,5 +1,6 @@
 package net.functionhub.api.service.user;
 
+import java.util.Map;
 import net.functionhub.api.ApiKeyRequest;
 import net.functionhub.api.ApiKeyResponse;
 import net.functionhub.api.UserProfile;
@@ -49,4 +50,10 @@ public interface UserService {
    * integrated the session user object is into the services.
    */
   void createAnonymousUser();
+
+  String getEnvVariables();
+
+  Map<String, Object> getEnvVariablesToInject();
+
+  String upsertEnvVariables(String requestBody);
 }

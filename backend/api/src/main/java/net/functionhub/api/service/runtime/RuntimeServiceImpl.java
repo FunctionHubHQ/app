@@ -35,6 +35,7 @@ import net.functionhub.api.props.DenoProps;
 import net.functionhub.api.props.MessagesProps;
 import net.functionhub.api.props.SourceProps;
 import net.functionhub.api.service.entitlement.EntitlementService;
+import net.functionhub.api.service.user.UserService;
 import net.functionhub.api.service.user.UserService.AuthMode;
 import net.functionhub.api.service.utils.FHUtils;
 import java.io.File;
@@ -92,6 +93,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
   private final TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {};
   private final HttpServletResponse httpServletResponse;
+  private final UserService userService;
 
   // Define a unique version key to avoid conflicts
   public final static String versionKey = "version_" + FHUtils.generateUid(6);
@@ -315,19 +317,19 @@ public class RuntimeServiceImpl implements RuntimeService {
       }
       if (!ObjectUtils.isEmpty(code) && !ObjectUtils.isEmpty(userId)) {
         String rawCode = new String(Base64.getDecoder().decode(code.getBytes()));
-        return workerScript(rawCode, userId);
+        return workerScript(rawCode);
       }
     }
     return null;
   }
 
-  private String workerScript(String rawCode, String userId) {
+  private String workerScript(String rawCode) {
     StringJoiner joiner = new StringJoiner("\n");
     joiner.add(rawCode);
     try {
       File file = ResourceUtils.getFile("classpath:ts/workerTemplate.ts");
       String workerTemplate =  new String(Files.readAllBytes(file.toPath()));
-      workerTemplate = injectSecrets(workerTemplate, userId);
+      workerTemplate = injectSecrets(workerTemplate);
       joiner.add(workerTemplate);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -335,15 +337,18 @@ public class RuntimeServiceImpl implements RuntimeService {
     return joiner.toString();
   }
 
-  private String injectSecrets(String workerTemplate, String userId) {
+  private String injectSecrets(String workerTemplate) {
     // Inject all of this user's secrets into the global scope of the script
-    ;
     StringJoiner joiner = new StringJoiner(",\n");
     String key = "FUNCTION_HUB_KEY";
     String value = FHUtils.getSessionUser().getApiKey();
     joiner.add(String.format("'%s':'%s'", key, value));
+    Map<String, Object> envVariables = userService.getEnvVariablesToInject();
+    for (Map.Entry<String, Object> entry : envVariables.entrySet()) {
+      joiner.add(String.format("'%s':'%s'", entry.getKey(), entry.getValue()));
+    }
     return workerTemplate
-        .replace("self.process.env = {}", String.format("self.process.env = {%s}", joiner));
+        .replace("self.Hub.env = {}", String.format("self.Hub.env = {%s}", joiner));
   }
 
   @Override

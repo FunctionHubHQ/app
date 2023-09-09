@@ -39,7 +39,7 @@ public class FirebaseServiceIntegrationTest extends AbstractTestNGSpringContextT
     private FirebaseService firebaseService;
 
     private final String demoUserEmail = UUID.randomUUID() + "@functionhub.net";
-    private final String demoUserDisplayName = "Recipe Man";
+    private final String demoUserDisplayName = "Hub Man";
 
     @BeforeClass
     public void setup() {

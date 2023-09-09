@@ -580,6 +580,57 @@
         }
       }
     },
+    "/env-variables": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Upsert user env variables",
+        "operationId": "upsertEnvVariables",
+        "requestBody": {
+          "required": true,
+          "description": "Api key request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Env variable response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get all env variables",
+        "operationId": "getEnvVariables",
+        "responses": {
+          "200": {
+            "description": "Env variable response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/completion/{function_slug}": {
       "post": {
         "tags": [
