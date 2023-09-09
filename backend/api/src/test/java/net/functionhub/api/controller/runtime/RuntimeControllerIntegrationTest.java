@@ -1,4 +1,4 @@
-package net.functionhub.api.controller;
+package net.functionhub.api.controller.runtime;
 
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
@@ -25,6 +25,7 @@ import net.functionhub.api.GPTMessage;
 import net.functionhub.api.GenericResponse;
 import net.functionhub.api.ProjectCreateRequest;
 import net.functionhub.api.Projects;
+import net.functionhub.api.controller.ControllerTestConfiguration;
 import net.functionhub.api.data.postgres.entity.ApiKeyEntity;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.data.postgres.entity.EntitlementEntity;
@@ -169,7 +170,7 @@ public class RuntimeControllerIntegrationTest extends AbstractTestNGSpringContex
         log.info("  Testcase: " + method.getName() + " has ended");
     }
 
-    @Test(enabled = false)
+    @Test
     public void stressTestNonBlockingCalls() throws JsonProcessingException {
         final CodeUpdateResult nonBlockingCodeCell = createCodeCell(nonBlockingCode);
 

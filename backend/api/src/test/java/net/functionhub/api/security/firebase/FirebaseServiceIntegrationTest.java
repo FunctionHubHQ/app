@@ -1,10 +1,11 @@
-package net.functionhub.api.security;
+package net.functionhub.api.security.firebase;
 
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
+import net.functionhub.api.security.SecurityTestConfiguration;
 import net.functionhub.api.utils.firebase.FirebaseSDKConfig;
 import net.functionhub.api.utils.firebase.FirebaseService;
 import java.io.IOException;
@@ -27,7 +28,6 @@ import static org.hamcrest.Matchers.*;
  * @author Bizuwork Melesse
  * created on 8/22/21
  */
-@Ignore
 @Slf4j
 @SpringBootTest(classes = SecurityTestConfiguration.class)
 public class FirebaseServiceIntegrationTest extends AbstractTestNGSpringContextTests {
