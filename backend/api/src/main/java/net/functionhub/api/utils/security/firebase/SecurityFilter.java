@@ -98,6 +98,8 @@ public class SecurityFilter extends OncePerRequestFilter {
       if (bearerToken.startsWith(UserService.apiKeyPrefix)) {
         user = new SessionUser();
         if (bearerToken.contains("internal")) {
+          log.info("LOGGING INTERNAL REQUEST FROM REMOTE HOST: {}",
+              httpServletRequest.getRemoteHost());
           assert (httpServletRequest.getRequestURI().equals("/log") ||
               httpServletRequest.getRequestURI().equals("/seed")) &&
               httpServletRequest.getRemoteHost().equals("127.0.0.1");
