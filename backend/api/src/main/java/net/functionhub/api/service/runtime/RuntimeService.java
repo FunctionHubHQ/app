@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import net.functionhub.api.StatusRequest;
 import net.functionhub.api.StatusResponse;
+import net.functionhub.api.data.postgres.entity.CodeCellEntity;
 import net.functionhub.api.dto.SessionUser;
 
 /**
@@ -58,9 +59,9 @@ public interface RuntimeService {
 
   String getUserCode(String uid);
   GenericResponse handleExecResult(ExecResultAsync execResult);
-  CodeUpdateResult updateCode(Code code, boolean forked);
+  CodeUpdateResult updateCode(Code code, boolean forked, boolean initialUserFunction);
   Code getCodeDetail(String uid, Boolean bySlug);
-  void generateJsonSchema(SessionUser sessionUser, String code, String uid);
+  void generateJsonSchema(CodeCellEntity codeCell);
   String getJsonSchema(String uid);
   GenericResponse handleSpecResult(SpecResult specResult);
   GenericResponse deploy(ExecRequest execRequest);

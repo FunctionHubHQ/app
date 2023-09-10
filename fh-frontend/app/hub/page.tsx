@@ -1,17 +1,47 @@
+'use client'
 import { hubPages } from '#/lib/hubPages';
 import Link from 'next/link';
+import {useAuthContext} from "#/context/AuthContext";
+import {Button, Card} from "flowbite-react";
+import FHButton from "#/ui/project/fh-button";
+import {useRouter} from "next/navigation";
+import {createNewFunction} from "#/ui/utils/utils";
 
 export default function Page() {
+  const {authUser, fhUser} = useAuthContext()
+  const router = useRouter()
+
+  const onCreateFirstFunction = async () => {
+    await createNewFunction(router, authUser, undefined)
+  }
+
   return (
     <div className="space-y-8">
       <div className="space-y-10 text-white">
+        {fhUser?.projects && fhUser.projects.length === 0 ? <>
+
+          <Card className="max-w-full">
+            <h5 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+              <p>
+                Create your first function
+              </p>
+            </h5>
+            <p className="font-normal text-gray-700 dark:text-gray-400">
+              <p>
+                Create and deploy your first GPT function
+              </p>
+            </p>
+            <FHButton label="Create" onClick={onCreateFirstFunction}/>
+          </Card>
+        </> : null}
+
+
         {hubPages.map((section) => {
           return (
             <div key={section.name} className="space-y-5">
               <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">
                 {section.name}
               </div>
-
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                 {section.items.map((item) => {
                   return (

@@ -4,8 +4,10 @@ import moment from "moment";
 import {createTheme} from "@uiw/codemirror-themes";
 import {tags as t} from "@lezer/highlight";
 import { auth } from "./firebase-setup";
-import {ProjectApi, UserApi} from "#/codegen";
-import {headerConfig} from "#/ui/utils/headerConfig";
+import {CodeUpdateResult, ProjectApi, UserApi} from "#/codegen";
+import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
+import {User} from "firebase/auth";
+import {AppRouterInstance} from "next/dist/shared/lib/app-router-context";
 
 export const getFormattedDate = (date: number) => {
   return moment.unix(date).format("llll")
@@ -18,6 +20,24 @@ export const getCreatedAt = (timestamp: number) => {
   return ''
 }
 
+export const getFunctionPath = (codeId: string, projectId: string): string => {
+  return `/hub/projects/${projectId}/edit:${codeId}`
+}
+
+export const createNewFunction = async (router: AppRouterInstance, authUser?: User, projectId?: string) => {
+  const token = await getAuthToken(authUser)
+  if (token) {
+    new ProjectApi(headerConfig(token))
+    .createFunction(projectId ? projectId : '')
+    .then(result => {
+      const response : CodeUpdateResult = result.data
+      DEBUG("CodeUpdateResult: ", response)
+      router.push(getFunctionPath(response.code_id as string, response.project_id as string))
+    }).catch(e => {
+      ERROR(e.message)
+    })
+  }
+}
 // /**
 //  * Check if the current user is registered. If not, register them. Once
 //  * registration has been verified or completed, disable the progress indicator and

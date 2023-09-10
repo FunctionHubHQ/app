@@ -48,7 +48,7 @@ export default function Page() {
 
   return (
       <div className="w-full">
-        <CodeEditor userCode={userCode} setUserCode={setUserCode}/>
+        <CodeEditor userCode={userCode} setUserCode={setUserCode} showEditButtons={true}/>
       </div>
   );
 }

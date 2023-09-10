@@ -29,7 +29,7 @@ const FunctionToggle: FC<FunctionToggleProps> = (props) => {
         if (token) {
           new RuntimeApi(headerConfig(token))
           .updateCode({
-            uid: props.codeId,
+            code_id: props.codeId,
             is_public: !isPublic,
             fields_to_update: ["is_public"]
           })

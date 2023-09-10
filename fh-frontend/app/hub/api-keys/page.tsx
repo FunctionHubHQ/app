@@ -14,6 +14,7 @@ import { javascript } from '@codemirror/lang-javascript';
 const stateFields = { history: historyField };
 import { vscodeDark } from '@uiw/codemirror-theme-vscode';
 import FHButton from "#/ui/project/fh-button";
+import { Button, Card } from 'flowbite-react';
 
 export default function Page() {
   const [providerKeyValue, setProviderKey] = useState<string | undefined>()

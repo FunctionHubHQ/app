@@ -121,8 +121,8 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         Code code = new Code()
             .code(encodedCode)
             .projectId(projects.getProjects().get(0).getProjectId());
-        CodeUpdateResult response = runtimeService.updateCode(code, false
-        );
+        CodeUpdateResult response = runtimeService.updateCode(code, false,
+            false);
         assertNotNull(response);
         assertNotNull(response.getCodeId());
 
@@ -132,7 +132,7 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
             .codeId(response.getCodeId())
             .fieldsToUpdate(List.of("is_active", "is_public"));
 
-        response = runtimeService.updateCode(code, false);
+        response = runtimeService.updateCode(code, false, false);
         assertNotNull(response);
         assertNotNull(response.getCodeId());
         try {
@@ -167,31 +167,10 @@ public class RuntimeServiceIntegrationTest extends AbstractTestNGSpringContextTe
         codeCell.setIsActive(true);
         codeCell.setFunctionName("demo_code");
         codeCell.setSlug("demo-code");
-        codeCell.setVersion(runtimeService.generateCodeVersion());
+        codeCell.setVersion(FHUtils.generateCodeVersion());
         codeCellRepo.save(codeCell);
 
         String code = runtimeService.getUserCode(codeCell.getId());
         assertNotNull(code);
-    }
-
-    @Test(enabled = false)
-    public void generateOpenApiSpecTest() {
-        String tsSpec = "export interface Author = {\n"
-            + "  name: string;\n"
-            + "  image: string;\n"
-            + "  designation: string;\n"
-            + "};\n"
-            + "\n"
-            + "export interface Blog = {\n"
-            + "  id: number;\n"
-            + "  title: string;\n"
-            + "  paragraph: string;\n"
-            + "  image: string;\n"
-            + "  author: Author;\n"
-            + "  tags: string[];\n"
-            + "  publishDate: string;\n"
-            + "};\n";
-        runtimeService.generateJsonSchema(FHUtils.getSessionUser(), Base64.getEncoder().encodeToString(tsSpec.getBytes()),
-            UUID.randomUUID().toString());
     }
 }

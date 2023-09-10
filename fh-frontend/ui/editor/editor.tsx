@@ -21,6 +21,7 @@ import {useAuthContext} from "#/context/AuthContext";
 
 export interface CodeEditorProps {
   userCode?: Code
+  showEditButtons?: boolean,
   setUserCode: (userCode: Code) => void
 }
 
@@ -158,7 +159,7 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
                 <div className="gf-editor-base gf-editor">
 
                   <div className="w-full ">
-                    {isOwner() ?
+                    {props.showEditButtons && isOwner() ?
                     <div className="flex space-x-1 rounded-xl bg-[#1e1e1e] p-1">
                       <div
                           className='w-full rounded-lg py-2 text-sm font-medium leading-5 text-blue-700'

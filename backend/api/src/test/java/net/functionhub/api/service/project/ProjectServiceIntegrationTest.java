@@ -378,7 +378,7 @@ public class ProjectServiceIntegrationTest extends AbstractTestNGSpringContextTe
             for (FHFunction function : projectService.getAllFunctions(projectId).getFunctions()) {
                 Code code = new Code().isPublic(true).codeId(function.getCodeId())
                     .fieldsToUpdate(List.of("is_public"));
-                runtimeService.updateCode(code, false);
+                runtimeService.updateCode(code, false, false);
                 if (tagged > 0) {
                     projectService.updateFunction(
                         new FHFunction().tags("apple, google, facebook")

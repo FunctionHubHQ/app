@@ -49,11 +49,12 @@ public class ProjectServiceImpl implements ProjectService {
   @Override
   public CodeUpdateResult createFunction(String projectId) {
     String template = FHUtils.loadFile("ts/functionTemplate.ts");
-    return upsertCode(new Code()
+    return runtimeService.updateCode(new Code()
         .projectId(projectId)
         .isActive(true)
         .isPublic(false)
-        .code(Base64.getEncoder().encodeToString(template.getBytes())));
+        .code(Base64.getEncoder().encodeToString(template.getBytes())), false,
+        ObjectUtils.isEmpty(projectId));
   }
 
   @Override
@@ -153,7 +154,7 @@ public class ProjectServiceImpl implements ProjectService {
       return runtimeService.updateCode(new Code()
           .code(codeCell.get().getCode())
           .projectId(forkRequest.getProjectId())
-          .parentId(codeCell.get().getId()), true);
+          .parentId(codeCell.get().getId()), true, false);
     }
     return new CodeUpdateResult();
   }
@@ -194,9 +195,5 @@ public class ProjectServiceImpl implements ProjectService {
       }
     }
     return sort;
-  }
-
-  private CodeUpdateResult upsertCode(Code code) {
-    return runtimeService.updateCode(code, false);
   }
 }

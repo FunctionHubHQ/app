@@ -5,8 +5,8 @@ import {usePathname, useRouter} from "next/navigation";
 import AddButton from "#/ui/project/add-button";
 import {Boundary} from "#/ui/boundary";
 import {useEffect, useState} from "react";
-import {DEBUG, ERROR} from "#/ui/utils/utils";
-import {CodeUpdateResult, FHFunction, FHFunctions, ProjectApi, Projects} from "#/codegen";
+import {createNewFunction, DEBUG, ERROR, getFunctionPath} from "#/ui/utils/utils";
+import {FHFunction, FHFunctions, ProjectApi} from "#/codegen";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {useAuthContext} from "#/context/AuthContext";
 import FunctionToggle from "#/ui/project/toggle";
@@ -38,23 +38,7 @@ export default function Page() {
   }, [projectId])
 
   const onAddFunction = async () => {
-    const token = await getAuthToken(authUser)
-    if (token) {
-      // setCreationInProgress(true)
-      new ProjectApi(headerConfig(token))
-      .createFunction(projectId)
-      .then(result => {
-        const response : CodeUpdateResult = result.data
-        DEBUG("CodeUpdateResult: ", response)
-        router.push(getFunctionPath(response.code_id as string))
-      }).catch(e => {
-        ERROR(e.message)
-      })
-    }
-  }
-
-  const getFunctionPath = (codeId: string): string => {
-    return `/hub/projects/${projectId}/edit:${codeId}`
+    await createNewFunction(router, authUser, projectId)
   }
 
   const getAllFunctions = async () => {
@@ -123,7 +107,7 @@ export default function Page() {
                         />
                         <div className="grid grid-flow-col justify-stretch">
                           <div>
-                            <Link href={getFunctionPath(_function.code_id as string)}>
+                            <Link href={getFunctionPath(_function.code_id as string, _function.project_id as string)}>
                             <div className="font-medium text-gray-200 group-hover:text-gray-50 max-w-[10px]">
                               {_function.name}
                             </div>
@@ -132,7 +116,7 @@ export default function Page() {
                         </div>
 
                         {_function.description ? (
-                            <Link href={getFunctionPath(_function.code_id as string)}>
+                            <Link href={getFunctionPath(_function.code_id as string, _function.project_id as string)}>
                             <div className="line-clamp-3 text-sm text-gray-400 group-hover:text-gray-300">
                               {_function.description}
                             </div>

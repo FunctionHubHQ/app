@@ -428,7 +428,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public CodeUpdateResult updateCode(Code code, boolean forked) {
+  public CodeUpdateResult updateCode(Code code, boolean forked, boolean initialUserFunction) {
     if (!FHUtils.getSessionUser().isAnonymous()) {
       String rawCode = null;
       CodeCellEntity updatedCell = null;
@@ -488,25 +488,12 @@ public class RuntimeServiceImpl implements RuntimeService {
         // Reset schema fields
         updatedCell.setFullOpenApiSchema(null);
         updatedCell.setJsonSchema(null);
+        
+        createCommitHistory(updatedCell);
+        generateJsonSchema(updatedCell);
 
-        final CodeCellEntity finalCell = updatedCell;
-        Thread.startVirtualThread(() -> {
-          CommitHistoryEntity commitHistory = new CommitHistoryEntity();
-          commitHistory.setId(FHUtils.generateEntityId("ch"));
-          commitHistory.setUserId(finalCell.getUserId());
-          commitHistory.setCodeCellId(finalCell.getId());
-          commitHistory.setVersion(finalCell.getVersion());
-          commitHistory.setCode(finalCell.getCode());
-          commitHistoryRepo.save(commitHistory);
-        });
-
-        final SessionUser user = FHUtils.getSessionUser();
-
-        Thread.startVirtualThread(() -> generateJsonSchema(user,
-            new String(Base64.getDecoder()
-                .decode(finalCell.getCode()
-                    .getBytes())), finalCell.getId()));
-        String projectIdFound = maybeHandleFork(updatedCell, forked, code.getProjectId());
+        String projectIdFound = maybeAddCellToProject(updatedCell, forked, code.getProjectId(),
+            initialUserFunction);
         return new CodeUpdateResult()
             .projectId(projectIdFound)
             .codeId(updatedCell.getId())
@@ -517,44 +504,65 @@ public class RuntimeServiceImpl implements RuntimeService {
     return new CodeUpdateResult();
   }
 
-  private String maybeHandleFork(CodeCellEntity updatedCell, boolean forked, String projectId) {
+  private void createCommitHistory(final CodeCellEntity codeCell) {
+    Thread.startVirtualThread(() -> {
+      CommitHistoryEntity commitHistory = new CommitHistoryEntity();
+      commitHistory.setId(FHUtils.generateEntityId("ch"));
+      commitHistory.setUserId(codeCell.getUserId());
+      commitHistory.setCodeCellId(codeCell.getId());
+      commitHistory.setVersion(codeCell.getVersion());
+      commitHistory.setCode(codeCell.getCode());
+      commitHistoryRepo.save(commitHistory);
+    });
+  }
+
+  private String maybeAddCellToProject(CodeCellEntity codeCell, boolean forked, String projectId,
+      boolean initialUserFunction) {
     if (forked) {
       if (projectId != null) {
-        ProjectItemEntity projectItemEntity = new ProjectItemEntity();
-        projectItemEntity.setId(FHUtils.generateEntityId("pi"));
-        projectItemEntity.setCodeId(updatedCell.getId());
-        projectItemEntity.setProjectId(projectId);
-        projectItemRepo.save(projectItemEntity);
+        createProjectItem(codeCell.getId(), projectId);
         return projectId;
       } else {
         // The user has no project so create a default project and fork the code into it
-        ProjectEntity projectEntity = new ProjectEntity();
-        projectEntity.setProjectName("Untitled");
-        projectEntity.setDescription("My first project");
-        projectEntity.setUserId(FHUtils.getSessionUser().getUserId());
-        projectEntity.setId(FHUtils.generateEntityId("p"));
-        projectRepo.save(projectEntity);
+        projectId = createEmptyProject();
 
         ProjectItemEntity projectItemEntity = new ProjectItemEntity();
         projectItemEntity.setId(FHUtils.generateEntityId("pi"));
-        projectItemEntity.setCodeId(updatedCell.getId());
-        projectItemEntity.setProjectId(projectEntity.getId());
+        projectItemEntity.setCodeId(codeCell.getId());
+        projectItemEntity.setProjectId(projectId);
         projectItemRepo.save(projectItemEntity);
-        return projectEntity.getId();
+        return projectId;
       }
     }
     else {
-      ProjectItemEntity projectItemEntity = projectItemRepo.findByCodeId(updatedCell.getId());
+      if (initialUserFunction) {
+        projectId = createEmptyProject();
+      }
+      ProjectItemEntity projectItemEntity = projectItemRepo.findByCodeId(codeCell.getId());
       if (projectItemEntity == null) {
-        projectItemEntity = new ProjectItemEntity();
-        projectItemEntity.setId(FHUtils.generateEntityId("pi"));
-        projectItemEntity.setCodeId(updatedCell.getId());
-        projectItemEntity.setProjectId(projectId);
-        projectItemRepo.save(projectItemEntity);
-        return projectItemEntity.getProjectId();
+        createProjectItem(codeCell.getId(), projectId);
+        return projectId;
       }
     }
     return null;
+  }
+
+  private void createProjectItem(String codeId, String projectId) {
+    ProjectItemEntity projectItemEntity = new ProjectItemEntity();
+    projectItemEntity.setId(FHUtils.generateEntityId("pi"));
+    projectItemEntity.setCodeId(codeId);
+    projectItemEntity.setProjectId(projectId);
+    projectItemRepo.save(projectItemEntity);
+  }
+
+  private String createEmptyProject() {
+    ProjectEntity projectEntity = new ProjectEntity();
+    projectEntity.setProjectName("Untitled");
+    projectEntity.setDescription("My first project");
+    projectEntity.setUserId(FHUtils.getSessionUser().getUserId());
+    projectEntity.setId(FHUtils.generateEntityId("p"));
+    projectRepo.save(projectEntity);
+    return projectEntity.getId();
   }
 
   private String getUniqueSlug() {
@@ -644,15 +652,19 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public void generateJsonSchema(SessionUser sessionUser, String code, String codeId) {
-    GenerateSpecRequest request = new GenerateSpecRequest();
-    request.setFile(code);
-    request.setEnv(sourceProps.getProfile());
-    request.setCodeId(codeId);
-    request.setFrom("ts");
-    request.setTo("jsc");
-    request.setApiKey(sessionUser.getApiKey());
-    submitExecutionTask(request, getCodeGenUrl());
+  public void generateJsonSchema(final CodeCellEntity codeCell) {
+    final SessionUser sessionUser = FHUtils.getSessionUser();
+    Thread.startVirtualThread(() -> {
+      GenerateSpecRequest request = new GenerateSpecRequest();
+      request.setFile(new String(Base64.getDecoder().decode(codeCell.getCode().getBytes())));
+      request.setEnv(sourceProps.getProfile());
+      request.setCodeId(codeCell.getId());
+      request.setFrom("ts");
+      request.setTo("jsc");
+      request.setApiKey(sessionUser.getApiKey());
+      submitExecutionTask(request, getCodeGenUrl());
+    });
+    
   }
 
   @Override

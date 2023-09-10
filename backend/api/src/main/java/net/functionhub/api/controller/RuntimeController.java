@@ -79,7 +79,7 @@ public class RuntimeController implements RuntimeApi, SpecApi {
 
   @Override
   public ResponseEntity<CodeUpdateResult> updateCode(Code code) {
-    return ResponseEntity.ok(runtimeService.updateCode(code, false));
+    return ResponseEntity.ok(runtimeService.updateCode(code, false, false));
   }
 
   @Override

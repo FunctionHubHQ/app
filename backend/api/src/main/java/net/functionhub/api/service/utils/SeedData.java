@@ -84,7 +84,7 @@ public class SeedData {
         if (publicCount < numPublicFunctions) {
           Code code = new Code().isPublic(true).codeId(function.getCodeId())
               .fieldsToUpdate(List.of("is_public"));
-          runtimeService.updateCode(code, false);
+          runtimeService.updateCode(code, false, false);
           publicCount++;
         }
 
