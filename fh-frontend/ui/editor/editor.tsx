@@ -39,14 +39,14 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
   const { authUser, fhUser } = useAuthContext()
 
   const isOwner = () => {
-    return authUser && fhUser ? fhUser.uid === props.userCode?.owner_id : false
+    return authUser && fhUser ? fhUser.user_id === props.userCode?.owner_id : false
   }
   const getCodeKey = () => {
-    return  "main_" + props.userCode?.uid as string
+    return  "main_" + props.userCode?.code_id as string
   }
 
   const getStateKey = () => {
-    return 'editorState_' + props.userCode?.uid as string
+    return 'editorState_' + props.userCode?.code_id as string
   }
 
   const onCodeChange = (value: string, viewUpdate: any) => {
@@ -65,7 +65,7 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
       if (token && typeof mainCode === "string") {
         new RuntimeApi(headerConfig(token))
         .deploy({
-          uid: props.userCode?.uid
+          code_id: props.userCode?.code_id
         })
         .then(result => {
           DEBUG("Deploy Response: ", result.data)
@@ -100,14 +100,14 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
         if (typeof mainCode === "string") {
           new RuntimeApi(headerConfig(token))
           .updateCode({
-            uid: props.userCode?.uid,
+            code_id: props.userCode?.code_id,
             code: btoa(mainCode),
             fields_to_update: ["code"]
           })
           .then(result => {
             const _code = {...props.userCode}
             DEBUG("Update Response: ", result.data)
-            _code["uid"] = result.data.uid
+            _code["code_id"] = result.data.code_id
             setFunctionSlug(result.data.slug)
             setVersion(result.data.version)
             props.setUserCode(_code)
@@ -216,7 +216,7 @@ const CodeEditor: FC<CodeEditorProps> = (props) => {
                               }
                               : undefined
                         }
-                        onChange={(value, valueUpdate) => onCodeChange(value, valueUpdate, "main")}
+                        onChange={(value, valueUpdate) => onCodeChange(value, valueUpdate)}
                     />
                   </div>
                 </div>

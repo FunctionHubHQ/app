@@ -48,7 +48,7 @@ const ExploreView: FC<ExploreViewProps> = (props) => {
       }).then(response => {
         const updateResult: CodeUpdateResult = response.data
         console.log("FORK RESULT: ", updateResult)
-        router.push(`/hub/projects/${updateResult.project_id}/edit:${updateResult.uid}`)
+        router.push(`/hub/projects/${updateResult.project_id}/edit:${updateResult.code_id}`)
       }).catch(e => ERROR(e))
     }
   }

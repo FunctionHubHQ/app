@@ -9,7 +9,12 @@ import {UserApi, UserProfile, UserProfileResponse} from "#/codegen";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import { setCookie, deleteCookie } from 'cookies-next';
 
-export const AuthContext = React.createContext({});
+interface AuthContextProps {
+  authUser?: User,
+  fhUser?: UserProfile
+}
+
+export const AuthContext: React.Context<AuthContextProps> = React.createContext({});
 
 export const useAuthContext = () => React.useContext(AuthContext);
 

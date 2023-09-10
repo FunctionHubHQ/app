@@ -5,7 +5,7 @@ export const offlineMode = false
 
 export const ANONYMOUS_USER_API_KEY = "fh-anon-YmaGJfzBpgjWbgWiphfF7RfGNirNtQT7UJ2Ig5jB2SffW7"
 
-export const getAuthToken = async (user: User): Promise<string> => {
+export const getAuthToken = async (user?: User): Promise<string> => {
     if (!!user) {
         const tokenResult = await user?.getIdTokenResult(false)
         if (tokenResult?.token) {

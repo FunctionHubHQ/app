@@ -14,15 +14,17 @@ import {AiOutlineCheck, AiOutlineClose} from 'react-icons/ai'
 
 export default function Page() {
   const [usernameAvailable, setUsernameAvailable] = useState(false)
-  const [username, setUsername] = useState<string | undefined>(undefined)
+  const [username, setUsername] = useState('')
   const { authUser, fhUser } = useAuthContext()
 
   useEffect(() => {
     initProfile()
-  }, [])
+  }, [fhUser])
 
   const initProfile = () => {
-    setUsername(fhUser?.username)
+    if (fhUser?.username) {
+      setUsername(fhUser?.username)
+    }
   }
 
   const onUpdateProfile = async () => {
@@ -34,12 +36,12 @@ export default function Page() {
       })
       .then(result => {
         const response: UserProfileResponse = result.data
-        setUsername(response.profile?.username)
+        setUsername(response.profile?.username ? response.profile?.username : '')
       }).catch(e => ERROR(e))
     }
   }
 
-  const onChange = async (e) => {
+  const onChange = async (e: any) => {
     e.preventDefault()
     setUsername(e.target.value)
     const token = await getAuthToken(authUser)

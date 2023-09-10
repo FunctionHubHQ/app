@@ -46,7 +46,7 @@ export default function Page() {
       .then(result => {
         const response : CodeUpdateResult = result.data
         DEBUG("CodeUpdateResult: ", response)
-        router.push(getFunctionPath(response.uid as string))
+        router.push(getFunctionPath(response.code_id as string))
       }).catch(e => {
         ERROR(e.message)
       })

@@ -41,11 +41,21 @@ export interface ApiKey {
     created_at?: number;
     /**
      * 
-     * @type {boolean}
+     * @type {ApiKeyProvider}
      * @memberof ApiKey
      */
-    is_vendor_key?: boolean;
+    provider?: ApiKeyProvider;
 }
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+export enum ApiKeyProvider {
+    FunctionHub = 'FUNCTION_HUB',
+    OpenAi = 'OPEN_AI'
+}
+
 /**
  * 
  * @export
@@ -60,10 +70,10 @@ export interface ApiKeyRequest {
     key?: string;
     /**
      * 
-     * @type {boolean}
+     * @type {ApiKeyProvider}
      * @memberof ApiKeyRequest
      */
-    is_vendor_key?: boolean;
+    provider?: ApiKeyProvider;
 }
 /**
  * 
@@ -85,11 +95,17 @@ export interface ApiKeyResponse {
  */
 export interface Code {
     /**
-     * Code cell uid
+     * 
      * @type {string}
      * @memberof Code
      */
-    uid?: string;
+    code_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Code
+     */
+    project_id?: string;
     /**
      * 
      * @type {string}
@@ -162,7 +178,7 @@ export interface CodeUpdateResult {
      * @type {string}
      * @memberof CodeUpdateResult
      */
-    uid?: string;
+    code_id?: string;
     /**
      * 
      * @type {string}
@@ -193,7 +209,7 @@ export interface ExecRequest {
      * @type {string}
      * @memberof ExecRequest
      */
-    uid?: string;
+    code_id?: string;
     /**
      * 
      * @type {string}
@@ -236,7 +252,7 @@ export interface ExecResultAsync {
      * @type {string}
      * @memberof ExecResultAsync
      */
-    uid?: string;
+    code_id?: string;
     /**
      * 
      * @type {string}
@@ -688,7 +704,7 @@ export interface SpecResult {
      * @type {string}
      * @memberof SpecResult
      */
-    uid?: string;
+    code_id?: string;
     /**
      * 
      * @type {Spec}
@@ -757,7 +773,7 @@ export interface UserProfile {
      * @type {string}
      * @memberof UserProfile
      */
-    uid?: string;
+    user_id?: string;
     /**
      * 
      * @type {string}
@@ -2005,16 +2021,16 @@ export const RuntimeApiAxiosParamCreator = function (configuration?: Configurati
         /**
          * Get user code detail
          * @summary Get user code detail
-         * @param {string} uid 
+         * @param {string} codeId 
          * @param {boolean} [bySlug] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getCodeDetail: async (uid: string, bySlug?: boolean, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'uid' is not null or undefined
-            assertParamExists('getCodeDetail', 'uid', uid)
-            const localVarPath = `/code/{uid}`
-                .replace(`{${"uid"}}`, encodeURIComponent(String(uid)));
+        getCodeDetail: async (codeId: string, bySlug?: boolean, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'codeId' is not null or undefined
+            assertParamExists('getCodeDetail', 'codeId', codeId)
+            const localVarPath = `/code/{code_id}`
+                .replace(`{${"code_id"}}`, encodeURIComponent(String(codeId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -2080,15 +2096,15 @@ export const RuntimeApiAxiosParamCreator = function (configuration?: Configurati
         },
         /**
          * 
-         * @param {string} uid 
+         * @param {string} codeId 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getUserCode: async (uid: string, options: any = {}): Promise<RequestArgs> => {
-            // verify required parameter 'uid' is not null or undefined
-            assertParamExists('getUserCode', 'uid', uid)
-            const localVarPath = `/npm/{uid}`
-                .replace(`{${"uid"}}`, encodeURIComponent(String(uid)));
+        getUserCode: async (codeId: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'codeId' is not null or undefined
+            assertParamExists('getUserCode', 'codeId', codeId)
+            const localVarPath = `/npm/{code_id}`
+                .replace(`{${"code_id"}}`, encodeURIComponent(String(codeId)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -2334,13 +2350,13 @@ export const RuntimeApiFp = function(configuration?: Configuration) {
         /**
          * Get user code detail
          * @summary Get user code detail
-         * @param {string} uid 
+         * @param {string} codeId 
          * @param {boolean} [bySlug] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getCodeDetail(uid: string, bySlug?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Code>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getCodeDetail(uid, bySlug, options);
+        async getCodeDetail(codeId: string, bySlug?: boolean, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Code>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getCodeDetail(codeId, bySlug, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -2356,12 +2372,12 @@ export const RuntimeApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
-         * @param {string} uid 
+         * @param {string} codeId 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getUserCode(uid: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getUserCode(uid, options);
+        async getUserCode(codeId: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getUserCode(codeId, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -2454,13 +2470,13 @@ export const RuntimeApiFactory = function (configuration?: Configuration, basePa
         /**
          * Get user code detail
          * @summary Get user code detail
-         * @param {string} uid 
+         * @param {string} codeId 
          * @param {boolean} [bySlug] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getCodeDetail(uid: string, bySlug?: boolean, options?: any): AxiosPromise<Code> {
-            return localVarFp.getCodeDetail(uid, bySlug, options).then((request) => request(axios, basePath));
+        getCodeDetail(codeId: string, bySlug?: boolean, options?: any): AxiosPromise<Code> {
+            return localVarFp.getCodeDetail(codeId, bySlug, options).then((request) => request(axios, basePath));
         },
         /**
          * Execution results are short-lived
@@ -2474,12 +2490,12 @@ export const RuntimeApiFactory = function (configuration?: Configuration, basePa
         },
         /**
          * 
-         * @param {string} uid 
+         * @param {string} codeId 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getUserCode(uid: string, options?: any): AxiosPromise<string> {
-            return localVarFp.getUserCode(uid, options).then((request) => request(axios, basePath));
+        getUserCode(codeId: string, options?: any): AxiosPromise<string> {
+            return localVarFp.getUserCode(codeId, options).then((request) => request(axios, basePath));
         },
         /**
          * Handles user code execution result
@@ -2570,14 +2586,14 @@ export class RuntimeApi extends BaseAPI {
     /**
      * Get user code detail
      * @summary Get user code detail
-     * @param {string} uid 
+     * @param {string} codeId 
      * @param {boolean} [bySlug] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RuntimeApi
      */
-    public getCodeDetail(uid: string, bySlug?: boolean, options?: any) {
-        return RuntimeApiFp(this.configuration).getCodeDetail(uid, bySlug, options).then((request) => request(this.axios, this.basePath));
+    public getCodeDetail(codeId: string, bySlug?: boolean, options?: any) {
+        return RuntimeApiFp(this.configuration).getCodeDetail(codeId, bySlug, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -2594,13 +2610,13 @@ export class RuntimeApi extends BaseAPI {
 
     /**
      * 
-     * @param {string} uid 
+     * @param {string} codeId 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof RuntimeApi
      */
-    public getUserCode(uid: string, options?: any) {
-        return RuntimeApiFp(this.configuration).getUserCode(uid, options).then((request) => request(this.axios, this.basePath));
+    public getUserCode(codeId: string, options?: any) {
+        return RuntimeApiFp(this.configuration).getUserCode(codeId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -2927,6 +2943,36 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             };
         },
         /**
+         * 
+         * @summary Get all env variables
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getEnvVariables: async (options: any = {}): Promise<RequestArgs> => {
+            const localVarPath = `/env-variables`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Get user profile or create one if it doesn\'t exist
          * @summary Get user profile
          * @param {*} [options] Override http request option.
@@ -3030,6 +3076,42 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
         },
         /**
          * 
+         * @summary Upsert user env variables
+         * @param {string} body Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        upsertEnvVariables: async (body: string, options: any = {}): Promise<RequestArgs> => {
+            // verify required parameter 'body' is not null or undefined
+            assertParamExists('upsertEnvVariables', 'body', body)
+            const localVarPath = `/env-variables`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter, options.query);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(body, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary Check if username exists
          * @param {UsernameRequest} usernameRequest Username check
          * @param {*} [options] Override http request option.
@@ -3096,6 +3178,16 @@ export const UserApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
+         * 
+         * @summary Get all env variables
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getEnvVariables(options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getEnvVariables(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * Get user profile or create one if it doesn\'t exist
          * @summary Get user profile
          * @param {*} [options] Override http request option.
@@ -3125,6 +3217,17 @@ export const UserApiFp = function(configuration?: Configuration) {
          */
         async upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ApiKeyResponse>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.upsertApiKey(apiKeyRequest, options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
+         * 
+         * @summary Upsert user env variables
+         * @param {string} body Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async upsertEnvVariables(body: string, options?: any): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.upsertEnvVariables(body, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -3168,6 +3271,15 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
             return localVarFp.getApiKeys(options).then((request) => request(axios, basePath));
         },
         /**
+         * 
+         * @summary Get all env variables
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getEnvVariables(options?: any): AxiosPromise<string> {
+            return localVarFp.getEnvVariables(options).then((request) => request(axios, basePath));
+        },
+        /**
          * Get user profile or create one if it doesn\'t exist
          * @summary Get user profile
          * @param {*} [options] Override http request option.
@@ -3195,6 +3307,16 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
          */
         upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any): AxiosPromise<ApiKeyResponse> {
             return localVarFp.upsertApiKey(apiKeyRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Upsert user env variables
+         * @param {string} body Api key request
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        upsertEnvVariables(body: string, options?: any): AxiosPromise<string> {
+            return localVarFp.upsertEnvVariables(body, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -3240,6 +3362,17 @@ export class UserApi extends BaseAPI {
     }
 
     /**
+     * 
+     * @summary Get all env variables
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public getEnvVariables(options?: any) {
+        return UserApiFp(this.configuration).getEnvVariables(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Get user profile or create one if it doesn\'t exist
      * @summary Get user profile
      * @param {*} [options] Override http request option.
@@ -3272,6 +3405,18 @@ export class UserApi extends BaseAPI {
      */
     public upsertApiKey(apiKeyRequest: ApiKeyRequest, options?: any) {
         return UserApiFp(this.configuration).upsertApiKey(apiKeyRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Upsert user env variables
+     * @param {string} body Api key request
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public upsertEnvVariables(body: string, options?: any) {
+        return UserApiFp(this.configuration).upsertEnvVariables(body, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
