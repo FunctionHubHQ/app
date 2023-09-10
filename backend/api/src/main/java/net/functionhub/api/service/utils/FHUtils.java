@@ -17,14 +17,18 @@ import java.util.Random;
 import net.functionhub.api.Project;
 import net.functionhub.api.UserProfile;
 import net.functionhub.api.data.postgres.entity.CodeCellEntity;
+import net.functionhub.api.data.postgres.entity.CommitHistoryEntity;
 import net.functionhub.api.data.postgres.projection.Deployment;
 import net.functionhub.api.data.postgres.projection.UserProjectProjection;
 import net.functionhub.api.data.postgres.projection.UserProjection;
+import net.functionhub.api.data.postgres.repo.CodeCellRepo;
+import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.dto.SessionUser;
 import net.functionhub.api.service.user.UserService;
 import org.eclipse.jetty.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.ResourceUtils;
 
 /**
@@ -233,5 +237,36 @@ public class FHUtils {
 
   public static String generateEntityId(String prefix) {
     return prefix + generateUid(SHORT_UID_LENGTH);
+  }
+
+  public static void reTraffic(CodeCellRepo codeCellRepo, CommitHistoryRepo commitHistoryRepo) {
+    // If any injected fields, e.g. env variables, api keys, and billing information, changes, we
+    // should regenerate the version IDs of all deployed and undeployed code. This would invalidate
+    // the cache in the runtime (the files won't get deleted, however)
+    List<CodeCellEntity> allCodeCells = codeCellRepo.findByUserId(getSessionUser().getUserId());
+    if (!ObjectUtils.isEmpty(allCodeCells)) {
+      // Note: We are not updating the updated_at timestamp
+      Map<String, CodeCellEntity> codeCellsById = new HashMap<>();
+      List<String> codeCellIds = new ArrayList<>();
+      for (CodeCellEntity cell : allCodeCells) {
+        codeCellsById.put(cell.getId(), cell);
+        codeCellIds.add(cell.getId());
+        cell.setVersion(generateCodeVersion());
+      }
+      codeCellRepo.saveAll(allCodeCells);
+      // Only need to
+      List<CommitHistoryEntity> commitHistoryEntities = commitHistoryRepo
+          .findAllDeploymentsByAllCodeIds(codeCellIds);
+      for (CommitHistoryEntity commit : commitHistoryEntities) {
+        commit.setVersion(codeCellsById.get(commit.getCodeCellId()).getVersion());
+      }
+      if (!ObjectUtils.isEmpty(commitHistoryEntities)) {
+        commitHistoryRepo.saveAll(commitHistoryEntities);
+      }
+    }
+  }
+
+  public static String generateCodeVersion() {
+    return FHUtils.generateUid(FHUtils.SHORT_UID_LENGTH);
   }
 }
