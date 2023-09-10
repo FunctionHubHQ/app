@@ -18,19 +18,19 @@ export default function RootLayout({
   const editorLayout = pathname.includes("edit:")
   const homePageLayout = pathname === '/'
   const exploreLayout = pathname.startsWith("/explore")
-  const viewParentLayout = pathname.startsWith("/view") && pathname.length == "/view".length || pathname.length == "/view/".length
+  // const viewParentLayout = pathname.startsWith("/view") && pathname.length == "/view".length || pathname.length == "/view/".length
   const viewPublicCodeLayout = pathname.startsWith("/view") && pathname.length > "/view/".length
   const noBgLayout = pathname.includes("/terms") ||
       pathname.includes("/privacy") ||
       pathname.includes("/about") ||
       pathname.includes("/pricing")
-  const applyGlobalLayout = !(loginLayout || editorLayout || noBgLayout || homePageLayout || exploreLayout || viewParentLayout || viewPublicCodeLayout)
+  const applyGlobalLayout = !(loginLayout || editorLayout || noBgLayout || homePageLayout || exploreLayout || viewPublicCodeLayout)
 
   return (
     <html lang="en" className="[color-scheme:dark]">
       <body className="overflow-y-scroll bg-[#1e1e1e] px-8" >
       <AuthContextProvider>
-        <HeaderNav/>
+        {!loginLayout && <HeaderNav/>}
         {loginLayout && <div className="min-h-screen">
           <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
             <div>
@@ -66,7 +66,7 @@ export default function RootLayout({
             </div>
         }
 
-        {(applyGlobalLayout || viewParentLayout) &&
+        {applyGlobalLayout &&
         <div className="min-h-screen pt-20">
           <div className="mx-auto max-w-4xl space-y-8 px-2 pt-20 lg:px-8 lg:py-8">
 
@@ -95,7 +95,7 @@ export default function RootLayout({
         }
 
         {/*{viewPublicCodeLayout && children}*/}
-        <Footer/>
+        {!loginLayout && <Footer/> }
       </AuthContextProvider>
       </body>
     </html>

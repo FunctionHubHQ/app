@@ -130,8 +130,8 @@ const ExploreView: FC<ExploreViewProps> = (props) => {
               <div className="rounded-lg bg-black p-3.5 lg:p-6">
               <Boundary labels={['explore']} color="pink" animateRerendering={false}>
                 <div className="text-vercel-pink space-y-4">
-                  <h2 className="text-lg text-vercel-pink font-bold">You have reached the end</h2>
-                  <p className="text-sm">Sorry, there are no more pages :(</p>
+                  <h2 className="text-lg text-vercel-pink font-bold">There is nothing here</h2>
+                  <p className="text-sm">{"Sorry, we couldn't find pages to show :("}</p>
                 </div>
               </Boundary>
               </div>

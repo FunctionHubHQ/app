@@ -2,7 +2,7 @@
 
 import CodeEditor from "#/ui/editor/editor";
 import {useEffect, useState} from "react";
-import {usePathname} from "next/navigation";
+import {usePathname, useRouter} from "next/navigation";
 import {DEBUG, ERROR} from "#/ui/utils/utils";
 import {getAuthToken, headerConfig} from "#/ui/utils/headerConfig";
 import {useAuthContext} from "#/context/AuthContext";
@@ -16,6 +16,7 @@ export default function Page() {
   const [userCode, setUserCode] = useState<Code | undefined>(undefined)
   const { authUser } = useAuthContext()
   const pathname = usePathname();
+  const router = useRouter()
 
 
   useEffect(() => {
@@ -38,9 +39,14 @@ export default function Page() {
         .then(result => {
           const response : Code = result.data
           DEBUG("User code: ", response)
-          setUserCode(response)
+          if (response.code_id) {
+            setUserCode(response)
+          } else {
+            router.push("/view")
+          }
         }).catch(e => {
           ERROR(e.message)
+          router.push("/view")
         })
       }
     })
