@@ -247,18 +247,27 @@ public class FHUtils {
     if (!ObjectUtils.isEmpty(allCodeCells)) {
       // Note: We are not updating the updated_at timestamp
       Map<String, CodeCellEntity> codeCellsById = new HashMap<>();
+      Map<String, String> oldDeployedVersions = new HashMap<>();
       List<String> codeCellIds = new ArrayList<>();
       for (CodeCellEntity cell : allCodeCells) {
         codeCellsById.put(cell.getId(), cell);
         codeCellIds.add(cell.getId());
         cell.setVersion(generateCodeVersion());
+        if (cell.getDeployed()) {
+          oldDeployedVersions.put(cell.getId(), cell.getDeployedVersion());
+          cell.setDeployedVersion(cell.getVersion());
+        }
       }
       codeCellRepo.saveAll(allCodeCells);
       // Only need to
       List<CommitHistoryEntity> commitHistoryEntities = commitHistoryRepo
           .findAllDeploymentsByAllCodeIds(codeCellIds);
       for (CommitHistoryEntity commit : commitHistoryEntities) {
-        commit.setVersion(codeCellsById.get(commit.getCodeCellId()).getVersion());
+        if (commit.getDeployed() &&
+            oldDeployedVersions.containsKey(commit.getCodeCellId()) &&
+            oldDeployedVersions.get(commit.getCodeCellId()).equals(commit.getVersion())) {
+          commit.setVersion(codeCellsById.get(commit.getCodeCellId()).getVersion());
+        }
       }
       if (!ObjectUtils.isEmpty(commitHistoryEntities)) {
         commitHistoryRepo.saveAll(commitHistoryEntities);

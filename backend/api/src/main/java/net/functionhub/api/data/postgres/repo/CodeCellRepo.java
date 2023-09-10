@@ -34,6 +34,8 @@ public interface CodeCellRepo extends JpaRepository<CodeCellEntity, String> {
       nativeQuery = true)
   CodeCellEntity findBySlugAndVersion(String slug, String version);
 
+  List<CodeCellEntity> findByUserId(String userId);
+
   @Query(value = "SELECT cc.* " +
       "FROM public.code_cell cc JOIN public.api_key a ON cc.user_id = a.user_id "
       + "WHERE cc.slug = ?1 AND a.api_key = ?2",

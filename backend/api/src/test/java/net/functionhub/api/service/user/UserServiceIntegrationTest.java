@@ -95,8 +95,8 @@ public class UserServiceIntegrationTest extends AbstractTestNGSpringContextTests
             Map<String, Object> savedKeys = objectMapper.readValue(decoded, typeRef);
             assertNotNull(savedKeys);
             assertEquals(2, savedKeys.size());
-            assertTrue(savedKeys.get("ALPHA_KEY").toString().startsWith("alp****************"));
-            assertTrue(savedKeys.get("BETA_KEY").toString().startsWith("bet****************"));
+            assertTrue(savedKeys.get("ALPHA_KEY").toString().startsWith("****************"));
+            assertTrue(savedKeys.get("BETA_KEY").toString().startsWith("****************"));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

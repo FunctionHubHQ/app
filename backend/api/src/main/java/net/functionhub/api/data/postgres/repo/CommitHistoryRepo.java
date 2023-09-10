@@ -19,6 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 public interface CommitHistoryRepo extends JpaRepository<CommitHistoryEntity, String> {
   List<CommitHistoryEntity> findByCodeCellId(String codeCellId);
 
+  @Query(value = "SELECT * " +
+      "FROM commit_history " +
+      "WHERE code_cell_id IN (?1) AND deployed = true",
+      nativeQuery = true)
+  List<CommitHistoryEntity> findAllDeploymentsByAllCodeIds(List<String> codeCellIds);
+
   @Query(value = "SELECT "
       + "DISTINCT (cc.id) as id, "
       + "cc.function_name as name, "

@@ -21,6 +21,8 @@ import net.functionhub.api.data.postgres.entity.EntitlementEntity;
 import net.functionhub.api.data.postgres.entity.EnvVariableEntity;
 import net.functionhub.api.data.postgres.entity.UserEntity;
 import net.functionhub.api.data.postgres.repo.ApiKeyRepo;
+import net.functionhub.api.data.postgres.repo.CodeCellRepo;
+import net.functionhub.api.data.postgres.repo.CommitHistoryRepo;
 import net.functionhub.api.data.postgres.repo.EntitlementRepo;
 import net.functionhub.api.data.postgres.repo.EnvVariableRepo;
 import net.functionhub.api.data.postgres.repo.ProjectRepo;
@@ -48,6 +50,8 @@ import org.springframework.util.ObjectUtils;
 public class UserServiceImpl implements UserService {
   private final ProjectRepo projectRepo;
   private final UserRepo userRepo;
+  private final CodeCellRepo codeCellRepo;
+  private final CommitHistoryRepo commitHistoryRepo;
   private final ApiKeyRepo apiKeyRepo;
   private final EntitlementRepo entitlementRepo;
   private final EntitlementProps entitlementProps;
@@ -150,6 +154,7 @@ public class UserServiceImpl implements UserService {
     }
     apiKeyEntity.setUserId(FHUtils.getSessionUser().getUserId());
     apiKeyRepo.save(apiKeyEntity);
+    FHUtils.reTraffic(codeCellRepo, commitHistoryRepo);
     return getApiKeys();
   }
 
@@ -159,7 +164,7 @@ public class UserServiceImpl implements UserService {
       apiKeyRepo.deleteAll(
           apiKeyRepo.findAllByProvider(apiKeyRequest.getProvider().getValue(),
               FHUtils.getSessionUser().getUserId()));
-    } else if (!ObjectUtils.isEmpty(apiKeyRequest.getKey())) {
+    } else {
         ApiKeyEntity entity = apiKeyRepo.findByApiKey(apiKeyRequest.getKey());
         if (entity != null) {
           apiKeyRepo.delete(entity);
@@ -168,10 +173,11 @@ public class UserServiceImpl implements UserService {
               FHUtils.getSessionUser().getUserId());
           if (apiKeyEntities.size() == 0) {
             // A user must always have at least one FunctionHub key
-            return createNewApiKey(new ApiKeyRequest());
+            return createNewApiKey(new ApiKeyRequest().provider(ApiKeyProvider.FUNCTION_HUB));
           }
         }
     }
+    FHUtils.reTraffic(codeCellRepo, commitHistoryRepo);
     return getApiKeys();
   }
 
@@ -241,7 +247,7 @@ public class UserServiceImpl implements UserService {
     if (decodedKeys.size() > 0) {
       Map<String, Object> redactedKeys = new HashMap<>();
       for (Map.Entry<String, Object> entry : decodedKeys.entrySet()) {
-        redactedKeys.put(entry.getKey(), entry.getValue().toString().substring(0, 3) + "****************");
+        redactedKeys.put(entry.getKey(), "****************");
       }
       try {
         return Base64.getEncoder().encodeToString(objectMapper.writeValueAsBytes(redactedKeys));
@@ -272,16 +278,20 @@ public class UserServiceImpl implements UserService {
 
   @Override
   public String upsertEnvVariables(String requestBody) {
-    EnvVariableEntity envVariableEntity = envVariableRepo.findByUserId(FHUtils.getSessionUser().getUserId());
-    if (envVariableEntity == null) {
-      envVariableEntity = new EnvVariableEntity();
-      envVariableEntity.setUserId(FHUtils.getSessionUser().getUserId());
-      envVariableEntity.setId(FHUtils.generateEntityId("ev"));
-    } else {
-      envVariableEntity.setUpdatedAt(LocalDateTime.now());
+    if (!ObjectUtils.isEmpty(requestBody)) {
+      EnvVariableEntity envVariableEntity = envVariableRepo.findByUserId(FHUtils.getSessionUser().getUserId());
+      if (envVariableEntity == null) {
+        envVariableEntity = new EnvVariableEntity();
+        envVariableEntity.setUserId(FHUtils.getSessionUser().getUserId());
+        envVariableEntity.setId(FHUtils.generateEntityId("ev"));
+      } else {
+        envVariableEntity.setUpdatedAt(LocalDateTime.now());
+      }
+      String cleaned = requestBody.replace("\"", "");
+          envVariableEntity.setEnvVariableJson(cleaned);
+      envVariableRepo.save(envVariableEntity);
+      FHUtils.reTraffic(codeCellRepo, commitHistoryRepo);
     }
-    envVariableEntity.setEnvVariableJson(requestBody);
-    envVariableRepo.save(envVariableEntity);
     return getEnvVariables();
   }
 

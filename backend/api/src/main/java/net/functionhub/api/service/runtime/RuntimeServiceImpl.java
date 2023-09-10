@@ -428,11 +428,6 @@ public class RuntimeServiceImpl implements RuntimeService {
   }
 
   @Override
-  public String generateCodeVersion() {
-    return FHUtils.generateUid(FHUtils.LONG_UID_LENGTH);
-  }
-
-  @Override
   public CodeUpdateResult updateCode(Code code, boolean forked) {
     if (!FHUtils.getSessionUser().isAnonymous()) {
       String rawCode = null;
@@ -451,7 +446,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         codeCell.setIsActive(isBelowActiveLimit(FHUtils.getSessionUser().getUserId()));
         codeCell.setIsPublic(false);
         codeCell.setSlug(getUniqueSlug());
-        codeCell.setVersion(generateCodeVersion());
+        codeCell.setVersion(FHUtils.generateCodeVersion());
         if (!ObjectUtils.isEmpty(code.getParentId())) {
           codeCell.setParentId(code.getParentId());
         }
@@ -467,7 +462,7 @@ public class RuntimeServiceImpl implements RuntimeService {
               switch (field) {
                 case "code" -> {
                   codeCell.setCode(code.getCode());
-                  codeCell.setVersion(generateCodeVersion());
+                  codeCell.setVersion(FHUtils.generateCodeVersion());
                   rawCode = new String(Base64.getDecoder().decode(code.getCode().getBytes()));
                   codeCell.setDescription(parseCodeComment(rawCode, "@description"));
                   codeCell.setSummary(parseCodeComment(rawCode, "@summary"));
@@ -506,7 +501,7 @@ public class RuntimeServiceImpl implements RuntimeService {
         });
 
         final SessionUser user = FHUtils.getSessionUser();
-        ;
+
         Thread.startVirtualThread(() -> generateJsonSchema(user,
             new String(Base64.getDecoder()
                 .decode(finalCell.getCode()
@@ -624,7 +619,7 @@ public class RuntimeServiceImpl implements RuntimeService {
   public Code getCodeDetail(String uid, Boolean bySlug) {
     if (!ObjectUtils.isEmpty(uid)) {
       CodeCellEntity codeCell = null;
-      if (bySlug) {
+      if (bySlug != null && bySlug) {
         codeCell = codeCellRepo.findBySlug(uid);
       } else {
         codeCell = codeCellRepo.findById(uid).orElse(null);
@@ -862,6 +857,8 @@ public class RuntimeServiceImpl implements RuntimeService {
                 codeCell.getVersion());
             if (!ObjectUtils.isEmpty(commitHistory)) {
               commitHistory.get(0).setDeployed(true);
+              commitHistory.get(0).setFullOpenApiSchema(codeCell.getFullOpenApiSchema());
+              commitHistory.get(0).setJsonSchema(codeCell.getJsonSchema());
               commitHistoryRepo.save(commitHistory.get(0));
             }
             return new GenericResponse().status("ok");
@@ -951,24 +948,23 @@ public class RuntimeServiceImpl implements RuntimeService {
           statusRequest.getVersion());
       if (FHUtils.hasReadAccess(codeCell, httpServletResponse, objectMapper,
           messagesProps.getUnauthorized())) {
-        throw new RuntimeException("Function not found");
-      }
-      if (statusRequest.getDeployed() != null && statusRequest.getDeployed()) {
-        // Get it from the commit history
-        Deployment deployment = commitHistoryRepo.findDeployedCommitByVersionAndSlug(
-            statusRequest.getVersion(), statusRequest.getSlug());
-        if (deployment == null) {
-          throw new RuntimeException("Deployment not found for " +
-              statusRequest.getSlug()  + " with version " +
-              statusRequest.getVersion());
+        if (statusRequest.getDeployed() != null && statusRequest.getDeployed()) {
+          // Get it from the commit history
+          Deployment deployment = commitHistoryRepo.findDeployedCommitByVersionAndSlug(
+              statusRequest.getVersion(), statusRequest.getSlug());
+          if (deployment == null) {
+            throw new RuntimeException("Deployment not found for " +
+                statusRequest.getSlug() + " with version " +
+                statusRequest.getVersion());
+          }
+          return new StatusResponse().isReady(
+              !ObjectUtils.isEmpty(deployment.getSchema()) &&
+                  !ObjectUtils.isEmpty(deployment.getPayload()));
+        } else {
+          return new StatusResponse().isReady(
+              !ObjectUtils.isEmpty(codeCell.getFullOpenApiSchema()) &&
+                  !ObjectUtils.isEmpty(codeCell.getJsonSchema()));
         }
-        return new StatusResponse().isReady(
-            !ObjectUtils.isEmpty(deployment.getSchema()) &&
-                !ObjectUtils.isEmpty(deployment.getPayload()));
-      } else {
-        return new StatusResponse().isReady(
-            !ObjectUtils.isEmpty(codeCell.getFullOpenApiSchema()) &&
-                !ObjectUtils.isEmpty(codeCell.getJsonSchema()));
       }
     }
     throw new RuntimeException("Invalid request");
